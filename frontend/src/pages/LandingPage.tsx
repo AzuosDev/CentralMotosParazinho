@@ -328,22 +328,117 @@ function SecuritySection() {
 
 type BillingCycle = "monthly" | "annual";
 
+// Crossfade: quando `value` muda, primeiro esconde o conteúdo antigo (fade-out) e só troca
+// o valor exibido depois que a transição de saída terminou — evita a troca seca de texto.
+function useCrossfade<T>(value: T, duration = 200) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (value === displayValue) return;
+    setVisible(false);
+    const timeout = setTimeout(() => {
+      setDisplayValue(value);
+      setVisible(true);
+    }, duration);
+    return () => clearTimeout(timeout);
+  }, [value, displayValue, duration]);
+
+  return { displayValue, visible };
+}
+
+function PricingCard({
+  highlight,
+  delay,
+  badge,
+  priceNode,
+  disclaimer,
+  features,
+  cta,
+}: {
+  highlight: boolean;
+  delay: number;
+  badge: string;
+  priceNode: ReactNode;
+  disclaimer: string;
+  features: string[];
+  cta: ReactNode;
+}) {
+  const { ref, inView } = useInView<HTMLDivElement>();
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "h-full transition-all duration-700 ease-out",
+        inView ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0",
+      )}
+      style={{ transitionDelay: inView ? `${delay}ms` : "0ms" }}
+    >
+      <div
+        className={cn(
+          "flex h-full flex-col rounded-card bg-bg-card p-6 shadow-[0_0_50px_-15px_rgba(163,230,53,0.4)] ring-1 ring-accent-lime/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_65px_-10px_rgba(163,230,53,0.6)] hover:ring-accent-lime/50 sm:p-8",
+        )}
+      >
+        <p className={cn("text-sm font-semibold uppercase tracking-widest", highlight ? "text-accent-lime" : "text-text-secondary")}>
+          {badge}
+        </p>
+
+        {priceNode}
+
+        <p className="mt-3 text-sm text-text-secondary">{disclaimer}</p>
+
+        <ul className="mt-6 space-y-3 text-left">
+          {features.map((feature, index) => (
+            <li
+              key={feature}
+              className={cn(
+                "flex items-start gap-2 text-sm text-text-secondary transition-all duration-500 ease-out",
+                inView ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0",
+              )}
+              style={{ transitionDelay: inView ? `${250 + index * 70}ms` : "0ms" }}
+            >
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-lime" />
+              <span className="min-w-0">{feature}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-auto pt-6">{cta}</div>
+      </div>
+    </div>
+  );
+}
+
 function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const isAnnual = cycle === "annual";
+  const { displayValue: displayCycle, visible: priceVisible } = useCrossfade(cycle);
+  const displayIsAnnual = displayCycle === "annual";
+
+  const fadeClass = cn(
+    "transition-all duration-200 ease-out",
+    priceVisible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+  );
 
   return (
     <section id="precos" className="mx-auto w-full max-w-4xl scroll-mt-28 px-4 py-16 text-center sm:px-6">
       <h2 className="font-sans text-3xl font-bold text-text-primary">Escolha o plano ideal pra você</h2>
 
       <Reveal delay={0} className="mt-8 flex justify-center">
-        <div className="flex w-fit gap-1 rounded-full bg-bg-card p-1 ring-1 ring-border-default">
+        <div className="relative inline-flex rounded-full bg-bg-card p-1 ring-1 ring-border-default">
+          <div
+            className={cn(
+              "absolute inset-y-1 left-1 w-24 rounded-full bg-accent-lime transition-transform duration-300 ease-out",
+              isAnnual && "translate-x-24",
+            )}
+          />
           <button
             type="button"
             onClick={() => setCycle("monthly")}
             className={cn(
-              "cursor-pointer rounded-full px-5 py-2 text-sm font-semibold transition",
-              !isAnnual ? "bg-accent-lime text-black" : "text-text-secondary hover:text-text-primary",
+              "relative z-10 w-24 cursor-pointer rounded-full py-2 text-sm font-semibold transition-colors duration-300",
+              !isAnnual ? "text-black" : "text-text-secondary hover:text-text-primary",
             )}
           >
             Mensal
@@ -352,8 +447,8 @@ function Pricing() {
             type="button"
             onClick={() => setCycle("annual")}
             className={cn(
-              "cursor-pointer rounded-full px-5 py-2 text-sm font-semibold transition",
-              isAnnual ? "bg-accent-lime text-black" : "text-text-secondary hover:text-text-primary",
+              "relative z-10 w-24 cursor-pointer rounded-full py-2 text-sm font-semibold transition-colors duration-300",
+              isAnnual ? "text-black" : "text-text-secondary hover:text-text-primary",
             )}
           >
             Anual
@@ -362,72 +457,60 @@ function Pricing() {
       </Reveal>
 
       <div className="mt-10 grid grid-cols-1 gap-6 text-left md:grid-cols-2">
-        <Reveal delay={0}>
-          <div className="flex h-full flex-col rounded-card bg-bg-card p-6 shadow-[0_0_50px_-15px_rgba(163,230,53,0.4)] ring-1 ring-accent-lime/30 transition-shadow duration-300 hover:shadow-[0_0_60px_-12px_rgba(163,230,53,0.55)] sm:p-8">
-            <p className="text-sm font-semibold uppercase tracking-widest text-accent-lime">Básico</p>
-            <p className="mt-3 font-sans text-4xl font-extrabold text-text-primary">
-              {isAnnual ? "R$299,90" : "R$29,90"}
-              <span className="text-lg font-medium text-text-secondary">{isAnnual ? "/ano" : "/mês"}</span>
-            </p>
-            <p className="mt-2 text-sm text-accent-lime">
-              {isAnnual ? "Equivale a R$24,99/mês — economize ~2 meses (17%)" : "ou R$299,90/ano — economize ~2 meses"}
-            </p>
-            <p className="mt-3 text-sm text-text-secondary">
-              15 dias grátis, sem cartão de crédito. Cancele quando quiser.
-            </p>
-
-            <ul className="mt-6 space-y-3 text-left">
-              {basicFeatures.map((bullet) => (
-                <li key={bullet} className="flex items-start gap-2 text-sm text-text-secondary">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-lime" />
-                  <span className="min-w-0">{bullet}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-auto pt-6">
-              <Link
-                to="/register"
-                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
-              >
-                Começar teste grátis
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+        <PricingCard
+          highlight
+          delay={0}
+          badge="Básico"
+          priceNode={
+            <div className={fadeClass}>
+              <p className="mt-3 font-sans text-4xl font-extrabold text-text-primary">
+                {displayIsAnnual ? "R$299,90" : "R$29,90"}
+                <span className="text-lg font-medium text-text-secondary">{displayIsAnnual ? "/ano" : "/mês"}</span>
+              </p>
+              <p className="mt-2 text-sm text-accent-lime">
+                {displayIsAnnual
+                  ? "Equivale a R$24,99/mês — economize ~2 meses (17%)"
+                  : "ou R$299,90/ano — economize ~2 meses"}
+              </p>
             </div>
-          </div>
-        </Reveal>
+          }
+          disclaimer="15 dias grátis, sem cartão de crédito. Cancele quando quiser."
+          features={basicFeatures}
+          cta={
+            <Link
+              to="/register"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+            >
+              Começar teste grátis
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        />
 
-        <Reveal delay={100}>
-          <div className="flex h-full flex-col rounded-card bg-bg-card p-6 ring-1 ring-border-default transition-colors duration-300 hover:ring-accent-lime/30 sm:p-8">
-            <p className="text-sm font-semibold uppercase tracking-widest text-text-secondary">Empresarial</p>
-            <p className="mt-3 font-sans text-4xl font-extrabold text-text-primary">
-              {isAnnual ? "A partir de R$599,90" : "A partir de R$49,90"}
-              <span className="text-lg font-medium text-text-secondary">{isAnnual ? "/ano" : "/mês"}</span>
-            </p>
-            <p className="mt-2 text-sm text-text-secondary">
-              Valor sob consulta, de acordo com a necessidade do seu negócio.
-            </p>
-
-            <ul className="mt-6 space-y-3 text-left">
-              {businessFeatures.map((bullet) => (
-                <li key={bullet} className="flex items-start gap-2 text-sm text-text-secondary">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-lime" />
-                  <span className="min-w-0">{bullet}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-auto pt-6">
-              <a
-                href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Interesse no plano Empresarial")}`}
-                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-default px-6 py-3 text-sm font-bold text-text-primary transition-all duration-200 hover:border-accent-lime hover:text-accent-lime"
-              >
-                Falar com vendas
-                <ArrowRight className="h-4 w-4" />
-              </a>
+        <PricingCard
+          highlight={false}
+          delay={100}
+          badge="Empresarial"
+          priceNode={
+            <div className={fadeClass}>
+              <p className="mt-3 font-sans text-4xl font-extrabold text-text-primary">
+                {displayIsAnnual ? "A partir de R$599,90" : "A partir de R$49,90"}
+                <span className="text-lg font-medium text-text-secondary">{displayIsAnnual ? "/ano" : "/mês"}</span>
+              </p>
             </div>
-          </div>
-        </Reveal>
+          }
+          disclaimer="Valor sob consulta, de acordo com a necessidade do seu negócio."
+          features={businessFeatures}
+          cta={
+            <a
+              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Interesse no plano Empresarial")}`}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-default px-6 py-3 text-sm font-bold text-text-primary transition-all duration-200 hover:border-accent-lime hover:text-accent-lime"
+            >
+              Falar com vendas
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          }
+        />
       </div>
     </section>
   );
