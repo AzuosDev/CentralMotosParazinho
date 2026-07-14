@@ -91,6 +91,8 @@ const businessFeatures = [
 const CONTACT_EMAIL = "udawgs.org@gmail.com";
 const SALES_WHATSAPP_NUMBER = "5588996784110";
 const SALES_WHATSAPP_MESSAGE = "Olá! Tenho interesse no plano Empresarial do MeuGasto.";
+const CONTACT_WHATSAPP_MESSAGE = "Olá! Tenho uma dúvida sobre o MeuGasto.";
+const CONTACT_WHATSAPP_DISPLAY = "(88) 9 9678-4110";
 
 const faqs: { question: string; answer: string }[] = [
   {
@@ -186,8 +188,8 @@ function Reveal({
 
 const navLinks = [
   { id: "funcionalidades", label: "Funcionalidades" },
-  { id: "precos", label: "Preço" },
   { id: "seguranca", label: "Segurança" },
+  { id: "precos", label: "Preço" },
   { id: "contato", label: "Contato" },
 ];
 
@@ -647,26 +649,49 @@ function ContactSection() {
           <h2 className="font-sans text-2xl font-bold text-text-primary sm:text-3xl">Fale conosco</h2>
           <p className="mt-2 text-sm text-text-secondary">Tem dúvidas ou quer saber mais? Fale com a gente.</p>
 
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-6 flex w-full flex-col items-center justify-center gap-3">
+            <div className="group flex flex-col items-center gap-2 sm:relative sm:flex-row sm:justify-center sm:gap-0">
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="cursor-pointer break-all text-base font-semibold text-accent-lime underline-offset-4 transition-colors duration-200 hover:underline"
+              >
+                {CONTACT_EMAIL}
+              </a>
+              <button
+                type="button"
+                onClick={handleCopy}
+                aria-label={copied ? "Email copiado" : "Copiar email"}
+                title={copied ? "Copiado!" : "Copiar email"}
+                className={cn(
+                  "flex cursor-pointer items-center justify-center rounded-xl border p-2 transition-all duration-200",
+                  "sm:absolute sm:left-full sm:top-1/2 sm:ml-2 sm:-translate-y-1/2 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
+                  copied && "sm:opacity-100",
+                  copied
+                    ? "border-accent-lime/40 bg-accent-lime/10 text-accent-lime"
+                    : "border-border-default text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+                )}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex w-full items-center justify-center gap-2 text-sm text-text-secondary">
+            <span className="h-px w-8 bg-border-default" aria-hidden="true" />
+            ou
+            <span className="h-px w-8 bg-border-default" aria-hidden="true" />
+          </div>
+
+          <div className="mt-4 flex w-full items-center justify-center">
             <a
-              href={`mailto:${CONTACT_EMAIL}`}
-              className="cursor-pointer break-all text-base font-semibold text-accent-lime underline-offset-4 transition-colors duration-200 hover:underline"
+              href={`https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(CONTACT_WHATSAPP_MESSAGE)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative inline-block cursor-pointer text-base font-semibold text-accent-lime underline-offset-4 transition-colors duration-200 hover:underline"
             >
-              {CONTACT_EMAIL}
+              <MessageCircle className="absolute right-full top-1/2 mr-2 h-4 w-4 -translate-y-1/2" />
+              {CONTACT_WHATSAPP_DISPLAY}
             </a>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className={cn(
-                "flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200",
-                copied
-                  ? "border-accent-lime/40 bg-accent-lime/10 text-accent-lime"
-                  : "border-border-default text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
-              )}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copiado!" : "Copiar email"}
-            </button>
           </div>
         </div>
       </Reveal>
