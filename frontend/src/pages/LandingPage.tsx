@@ -71,10 +71,20 @@ const securityPoints: { icon: LucideIcon; text: string }[] = [
   },
 ];
 
-const pricingBullets = [
-  "Sem taxa de setup.",
-  "Sem fidelidade — cancele a qualquer momento direto no app.",
-  "Acesso completo a todas as funcionalidades desde o primeiro dia (sem trava de recurso \"premium\").",
+const basicFeatures = [
+  "Dashboard consolidado de todas as suas carteiras",
+  "Contas a pagar e receber, com parcelamento e recorrência",
+  "Importe seu extrato bancário via arquivo OFX",
+  "Categorização de gastos",
+  "Login biométrico",
+  "Insights financeiros",
+];
+
+const businessFeatures = [
+  "Tudo do plano Básico",
+  "Versão personalizada para o seu negócio",
+  "Manutenções corretivas prioritárias",
+  "Atualizações dedicadas",
 ];
 
 const CONTACT_EMAIL = "udawgs.org@gmail.com";
@@ -98,6 +108,21 @@ const faqs: { question: string; answer: string }[] = [
     question: "Meus dados financeiros estão seguros?",
     answer:
       "Toda comunicação é criptografada (HTTPS) e o login biométrico não expõe sua senha na rede. Veja mais na seção de Segurança acima.",
+  },
+  {
+    question: "Qual a diferença entre o plano Básico e o Empresarial?",
+    answer:
+      "O Básico dá acesso completo ao MeuGasto para uso pessoal, com assinatura direta pelo app. O Empresarial é uma versão personalizada para o seu negócio, com manutenções corretivas prioritárias e atualizações dedicadas — o valor final e o escopo são definidos em conversa com nosso time.",
+  },
+  {
+    question: "Posso trocar entre mensal e anual depois de assinar?",
+    answer:
+      "Sim. No plano Básico, você troca entre mensal e anual quando quiser, direto nas configurações da conta — a mudança vale a partir do próximo ciclo de cobrança. No Empresarial, qualquer ajuste é combinado direto com nosso time.",
+  },
+  {
+    question: "O teste grátis de 15 dias vale para qual plano?",
+    answer:
+      "Só para o plano Básico. O Empresarial funciona por consulta comercial — fale com a gente pra montar a melhor proposta pro seu negócio.",
   },
 ];
 
@@ -301,36 +326,109 @@ function SecuritySection() {
   );
 }
 
+type BillingCycle = "monthly" | "annual";
+
 function Pricing() {
+  const [cycle, setCycle] = useState<BillingCycle>("monthly");
+  const isAnnual = cycle === "annual";
+
   return (
-    <section id="precos" className="mx-auto w-full max-w-3xl scroll-mt-28 px-4 py-16 text-center sm:px-6">
-      <h2 className="font-sans text-3xl font-bold text-text-primary">Comece agora mesmo!</h2>
-      <Reveal delay={0} className="mx-auto mt-10 max-w-md">
-        <div className="rounded-card bg-bg-card p-6 shadow-[0_0_50px_-15px_rgba(163,230,53,0.4)] ring-1 ring-accent-lime/30 transition-shadow duration-300 hover:shadow-[0_0_60px_-12px_rgba(163,230,53,0.55)] sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-widest text-accent-lime">15 dias grátis</p>
-          <p className="mt-3 font-sans text-4xl font-extrabold text-text-primary">
-            R$49<span className="text-lg font-medium text-text-secondary">/mês</span>
-          </p>
-          <p className="mt-2 text-sm text-text-secondary">depois do período de teste. Cancele quando quiser.</p>
+    <section id="precos" className="mx-auto w-full max-w-4xl scroll-mt-28 px-4 py-16 text-center sm:px-6">
+      <h2 className="font-sans text-3xl font-bold text-text-primary">Escolha o plano ideal pra você</h2>
 
-          <ul className="mt-6 space-y-3 text-left">
-            {pricingBullets.map((bullet) => (
-              <li key={bullet} className="flex items-start gap-2 text-sm text-text-secondary">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-lime" />
-                <span className="min-w-0">{bullet}</span>
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            to="/register"
-            className="mt-8 flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+      <Reveal delay={0} className="mt-8 flex justify-center">
+        <div className="flex w-fit gap-1 rounded-full bg-bg-card p-1 ring-1 ring-border-default">
+          <button
+            type="button"
+            onClick={() => setCycle("monthly")}
+            className={cn(
+              "cursor-pointer rounded-full px-5 py-2 text-sm font-semibold transition",
+              !isAnnual ? "bg-accent-lime text-black" : "text-text-secondary hover:text-text-primary",
+            )}
           >
-            Começar teste grátis
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+            Mensal
+          </button>
+          <button
+            type="button"
+            onClick={() => setCycle("annual")}
+            className={cn(
+              "cursor-pointer rounded-full px-5 py-2 text-sm font-semibold transition",
+              isAnnual ? "bg-accent-lime text-black" : "text-text-secondary hover:text-text-primary",
+            )}
+          >
+            Anual
+          </button>
         </div>
       </Reveal>
+
+      <div className="mt-10 grid grid-cols-1 gap-6 text-left md:grid-cols-2">
+        <Reveal delay={0}>
+          <div className="flex h-full flex-col rounded-card bg-bg-card p-6 shadow-[0_0_50px_-15px_rgba(163,230,53,0.4)] ring-1 ring-accent-lime/30 transition-shadow duration-300 hover:shadow-[0_0_60px_-12px_rgba(163,230,53,0.55)] sm:p-8">
+            <p className="text-sm font-semibold uppercase tracking-widest text-accent-lime">Básico</p>
+            <p className="mt-3 font-sans text-4xl font-extrabold text-text-primary">
+              {isAnnual ? "R$299,90" : "R$29,90"}
+              <span className="text-lg font-medium text-text-secondary">{isAnnual ? "/ano" : "/mês"}</span>
+            </p>
+            <p className="mt-2 text-sm text-accent-lime">
+              {isAnnual ? "Equivale a R$24,99/mês — economize ~2 meses (17%)" : "ou R$299,90/ano — economize ~2 meses"}
+            </p>
+            <p className="mt-3 text-sm text-text-secondary">
+              15 dias grátis, sem cartão de crédito. Cancele quando quiser.
+            </p>
+
+            <ul className="mt-6 space-y-3 text-left">
+              {basicFeatures.map((bullet) => (
+                <li key={bullet} className="flex items-start gap-2 text-sm text-text-secondary">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-lime" />
+                  <span className="min-w-0">{bullet}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-auto pt-6">
+              <Link
+                to="/register"
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+              >
+                Começar teste grátis
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={100}>
+          <div className="flex h-full flex-col rounded-card bg-bg-card p-6 ring-1 ring-border-default transition-colors duration-300 hover:ring-accent-lime/30 sm:p-8">
+            <p className="text-sm font-semibold uppercase tracking-widest text-text-secondary">Empresarial</p>
+            <p className="mt-3 font-sans text-4xl font-extrabold text-text-primary">
+              {isAnnual ? "A partir de R$599,90" : "A partir de R$49,90"}
+              <span className="text-lg font-medium text-text-secondary">{isAnnual ? "/ano" : "/mês"}</span>
+            </p>
+            <p className="mt-2 text-sm text-text-secondary">
+              Valor sob consulta, de acordo com a necessidade do seu negócio.
+            </p>
+
+            <ul className="mt-6 space-y-3 text-left">
+              {businessFeatures.map((bullet) => (
+                <li key={bullet} className="flex items-start gap-2 text-sm text-text-secondary">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-lime" />
+                  <span className="min-w-0">{bullet}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-auto pt-6">
+              <a
+                href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Interesse no plano Empresarial")}`}
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-default px-6 py-3 text-sm font-bold text-text-primary transition-all duration-200 hover:border-accent-lime hover:text-accent-lime"
+              >
+                Falar com vendas
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </Reveal>
+      </div>
     </section>
   );
 }
