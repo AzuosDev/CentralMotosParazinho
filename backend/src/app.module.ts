@@ -11,7 +11,6 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 import { PendingModule } from './modules/pending/pending.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { InsightsModule } from './modules/insights/insights.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { ImportModule } from './modules/import/import.module';
@@ -49,7 +48,6 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     PendingModule,
     GoalsModule,
     DashboardModule,
-    InsightsModule,
     ExpensesModule,
     WalletsModule,
     ImportModule,

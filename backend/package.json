@@ -9,7 +9,6 @@
     "start:dev": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules src/main.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",

@@ -182,39 +182,6 @@ export type DashboardResponse = {
   goalsSummary: Goal[];
 };
 
-export type InsightsPeriodTotals = {
-  totalIncome: number;
-  totalExpense: number;
-  monthsWithData: number;
-  avgMonthlyIncome: number;
-  avgMonthlyExpense: number;
-  avgMonthlyBalance: number;
-};
-
-export type InsightsTopCategory = {
-  categoryId: string | null;
-  name: string;
-  total: number;
-  percentOfExpenses: number;
-  yoyPct: number | null;
-};
-
-export type InsightsAnnualSummary = {
-  year: number;
-  previousYear: number;
-  current: InsightsPeriodTotals;
-  previous: InsightsPeriodTotals;
-  yoyChange: {
-    incomePct: number | null;
-    expensePct: number | null;
-    balancePct: number | null;
-  };
-  topCategories: InsightsTopCategory[];
-  narrative: string | null;
-  narrativeUnavailable: boolean;
-  noData: boolean;
-};
-
 export type ApiValidationError = {
   statusCode?: number;
   error?: string;
