@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Lock,
   Mail,
+  MessageCircle,
   ShieldCheck,
   Server,
   Tag,
@@ -88,6 +89,8 @@ const businessFeatures = [
 ];
 
 const CONTACT_EMAIL = "udawgs.org@gmail.com";
+const SALES_WHATSAPP_NUMBER = "5588996784110";
+const SALES_WHATSAPP_MESSAGE = "Olá! Tenho interesse no plano Empresarial do MeuGasto.";
 
 const faqs: { question: string; answer: string }[] = [
   {
@@ -410,6 +413,54 @@ function PricingCard({
   );
 }
 
+function BusinessContactCta() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-default px-6 py-3 text-sm font-bold text-text-primary transition-all duration-200 hover:border-accent-lime hover:text-accent-lime"
+      >
+        Falar com vendas
+        <ArrowRight className="h-4 w-4" />
+      </button>
+
+      {open && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          <div className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-border-default bg-bg-card text-left shadow-xl">
+            <a
+              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Interesse no plano Empresarial")}`}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-text-primary transition-colors duration-200 hover:bg-bg-overlay hover:text-accent-lime"
+            >
+              <Mail className="h-4 w-4" />
+              Por e-mail
+            </a>
+            <a
+              href={`https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(SALES_WHATSAPP_MESSAGE)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 border-t border-border-default px-4 py-3 text-sm font-medium text-text-primary transition-colors duration-200 hover:bg-bg-overlay hover:text-accent-lime"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Pelo WhatsApp
+            </a>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const isAnnual = cycle === "annual";
@@ -469,8 +520,8 @@ function Pricing() {
               </p>
               <p className="mt-2 text-sm text-accent-lime">
                 {displayIsAnnual
-                  ? "Equivale a R$24,99/mês — economize ~2 meses (17%)"
-                  : "ou R$299,90/ano — economize ~2 meses"}
+                  ? "Equivale a R$24,99/mês — economize ~2 meses (16%)"
+                  : "ou R$299,90/ano — economize ~2 meses (16%)"}
               </p>
             </div>
           }
@@ -501,15 +552,7 @@ function Pricing() {
           }
           disclaimer="Valor sob consulta, de acordo com a necessidade do seu negócio."
           features={businessFeatures}
-          cta={
-            <a
-              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Interesse no plano Empresarial")}`}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-default px-6 py-3 text-sm font-bold text-text-primary transition-all duration-200 hover:border-accent-lime hover:text-accent-lime"
-            >
-              Falar com vendas
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          }
+          cta={<BusinessContactCta />}
         />
       </div>
     </section>
