@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fingerprint, ShieldCheck, Trash2, Loader2, AlertCircle } from "lucide-react";
+import { CreditCard, Fingerprint, ShieldCheck, Trash2, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { startRegistration, platformAuthenticatorIsAvailable } from "@simplewebauthn/browser";
 
 import { api } from "../lib/api";
+import { useAuth, computeHasAccess } from "../contexts/AuthContext";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 
 type StoredCredential = {
@@ -25,9 +26,12 @@ function useWebAuthnSupported() {
 export function SettingsPage() {
   const queryClient = useQueryClient();
   const supported = useWebAuthnSupported();
+  const { subscription } = useAuth();
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   const credentialsQuery = useQuery<StoredCredential[]>({
     queryKey: ["webauthn-credentials"],
@@ -78,6 +82,18 @@ export function SettingsPage() {
     onError: () => setDeleteError("Erro ao remover credencial."),
   });
 
+  const handleOpenPortal = async () => {
+    setPortalLoading(true);
+    setPortalError(null);
+    try {
+      const { data } = await api.post<{ url: string }>('/api/billing/portal');
+      window.location.href = data.url;
+    } catch {
+      setPortalError('Não foi possível abrir o portal. Tente novamente.');
+      setPortalLoading(false);
+    }
+  };
+
   function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -92,6 +108,60 @@ export function SettingsPage() {
         <h1 className="font-sans text-2xl font-bold text-text-primary">Configurações</h1>
         <p className="mt-1 text-sm text-text-secondary">Gerencie sua conta e segurança.</p>
       </div>
+
+      {/* Seção assinatura */}
+      {subscription && !subscription.isLegacyFree && (
+        <div className="rounded-2xl bg-bg-card p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <CreditCard className="h-5 w-5 text-accent-lime shrink-0" />
+            <div>
+              <h2 className="font-semibold text-text-primary">Assinatura</h2>
+              <p className="text-xs text-text-secondary">
+                {subscription.subscriptionStatus === 'trial'
+                  ? 'Período de teste'
+                  : subscription.subscriptionStatus === 'active'
+                  ? `Plano Básico · ${subscription.billingCycle === 'annual' ? 'Anual' : 'Mensal'}`
+                  : 'Sem assinatura ativa'}
+              </p>
+            </div>
+            <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              computeHasAccess(subscription)
+                ? 'bg-accent-lime/10 text-accent-lime'
+                : 'bg-accent-red/10 text-accent-red'
+            }`}>
+              {computeHasAccess(subscription) ? 'Ativo' : 'Expirado'}
+            </span>
+          </div>
+
+          {subscription.subscriptionExpiresAt && (
+            <p className="text-xs text-text-secondary">
+              {subscription.subscriptionStatus === 'active' ? 'Renova em' : 'Expirou em'}{' '}
+              {new Date(subscription.subscriptionExpiresAt).toLocaleDateString('pt-BR')}
+            </p>
+          )}
+
+          {/* Só mostra o portal se tiver assinatura ativa via cartão (stripeSubscriptionId existe) */}
+          {subscription.subscriptionStatus === 'active' && (
+            <>
+              <button
+                onClick={handleOpenPortal}
+                disabled={portalLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-default bg-bg-overlay px-4 py-3 text-sm font-medium text-text-primary transition hover:bg-bg-muted disabled:opacity-50"
+              >
+                {portalLoading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Abrindo portal...</>
+                ) : (
+                  <><ExternalLink className="h-4 w-4" /> Gerenciar assinatura</>
+                )}
+              </button>
+              {portalError && <p className="text-xs text-accent-red">{portalError}</p>}
+              <p className="text-xs text-text-muted">
+                Cancele, troque o cartão ou veja faturas no portal seguro da Stripe.
+              </p>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Seção biometria */}
       <div className="rounded-2xl bg-bg-card p-6 space-y-4">

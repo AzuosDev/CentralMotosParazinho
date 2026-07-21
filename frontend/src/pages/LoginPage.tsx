@@ -14,8 +14,8 @@ import { api } from "../lib/api";
 import { setTokens } from "../lib/auth";
 import { getApiErrorMessages } from "../lib/errors";
 import { WEBAUTHN_TRIED_KEY } from "../lib/webauthn-suggestion";
-import { useAuth } from "../contexts/AuthContext";
-import type { AuthTokens } from "../types/api";
+import { useAuth, extractSubscription } from "../contexts/AuthContext";
+import type { AuthTokens, User } from "../types/api";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 
 const LAST_EMAIL_KEY = "contacerta_last_email";
@@ -35,7 +35,7 @@ export function LoginPage() {
   const [biometricError, setBiometricError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { unlock } = useAuth();
+  const { unlock, setSubscription } = useAuth();
   const queryClient = useQueryClient();
   const redirectTo = (location.state as { from?: string } | null)?.from ?? "/dashboard";
   const hasCheckedSupport = useRef(false);
@@ -86,6 +86,10 @@ export function LoginPage() {
       localStorage.setItem(LAST_EMAIL_KEY, values.email.trim().toLowerCase());
       queryClient.clear();
       setTokens(data.accessToken, data.refreshToken);
+      try {
+        const { data: me } = await api.get<User>('/api/auth/me');
+        setSubscription(extractSubscription(me));
+      } catch { /* fail silently */ }
       unlock();
       navigate(redirectTo, { replace: true });
     } catch (error) {
@@ -119,6 +123,10 @@ export function LoginPage() {
       localStorage.setItem(LAST_EMAIL_KEY, email);
       queryClient.clear();
       setTokens(tokens.accessToken, tokens.refreshToken);
+      try {
+        const { data: me } = await api.get<User>('/api/auth/me');
+        setSubscription(extractSubscription(me));
+      } catch { /* fail silently */ }
       unlock();
       navigate(redirectTo, { replace: true });
     } catch (err: unknown) {

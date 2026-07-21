@@ -22,11 +22,14 @@ export class UsersService {
   async create(dto: { email: string; password: string }) {
     const hashed = await bcrypt.hash(dto.password, 12);
     const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const trialEndsAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
     const created = await this.userModel.create({
       email: dto.email,
       password: hashed,
       emailVerified: false,
       emailVerificationToken,
+      subscriptionStatus: 'trial',
+      trialEndsAt,
     });
     const obj = created.toObject() as Record<string, unknown>;
     delete obj['password'];
