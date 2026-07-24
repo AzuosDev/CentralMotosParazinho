@@ -17,6 +17,7 @@ import { WalletsModule } from './modules/wallets/wallets.module';
 import { ImportModule } from './modules/import/import.module';
 import { WebAuthnModule } from './modules/webauthn/webauthn.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     ImportModule,
     WebAuthnModule,
     NotificationsModule,
+    BillingModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

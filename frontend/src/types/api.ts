@@ -8,12 +8,21 @@ export type MongoDocument = {
   __v?: number;
 };
 
+export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
+
 export type User = MongoDocument & {
   email: string;
   emailVerified: boolean;
   name?: string;
   avatarUrl?: string;
   gravatarUrl?: string;
+  // Subscription
+  subscriptionStatus?: SubscriptionStatus | null;
+  plan?: string | null;
+  trialEndsAt?: string | null;
+  isLegacyFree?: boolean;
+  subscriptionExpiresAt?: string | null;
+  billingCycle?: string | null;
 };
 
 export type AuthTokens = {
