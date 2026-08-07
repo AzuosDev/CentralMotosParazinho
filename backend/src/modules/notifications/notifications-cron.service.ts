@@ -34,6 +34,49 @@ export class NotificationsCronService {
     }
   }
 
+  async generateNotificationsForUser(userId: Types.ObjectId): Promise<void> {
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setUTCHours(23, 59, 59, 999);
+
+    const accounts = await this.pendingModel
+      .find({ userId, paid: false, skipped: { $ne: true }, dueDate: { $lte: todayEnd } })
+      .lean()
+      .exec();
+
+    for (const account of accounts) {
+      const dueDay = new Date(account.dueDate);
+      dueDay.setUTCHours(0, 0, 0, 0);
+      const isToday = dueDay.getTime() === todayStart.getTime();
+
+      let type: NotificationType;
+      let title: string;
+
+      if (account.tipo === 'RECEBER') {
+        type = isToday ? 'VENCE_HOJE_RECEBER' : 'VENCIDA_RECEBER';
+        title = isToday ? 'Recebimento esperado hoje' : 'Recebimento em atraso';
+      } else {
+        type = isToday ? 'VENCE_HOJE_PAGAR' : 'VENCIDA_PAGAR';
+        title = isToday ? 'Conta vence hoje' : 'Conta vencida';
+      }
+
+      const valueFormatted = account.value.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      await this.notificationsService.upsertNotification({
+        userId: account.userId as Types.ObjectId,
+        pendingAccountId: (account as any)._id as Types.ObjectId,
+        type,
+        title,
+        message: `${account.title} — R$ ${valueFormatted}`,
+        generatedDate: todayStart,
+      });
+    }
+  }
+
   async generateNotifications() {
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);

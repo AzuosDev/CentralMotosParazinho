@@ -80,7 +80,7 @@ export class WalletsService {
 
     const result: Array<Record<string, unknown>> = wallets.map((w) => ({
       ...w.toObject(),
-      saldo: saldoMap.get(w._id.toString()) ?? 0,
+      saldo: (w.saldo ?? 0) + (saldoMap.get(w._id.toString()) ?? 0),
     }));
 
     if (legacySaldo !== 0) {
@@ -125,7 +125,7 @@ export class WalletsService {
       ]),
     ]);
 
-    const saldo = (saldoAgg[0]?.saldo ?? 0) + (transferCreditsAgg[0]?.saldo ?? 0);
+    const saldo = (wallet.saldo ?? 0) + (saldoAgg[0]?.saldo ?? 0) + (transferCreditsAgg[0]?.saldo ?? 0);
     return { ...wallet.toObject(), saldo, transactions };
   }
 
