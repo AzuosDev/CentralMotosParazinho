@@ -97,6 +97,8 @@ function AppBoot({ children }: { children: React.ReactNode }) {
       } catch {
         // If /me fails, still unlock (network issue, don't block the app)
       }
+      // Gera notificações de contas vencidas/a vencer para o usuário logado
+      api.post('/api/notifications/sync').catch(() => {});
       unlock();
       setStatus('ready');
     } else if (!hasRefreshToken()) {

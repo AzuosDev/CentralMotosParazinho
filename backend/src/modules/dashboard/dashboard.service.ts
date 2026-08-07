@@ -28,9 +28,12 @@ export class DashboardService {
     let endDate: Date;
     const period = query.period ?? 'monthly';
 
-    if (period === 'weekly') {
-      const dow = now.getDay();
-      const monday = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - (dow === 0 ? 6 : dow - 1)));
+    if (period === 'daily') {
+      startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+      endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    } else if (period === 'weekly') {
+      const dow = now.getUTCDay();
+      const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (dow === 0 ? 6 : dow - 1)));
       const sunday = new Date(monday);
       sunday.setUTCDate(monday.getUTCDate() + 6);
       sunday.setUTCHours(23, 59, 59, 999);
