@@ -9,6 +9,7 @@ import { detectBankIcon } from "../lib/bankIcons";
 import { getApiErrorMessages } from "../lib/errors";
 import { brlFormatter, normalizeTransaction } from "../lib/finance";
 import { BankLogo } from "../components/ui/BankLogo";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { TxRow } from "../components/TxRow";
 import { TransactionModal } from "../components/modals/TransactionModal";
 import { DeleteWalletModal } from "../components/modals/DeleteWalletModal";
@@ -34,6 +35,7 @@ export function WalletPage() {
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState("");
   const [icone, setIcone] = useState("");
+  const [saldoInicial, setSaldoInicial] = useState(0);
   const [txOpen, setTxOpen] = useState(false);
   const [txTab, setTxTab] = useState<TransactionType>("EXPENSE");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -77,6 +79,7 @@ export function WalletPage() {
       await api.patch(`/api/wallets/${id}`, {
         nome: nome || wallet?.nome,
         icone: icone || wallet?.icone,
+        saldo: saldoInicial,
       });
     },
     onSuccess: () => {
@@ -185,6 +188,7 @@ export function WalletPage() {
               onClick={() => {
                 setNome(wallet.nome);
                 setIcone(wallet.icone ?? "");
+                setSaldoInicial(wallet.saldoInicial ?? 0);
                 setEditing(true);
               }}
               className="rounded-xl border border-bg-muted p-2 transition hover:bg-bg-muted"
@@ -226,6 +230,17 @@ export function WalletPage() {
               value={icone}
               onChange={(e) => setIcone(e.target.value)}
               placeholder="🏦"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-text-secondary">Saldo inicial</span>
+            <p className="mb-2 text-xs text-text-secondary">
+              Valor que você já tinha antes do primeiro lançamento. Use para corrigir o saldo se ele estiver errado.
+            </p>
+            <CurrencyInput
+              value={saldoInicial}
+              onChange={setSaldoInicial}
               className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
             />
           </label>

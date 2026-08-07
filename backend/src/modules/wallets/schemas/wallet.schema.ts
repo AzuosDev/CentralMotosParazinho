@@ -14,6 +14,11 @@ export class Wallet {
   @Prop({ default: 0 })
   saldo!: number;
 
+  // Saldo que o usuário declara ter antes do primeiro lançamento.
+  // Imutável pelo $inc — apenas alterado explicitamente via update().
+  @Prop({ default: 0 })
+  saldoInicial!: number;
+
   @Prop()
   icone?: string;
 }

@@ -24,6 +24,7 @@ export class WalletsService {
       userId: this.toObjectId(userId, 'userId'),
       nome: dto.nome,
       saldo: dto.saldo ?? 0,
+      saldoInicial: dto.saldo ?? 0,
       icone: dto.icone,
     });
   }
@@ -38,12 +39,14 @@ export class WalletsService {
 
   async findAll(userId: string) {
     const userObjectId = new Types.ObjectId(userId);
-    const [wallets, saldoAgg, transferCreditsAgg] = await Promise.all([
+    // saldoInicial é o valor declarado pelo usuário ao criar a carteira (nunca alterado
+    // por $inc). O saldo exibido é: saldoInicial + soma(INCOME) - soma(EXPENSE) + TC - TD.
+    // Isso garante corretude independente do histórico de $inc em wallet.saldo.
+    const [wallets, saldoAgg, transferCreditsAgg, transferDebitsAgg] = await Promise.all([
       this.walletModel.find({ userId: userObjectId }).sort({ createdAt: 1 }).exec(),
-      // Sem filtro de carteiraId: transações legadas (carteiraId nulo/ausente) caem no
-      // grupo `_id: null` em vez de serem descartadas antes do $group.
+      // income - expense por carteira (TRANSFER excluído para não duplicar com TC/TD)
       this.transactionModel.aggregate([
-        { $match: { userId: userObjectId, ...this.effectiveSaldoMatch() } },
+        { $match: { userId: userObjectId, ...this.effectiveSaldoMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
         {
           $group: {
             _id: '$carteiraId',
@@ -51,9 +54,15 @@ export class WalletsService {
           },
         },
       ]),
+      // Transfers recebidas (carteira destino ganha), excluindo agendadas
       this.transactionModel.aggregate([
-        { $match: { userId: userObjectId, type: TransactionType.TRANSFER, carteiraDestinoId: { $exists: true, $ne: null } } },
+        { $match: { userId: userObjectId, type: TransactionType.TRANSFER, carteiraDestinoId: { $exists: true, $ne: null }, ...this.effectiveSaldoMatch() } },
         { $group: { _id: '$carteiraDestinoId', saldo: { $sum: '$value' } } },
+      ]),
+      // Transfers enviadas (carteira origem perde)
+      this.transactionModel.aggregate([
+        { $match: { userId: userObjectId, type: TransactionType.TRANSFER, carteiraId: { $exists: true, $ne: null }, ...this.effectiveSaldoMatch() } },
+        { $group: { _id: '$carteiraId', saldo: { $sum: '$value' } } },
       ]),
     ]);
 
@@ -63,25 +72,35 @@ export class WalletsService {
     // Qualquer grupo que não corresponda a uma carteira real do usuário cai no saldo
     // legado — assim nenhum valor desaparece silenciosamente por não bater com nada.
     const realWalletIds = new Set(wallets.map((w) => w._id.toString()));
-    const saldoMap = new Map<string, number>();
+    const saldoAggMap = new Map<string, number>();
     let legacySaldo = 0;
     saldoAgg.forEach((r) => {
       const key = r._id != null ? String(r._id) : '';
-      if (key && realWalletIds.has(key)) {
-        saldoMap.set(key, r.saldo);
-      } else {
+      if (!key || !realWalletIds.has(key)) {
         legacySaldo += r.saldo;
+      } else {
+        saldoAggMap.set(key, r.saldo);
       }
     });
+
+    const transferCreditsMap = new Map<string, number>();
     transferCreditsAgg.forEach((r) => {
-      const key = r._id.toString();
-      saldoMap.set(key, (saldoMap.get(key) ?? 0) + r.saldo);
+      if (r._id != null) transferCreditsMap.set(r._id.toString(), r.saldo);
     });
 
-    const result: Array<Record<string, unknown>> = wallets.map((w) => ({
-      ...w.toObject(),
-      saldo: (w.saldo ?? 0) + (saldoMap.get(w._id.toString()) ?? 0),
-    }));
+    const transferDebitsMap = new Map<string, number>();
+    transferDebitsAgg.forEach((r) => {
+      if (r._id != null) transferDebitsMap.set(r._id.toString(), r.saldo);
+    });
+
+    const result: Array<Record<string, unknown>> = wallets.map((w) => {
+      const id = w._id.toString();
+      const saldo = (w.saldoInicial ?? 0)
+        + (saldoAggMap.get(id) ?? 0)
+        + (transferCreditsMap.get(id) ?? 0)
+        - (transferDebitsMap.get(id) ?? 0);
+      return { ...w.toObject(), saldo };
+    });
 
     if (legacySaldo !== 0) {
       result.push({
@@ -104,28 +123,41 @@ export class WalletsService {
 
     if (!wallet) throw new NotFoundException('Carteira não encontrada');
 
-    const [transactions, saldoAgg, transferCreditsAgg] = await Promise.all([
+    const [transactions, incomeExpenseAgg, transferCreditsAgg, transferDebitsAgg] = await Promise.all([
       this.transactionModel
-        .find({ userId: userObjectId, carteiraId: wallet._id })
+        .find({
+          userId: userObjectId,
+          $or: [
+            { carteiraId: wallet._id },
+            { type: TransactionType.TRANSFER, carteiraDestinoId: wallet._id },
+          ],
+        })
         .sort({ date: -1 })
         .limit(20)
         .exec(),
+      // income - expense desta carteira (TRANSFER excluído)
       this.transactionModel.aggregate([
-        { $match: { userId: userObjectId, carteiraId: wallet._id, ...this.effectiveSaldoMatch() } },
-        {
-          $group: {
-            _id: null,
-            saldo: { $sum: { $cond: [{ $eq: ['$type', TransactionType.INCOME] }, '$value', { $multiply: ['$value', -1] }] } },
-          },
-        },
+        { $match: { userId: userObjectId, carteiraId: wallet._id, ...this.effectiveSaldoMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
+        { $group: { _id: null, saldo: { $sum: { $cond: [{ $eq: ['$type', TransactionType.INCOME] }, '$value', { $multiply: ['$value', -1] }] } } } },
       ]),
+      // Transfers recebidas por esta carteira (carteiraDestino), excluindo agendadas
       this.transactionModel.aggregate([
-        { $match: { userId: userObjectId, type: TransactionType.TRANSFER, carteiraDestinoId: wallet._id } },
+        { $match: { userId: userObjectId, type: TransactionType.TRANSFER, carteiraDestinoId: wallet._id, ...this.effectiveSaldoMatch() } },
+        { $group: { _id: null, saldo: { $sum: '$value' } } },
+      ]),
+      // Transfers enviadas por esta carteira (carteiraId)
+      this.transactionModel.aggregate([
+        { $match: { userId: userObjectId, type: TransactionType.TRANSFER, carteiraId: wallet._id, ...this.effectiveSaldoMatch() } },
         { $group: { _id: null, saldo: { $sum: '$value' } } },
       ]),
     ]);
 
-    const saldo = (wallet.saldo ?? 0) + (saldoAgg[0]?.saldo ?? 0) + (transferCreditsAgg[0]?.saldo ?? 0);
+    // saldoInicial + soma(INCOME-EXPENSE) + transferências = saldo correto sempre,
+    // independente do estado de wallet.saldo ($inc pode ter ficado fora de sincronia).
+    const saldo = (wallet.saldoInicial ?? 0)
+      + (incomeExpenseAgg[0]?.saldo ?? 0)
+      + (transferCreditsAgg[0]?.saldo ?? 0)
+      - (transferDebitsAgg[0]?.saldo ?? 0);
     return { ...wallet.toObject(), saldo, transactions };
   }
 
@@ -139,7 +171,15 @@ export class WalletsService {
 
     if (dto.nome !== undefined) wallet.nome = dto.nome;
     if (dto.icone !== undefined) wallet.icone = dto.icone;
-    if (typeof dto.saldo === 'number') wallet.saldo = dto.saldo;
+    if (typeof dto.saldo === 'number') {
+      wallet.saldoInicial = dto.saldo;
+      // Recompõe wallet.saldo para que futuras operações $inc continuem corretas.
+      const incExpAgg = await this.transactionModel.aggregate([
+        { $match: { userId: wallet.userId, carteiraId: wallet._id, ...this.effectiveSaldoMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
+        { $group: { _id: null, saldo: { $sum: { $cond: [{ $eq: ['$type', TransactionType.INCOME] }, '$value', { $multiply: ['$value', -1] }] } } } },
+      ]);
+      wallet.saldo = dto.saldo + (incExpAgg[0]?.saldo ?? 0);
+    }
 
     await wallet.save();
     return wallet;
