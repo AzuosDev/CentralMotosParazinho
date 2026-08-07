@@ -13,6 +13,7 @@ import type { DashboardResponse } from "../types/api";
 import type { CategoryExpense } from "../types/finance";
 
 const periodTabs = [
+  { label: "Diário", value: "daily" },
   { label: "Semanal", value: "weekly" },
   { label: "Mensal", value: "monthly" },
   { label: "Anual", value: "yearly" },
@@ -59,7 +60,7 @@ function CategoryRow({ category, onClick }: { category: CategoryExpense; onClick
 
 export function ExpensesPage() {
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<ExpensePeriod>("monthly");
+  const [period, setPeriod] = useState<ExpensePeriod>("daily");
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const now = new Date();
   const month = now.getMonth() + 1;
