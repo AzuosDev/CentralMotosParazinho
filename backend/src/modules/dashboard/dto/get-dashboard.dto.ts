@@ -17,6 +17,6 @@ export class GetDashboardDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['weekly', 'monthly', 'yearly'])
-  period?: 'weekly' | 'monthly' | 'yearly';
+  @IsIn(['daily', 'weekly', 'monthly', 'yearly'])
+  period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
