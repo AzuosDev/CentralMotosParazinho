@@ -186,7 +186,7 @@ export function NotificationBell({
               </div>
             ) : (
               notifications.map((n) => {
-                const cfg = typeConfig[n.type];
+                const cfg = typeConfig[n.type] ?? { color: "text-text-secondary", dot: "bg-text-muted" };
                 return (
                   <button
                     key={n._id}
