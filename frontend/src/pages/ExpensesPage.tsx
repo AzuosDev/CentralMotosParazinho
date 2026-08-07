@@ -21,6 +21,12 @@ const periodTabs = [
 
 type ExpensePeriod = (typeof periodTabs)[number]["value"];
 
+const MONTH_OPTIONS = [
+  "Janeiro", "Fevereiro", "Março", "Abril",
+  "Maio", "Junho", "Julho", "Agosto",
+  "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
 function CategoryRow({ category, onClick }: { category: CategoryExpense; onClick: () => void }) {
   const variation = Number.isFinite(category.variation) ? category.variation : 0;
   const isIncrease = variation > 0;
@@ -63,8 +69,15 @@ export function ExpensesPage() {
   const [period, setPeriod] = useState<ExpensePeriod>("daily");
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  const currentYear = now.getFullYear();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(currentYear);
+  const years = useMemo(
+    () => Array.from({ length: 11 }, (_, i) => currentYear + 5 - i),
+    [currentYear],
+  );
+
+  const monthPickerVisible = period === "monthly";
 
   const expensesQuery = useQuery({
     queryKey: ["dashboard-expenses", period, month, year],
@@ -100,14 +113,42 @@ export function ExpensesPage() {
           <p className="text-sm text-text-secondary">Controle de gastos</p>
           <h1 className="font-sans text-3xl font-bold">Gastos por categoria</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setAddExpenseOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition hover:brightness-110"
-        >
-          <Plus className="h-4 w-4" />
-          Nova
-        </button>
+        <div className="flex items-center gap-2">
+          {monthPickerVisible && (
+            <>
+              <select
+                value={month}
+                onChange={(e) => setMonth(Number(e.target.value))}
+                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-white outline-none transition focus:border-accent-lime"
+              >
+                {MONTH_OPTIONS.map((label, i) => (
+                  <option key={label} value={i + 1}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-white outline-none transition focus:border-accent-lime"
+              >
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => setAddExpenseOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition hover:brightness-110"
+          >
+            <Plus className="h-4 w-4" />
+            Nova
+          </button>
+        </div>
       </header>
 
       <div className="flex gap-2 overflow-x-auto rounded-2xl bg-bg-card p-2">
