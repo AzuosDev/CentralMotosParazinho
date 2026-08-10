@@ -30,7 +30,16 @@ export class WalletsService {
   }
 
   private effectiveSaldoMatch() {
-    return { $or: [{ agendado: false }, { agendado: { $exists: false } }] };
+    // Inclui transações não-agendadas OU agendadas cuja data já passou.
+    // O campo agendado nunca é auto-expirado no banco, então transações criadas como
+    // futuras que já venceram continuariam excluídas do saldo para sempre sem esta cláusula.
+    const now = new Date();
+    return {
+      $or: [
+        { agendado: { $ne: true } },
+        { date: { $lte: now } },
+      ],
+    };
   }
 
   // Mesma carteira virtual usada em transactions.service.ts/pending.service.ts para
