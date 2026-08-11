@@ -279,7 +279,7 @@ export function WalletPage() {
         ) : (
           <div className="divide-y divide-bg-muted">
             {transactions.map((tx) => (
-              <TxRow key={tx.id} tx={tx} onEdit={handleEditTx} />
+              <TxRow key={tx.id} tx={tx} onEdit={handleEditTx} walletId={id} />
             ))}
           </div>
         )}
