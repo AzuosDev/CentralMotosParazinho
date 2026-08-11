@@ -15,12 +15,14 @@ export function TxRow({
   onDelete,
   selected,
   onToggleSelect,
+  walletId,
 }: {
   tx: Transaction;
   onEdit?: (tx: Transaction) => void;
   onDelete?: (tx: Transaction) => void;
   selected?: boolean;
   onToggleSelect?: (tx: Transaction) => void;
+  walletId?: string;
 }) {
   // Só pode ser selecionada em lote a transação que o backend marcou como "sem
   // carteira real" (carteira virtual injetada em transactions.service.ts/findAll).
@@ -29,6 +31,12 @@ export function TxRow({
   const showSelect = Boolean(onToggleSelect) && isLegacy;
   const isTransfer = tx.type === "TRANSFER" || Boolean(tx.carteiraDestinoId);
   const isIncome = tx.type === "INCOME";
+  // Transferências: positivo apenas quando esta carteira é o DESTINO.
+  // Sem contexto de carteira (lista geral) mantém o "+" histórico.
+  const isIncomingTransfer =
+    isTransfer && walletId
+      ? tx.carteiraDestinoId === walletId
+      : isTransfer;
   const label =
     tx.description ||
     (isIncome ? "Entrada" : isTransfer ? "Transferência" : "Saída");
@@ -36,10 +44,10 @@ export function TxRow({
     ? "text-text-muted"
     : isIncome
       ? "text-accent-lime"
-      : isTransfer
+      : isIncomingTransfer
         ? "text-blue-400"
         : "text-accent-red";
-  const sign = isIncome || isTransfer ? "+" : "–";
+  const sign = isIncome || isIncomingTransfer ? "+" : "–";
 
   return (
     // Mobile (abaixo de sm): coluna — descrição em cima, valor+ações embaixo,

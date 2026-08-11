@@ -57,7 +57,15 @@ export class DashboardService {
     const [facetResult, pendingAccounts, goals] = await Promise.all([
       this.transactionModel
         .aggregate([
-          { $match: { userId: userObjectId, agendado: { $ne: true }, date: { $gte: matchStart, $lte: yearEnd } } },
+          {
+            $match: {
+              userId: userObjectId,
+              date: { $gte: matchStart, $lte: yearEnd },
+              // Mesma lógica de effectiveSaldoMatch() em wallets.service.ts:
+              // inclui transações não-agendadas OU agendadas cuja data já passou.
+              $or: [{ agendado: { $ne: true } }, { date: { $lte: now } }],
+            },
+          },
           {
             $facet: {
               totalIncome: [
