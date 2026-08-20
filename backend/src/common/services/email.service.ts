@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
+import { EmailAttachment, passwordResetEmail, verificationEmail } from '../emails/auth-emails';
 
 @Injectable()
 export class EmailService {
@@ -43,7 +44,13 @@ export class EmailService {
     });
   }
 
-  private async sendMail(to: string, subject: string, text: string, html: string) {
+  private async sendMail(
+    to: string,
+    subject: string,
+    text: string,
+    html: string,
+    attachments: EmailAttachment[] = [],
+  ) {
     try {
       const from = this.getFromAddress();
       const transport = this.getTransport();
@@ -59,6 +66,7 @@ export class EmailService {
         subject,
         text,
         html,
+        attachments,
       });
 
       return true;
@@ -68,33 +76,17 @@ export class EmailService {
     }
   }
 
-  async sendVerificationEmail(to: string, token: string) {
-    const verifyUrl = `${this.getBaseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
-    return this.sendMail(
-      to,
-      'Confirme seu email - ContaCerta',
-      `Clique no link para confirmar seu email: ${verifyUrl}`,
-      `
-        <p>Olá!</p>
-        <p>Para confirmar seu email, clique no link abaixo:</p>
-        <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-        <p>Se você não criou uma conta no ContaCerta, ignore esta mensagem.</p>
-      `,
-    );
+  async sendVerificationEmail(to: string, token: string, name?: string) {
+    const baseUrl = this.getBaseUrl();
+    const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
+    const email = verificationEmail({ verifyUrl, baseUrl, name });
+    return this.sendMail(to, email.subject, email.text, email.html, email.attachments);
   }
 
-  async sendPasswordResetEmail(to: string, token: string) {
-    const resetUrl = `${this.getBaseUrl()}/reset-password?token=${encodeURIComponent(token)}`;
-    return this.sendMail(
-      to,
-      'Redefinição de senha - ContaCerta',
-      `Clique no link para redefinir sua senha: ${resetUrl}`,
-      `
-        <p>Olá!</p>
-        <p>Para redefinir sua senha, clique no link abaixo:</p>
-        <p><a href="${resetUrl}">${resetUrl}</a></p>
-        <p>Se você não solicitou essa alteração, ignore esta mensagem.</p>
-      `,
-    );
+  async sendPasswordResetEmail(to: string, token: string, name?: string) {
+    const baseUrl = this.getBaseUrl();
+    const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    const email = passwordResetEmail({ resetUrl, baseUrl, name });
+    return this.sendMail(to, email.subject, email.text, email.html, email.attachments);
   }
 }
