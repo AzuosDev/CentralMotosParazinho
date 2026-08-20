@@ -19,7 +19,11 @@ export class AuthService {
 
   async register(dto: { email: string; password: string }) {
     const user = await this.usersService.create(dto);
-    await this.emailService.sendVerificationEmail(user['email'] as string, user['emailVerificationToken'] as string);
+    await this.emailService.sendVerificationEmail(
+      user['email'] as string,
+      user['emailVerificationToken'] as string,
+      user['name'] as string | undefined,
+    );
     const { emailVerificationToken, password, passwordResetToken, passwordResetExpires, ...safeUser } = user;
     return safeUser;
   }
