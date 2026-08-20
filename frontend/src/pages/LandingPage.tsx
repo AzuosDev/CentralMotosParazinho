@@ -243,11 +243,7 @@ function Hero() {
   const state = mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0";
 
   return (
-    <section className="relative mx-auto flex w-full max-w-4xl flex-col items-center overflow-hidden px-4 py-16 text-center sm:px-6 sm:py-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex justify-center">
-        <div className="h-72 w-72 animate-glow-pulse rounded-full bg-accent-lime/20 blur-3xl sm:h-96 sm:w-96" />
-      </div>
-
+    <section className="relative mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-16 text-center sm:px-6 sm:py-24">
       <h1
         className={cn(base, state, "font-sans text-4xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-5xl")}
       >
