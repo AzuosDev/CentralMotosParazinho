@@ -374,7 +374,8 @@ function PricingCard({
     >
       <div
         className={cn(
-          "flex h-full flex-col rounded-card bg-bg-card p-6 shadow-[0_0_50px_-15px_rgba(163,230,53,0.4)] ring-1 ring-accent-lime/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_65px_-10px_rgba(163,230,53,0.6)] hover:ring-accent-lime/50 sm:p-8",
+          "flex h-full flex-col rounded-card bg-bg-card p-6 ring-1 transition-colors duration-300 sm:p-8",
+          highlight ? "ring-accent-lime/40 hover:ring-accent-lime/60" : "ring-border-default hover:ring-accent-lime/30",
         )}
       >
         <p className={cn("text-sm font-semibold uppercase tracking-widest", highlight ? "text-accent-lime" : "text-text-secondary")}>
