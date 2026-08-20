@@ -7,6 +7,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules src/main.ts",
+    "email:preview": "ts-node -T scripts/preview-emails.ts",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/billing/webhook/stripe"
   },
   "dependencies": {
