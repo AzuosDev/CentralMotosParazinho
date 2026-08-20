@@ -286,11 +286,9 @@ function Features() {
       <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {features.map(({ icon: Icon, title, description }, index) => (
           <Reveal key={title} delay={index * 80}>
-            <div className="group h-full rounded-card bg-bg-card p-6 ring-1 ring-border-default transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent-lime/10 hover:ring-accent-lime/40">
-              <span className="mb-4 grid h-11 w-11 place-items-center rounded-icon bg-accent-lime/10 transition-transform duration-300 group-hover:scale-110">
-                <Icon className="h-5 w-5 text-accent-lime" />
-              </span>
-              <h3 className="font-sans text-lg font-bold text-text-primary">{title}</h3>
+            <div className="h-full rounded-card bg-bg-card p-6 ring-1 ring-border-default transition-colors duration-300 hover:ring-accent-lime/40">
+              <Icon className="h-6 w-6 text-accent-lime" />
+              <h3 className="mt-4 font-sans text-lg font-bold text-text-primary">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</p>
             </div>
           </Reveal>
