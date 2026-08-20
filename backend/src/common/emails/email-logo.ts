@@ -1,5 +1,5 @@
 /**
- * Ícone do MeuGasto embutido no email (frontend/Public/pwa-192x192.png).
+ * Ícone do MeuGasto embutido no email (frontend/public/pwa-192x192.png).
  *
  * É anexado como imagem inline (Content-ID) em vez de link remoto: clientes de
  * email bloqueiam imagens externas por padrão e a pasta estática do frontend
