@@ -225,7 +225,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
         ) : null
       }
     >
-      {/* ── FASE 1: Upload ─────────────────────────────────────────────── */}
+      {/* Fase 1: Upload */}
       {phase === "upload" && (
         <div className="space-y-5 py-1">
           <div>
@@ -255,7 +255,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
               {file ? (
                 <>
                   <p className="font-semibold text-white">{file.name}</p>
-                  <p className="text-xs text-text-secondary">{(file.size / 1024).toFixed(1)} KB — clique para trocar</p>
+                  <p className="text-xs text-text-secondary">{(file.size / 1024).toFixed(1)} KB, clique para trocar</p>
                 </>
               ) : (
                 <>
@@ -290,7 +290,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
         </div>
       )}
 
-      {/* ── FASE 2: Preview ────────────────────────────────────────────── */}
+      {/* Fase 2: Preview */}
       {phase === "preview" && (
         <div className="space-y-3 py-1">
           <div className="flex items-center justify-between text-sm">
@@ -363,7 +363,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
         </div>
       )}
 
-      {/* ── FASE 3: Concluído ──────────────────────────────────────────── */}
+      {/* Fase 3: Concluído */}
       {phase === "done" && result && (
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <CheckCircle className="h-14 w-14 text-accent-lime" />

@@ -136,7 +136,7 @@ export function WalletsPage() {
         <div className="rounded-2xl bg-bg-card p-5 space-y-4">
           <h2 className="font-bold">Nova Carteira</h2>
           <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
-            {/* Logo/ícone auto-detectado — apenas visualização */}
+            {/* Logo/ícone auto-detectado, apenas visualização */}
             <div className="flex h-[50px] w-[50px] items-center justify-center self-end rounded-xl bg-bg-muted text-3xl">
               <BankLogo nome={nome} icone={icone} className="h-8 w-8" />
             </div>
@@ -243,7 +243,7 @@ export function WalletsPage() {
           {wallets.map((wallet) =>
             wallet.tipo === "VIRTUAL" ? (
               // Carteira virtual: não existe na coleção real, então não navega para
-              // detalhe nem pode ser excluída — só informa o saldo de dados legados.
+              // detalhe nem pode ser excluída, só informa o saldo de dados legados.
               <div
                 key={wallet._id}
                 title="Transações antigas ainda não associadas a uma carteira. Use a tela de transações para migrá-las."

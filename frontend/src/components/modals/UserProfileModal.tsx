@@ -31,7 +31,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { ModalShell } from "./ModalShell";
 import type { User } from "../../types/api";
 
-// ─── Schemas ────────────────────────────────────────────────────────────────
+// Schemas
 
 const nameSchema = z.object({
   name: z.string().max(100, "Use até 100 caracteres."),
@@ -63,7 +63,7 @@ type WebAuthnCredential = {
   createdAt?: string;
 };
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// Helpers
 
 function credentialLabel(cred: WebAuthnCredential): string {
   if (cred.backedUp || cred.deviceType === "multiDevice") return "Passkey sincronizada";
@@ -100,7 +100,7 @@ function compressImage(file: File, maxSize = 200): Promise<string> {
   });
 }
 
-// ─── Sub-components ─────────────────────────────────────────────────────────
+// Sub-components
 
 const inputClass =
   "w-full rounded-xl border border-bg-overlay bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime placeholder:text-text-muted";
@@ -114,7 +114,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-// ─── Main component ─────────────────────────────────────────────────────────
+// Main component
 
 export function UserProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -171,7 +171,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
     img.src = probeUrl;
   }, [gravatarUrl]);
 
-  // ─── Forms ────────────────────────────────────────────────────────────────
+  // Forms
 
   const nameForm = useForm<NameValues>({
     resolver: zodResolver(nameSchema),
@@ -183,7 +183,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
 
-  // ─── Mutations ────────────────────────────────────────────────────────────
+  // Mutations
 
   const updateAvatarMutation = useMutation({
     mutationFn: (url: string | null) =>
@@ -295,13 +295,13 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
     onSuccess: async () => {
       try {
         await api.post("/api/auth/logout", { refreshToken: getRefreshToken() });
-      } catch { /* ignored — account already deleted */ }
+      } catch { /* ignored: account already deleted */ }
       clearTokens();
       navigate("/login", { replace: true });
     },
   });
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────
+  // Handlers
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -343,7 +343,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
     onClose();
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // Render
 
   return (
     <ModalShell
@@ -505,7 +505,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
             })}
             className="space-y-3"
           >
-            {/* Campo senha atual — oculto quando biometria confirmada */}
+            {/* Campo senha atual, oculto quando biometria confirmada */}
             {reauthedToken ? (
               <div className="flex items-center justify-between rounded-xl bg-accent-lime/10 px-4 py-3">
                 <div className="flex items-center gap-2 text-sm text-accent-lime">

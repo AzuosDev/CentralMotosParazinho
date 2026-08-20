@@ -27,7 +27,7 @@ const features: { icon: LucideIcon; title: string; description: string }[] = [
     icon: LayoutDashboard,
     title: "Dashboard consolidado",
     description:
-      "Veja o saldo de todas as suas carteiras — banco, dinheiro, cartão — num único lugar, atualizado a cada movimentação.",
+      "Veja o saldo de todas as suas carteiras (banco, dinheiro, cartão) num único lugar, atualizado a cada movimentação.",
   },
   {
     icon: Clock,
@@ -63,12 +63,12 @@ const securityPoints: { icon: LucideIcon; text: string }[] = [
   { icon: Lock, text: "Conexão criptografada via HTTPS em toda comunicação com o app." },
   {
     icon: Fingerprint,
-    text: "Login biométrico processado localmente no seu dispositivo — sua senha não precisa trafegar pela rede toda vez que você entra.",
+    text: "Login biométrico processado localmente no seu dispositivo, sua senha não precisa trafegar pela rede toda vez que você entra.",
   },
   { icon: Server, text: "Dados hospedados em infraestrutura totalmente segura." },
   {
     icon: UserCheck,
-    text: "Você é o único com acesso à sua conta — nunca compartilhamos ou visualizamos seus dados.",
+    text: "Você é o único com acesso à sua conta. Nunca compartilhamos ou visualizamos seus dados.",
   },
 ];
 
@@ -103,11 +103,11 @@ const faqs: { question: string; answer: string }[] = [
   {
     question: "Preciso conectar minha conta bancária automaticamente?",
     answer:
-      "Não. Você cadastra suas transações manualmente ou importa o extrato do seu banco via arquivo OFX — o MeuGasto não acessa sua conta bancária diretamente.",
+      "Não. Você cadastra suas transações manualmente ou importa o extrato do seu banco via arquivo OFX. O MeuGasto não acessa sua conta bancária diretamente.",
   },
   {
     question: "Como cancelo?",
-    answer: "A qualquer momento, direto nas configurações da sua conta — sem precisar ligar ou mandar e-mail.",
+    answer: "A qualquer momento, direto nas configurações da sua conta, sem precisar ligar ou mandar e-mail.",
   },
   {
     question: "Meus dados financeiros estão seguros?",
@@ -117,21 +117,21 @@ const faqs: { question: string; answer: string }[] = [
   {
     question: "Qual a diferença entre o plano Básico e o Empresarial?",
     answer:
-      "O Básico dá acesso completo ao MeuGasto para uso pessoal, com assinatura direta pelo app. O Empresarial é uma versão personalizada para o seu negócio, com manutenções corretivas prioritárias e atualizações dedicadas — o valor final e o escopo são definidos em conversa com nosso time.",
+      "O Básico dá acesso completo ao MeuGasto para uso pessoal, com assinatura direta pelo app. O Empresarial é uma versão personalizada para o seu negócio, com manutenções corretivas prioritárias e atualizações dedicadas. O valor final e o escopo são definidos em conversa com nosso time.",
   },
   {
     question: "Posso trocar entre mensal e anual depois de assinar?",
     answer:
-      "Sim. No plano Básico, você troca entre mensal e anual quando quiser, direto nas configurações da conta — a mudança vale a partir do próximo ciclo de cobrança. No Empresarial, qualquer ajuste é combinado direto com nosso time.",
+      "Sim. No plano Básico, você troca entre mensal e anual quando quiser, direto nas configurações da conta, e a mudança vale a partir do próximo ciclo de cobrança. No Empresarial, qualquer ajuste é combinado direto com nosso time.",
   },
   {
     question: "O teste grátis de 15 dias vale para qual plano?",
     answer:
-      "Só para o plano Básico. O Empresarial funciona por consulta comercial — fale com a gente pra montar a melhor proposta pro seu negócio.",
+      "Só para o plano Básico. O Empresarial funciona por consulta comercial, fale com a gente pra montar a melhor proposta pro seu negócio.",
   },
 ];
 
-// ─── Helpers de animação (sem dependência externa) ─────────────────────────
+// Helpers de animação (sem dependência externa)
 
 function useInView<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
@@ -184,7 +184,7 @@ function Reveal({
   );
 }
 
-// ─── Seções ─────────────────────────────────────────────────────────────────
+// Seções
 
 const navLinks = [
   { id: "funcionalidades", label: "Funcionalidades" },
@@ -334,7 +334,7 @@ function SecuritySection() {
 type BillingCycle = "monthly" | "annual";
 
 // Crossfade: quando `value` muda, primeiro esconde o conteúdo antigo (fade-out) e só troca
-// o valor exibido depois que a transição de saída terminou — evita a troca seca de texto.
+// o valor exibido depois que a transição de saída terminou. Evita a troca seca de texto.
 function useCrossfade<T>(value: T, duration = 200) {
   const [displayValue, setDisplayValue] = useState(value);
   const [visible, setVisible] = useState(true);
@@ -522,8 +522,8 @@ function Pricing() {
               </p>
               <p className="mt-2 text-sm text-accent-lime">
                 {displayIsAnnual
-                  ? "Equivale a R$24,99/mês — economize ~2 meses (16%)"
-                  : "ou R$299,90/ano — economize ~2 meses (16%)"}
+                  ? "Equivale a R$24,99/mês, economize ~2 meses (16%)"
+                  : "ou R$299,90/ano, economize ~2 meses (16%)"}
               </p>
             </div>
           }
@@ -635,7 +635,7 @@ function ContactSection() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard indisponível (ex: contexto não seguro) — link mailto continua funcionando.
+      // Clipboard indisponível (ex: contexto não seguro), link mailto continua funcionando.
     }
   };
 

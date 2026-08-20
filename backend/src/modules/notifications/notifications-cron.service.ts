@@ -71,7 +71,7 @@ export class NotificationsCronService {
         pendingAccountId: (account as any)._id as Types.ObjectId,
         type,
         title,
-        message: `${account.title} — R$ ${valueFormatted}`,
+        message: `${account.title}: R$ ${valueFormatted}`,
         generatedDate: todayStart,
       });
     }
@@ -121,7 +121,7 @@ export class NotificationsCronService {
         pendingAccountId: (account as any)._id as Types.ObjectId,
         type,
         title,
-        message: `${account.title} — R$ ${valueFormatted}`,
+        message: `${account.title}: R$ ${valueFormatted}`,
         generatedDate: todayStart,
       });
     }

@@ -16,7 +16,7 @@ describe("useInactivityLock", () => {
     const lock = vi.fn();
     renderHook(() => useInactivityLock(lock, false));
 
-    // Avança além do timeout — o intervalo de 30s deve detectar a inatividade
+    // Avança além do timeout, o intervalo de 30s deve detectar a inatividade
     act(() => {
       vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS + 30_000);
     });
@@ -44,12 +44,12 @@ describe("useInactivityLock", () => {
       vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 5_000);
     });
 
-    // Simula interação — dispara mousemove que reseta lastActivity
+    // Simula interação, dispara mousemove que reseta lastActivity
     act(() => {
       window.dispatchEvent(new Event("mousemove"));
     });
 
-    // Avança mais tempo — sem contar do zero, lock não deveria ter disparado ainda
+    // Avança mais tempo, sem contar do zero, lock não deveria ter disparado ainda
     act(() => {
       vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 5_000);
     });
@@ -83,7 +83,7 @@ describe("useInactivityLock", () => {
     lock.mockClear();
 
     // Para testar visibilitychange isolado: recria o cenário sem avançar timers extras
-    // O lastActivity já é antigo — simular retorno ao foreground
+    // O lastActivity já é antigo, simular retorno ao foreground
     Object.defineProperty(document, "visibilityState", {
       value: "visible",
       writable: true,

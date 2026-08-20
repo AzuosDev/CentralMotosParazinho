@@ -186,7 +186,7 @@ export function isPastMonth(dateStr: string): boolean {
 }
 
 // Returns today's date as YYYY-MM-DD using the user's LOCAL calendar day,
-// not UTC — avoids showing "yesterday" for users in UTC-3 after midnight.
+// not UTC. Avoids showing "yesterday" for users in UTC-3 after midnight.
 export function localDateString(): string {
   const now = new Date();
   const y = now.getFullYear();
@@ -240,7 +240,7 @@ export function buildTransactionPayload(values: {
 }) {
   return {
     type: values.type,
-    value: values.amount, // ✅ corrigido: era "amount", backend espera "value"
+    value: values.amount,
     date: values.date,
     description: values.description?.trim() || undefined,
     categoryId: values.categoryId || undefined,
