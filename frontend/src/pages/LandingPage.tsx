@@ -225,7 +225,7 @@ function Nav() {
 
           <Link
             to="/login"
-            className="shrink-0 cursor-pointer rounded-full bg-accent-lime px-4 py-2 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+            className="shrink-0 cursor-pointer rounded-full bg-accent-lime px-4 py-2 text-sm font-bold text-black transition-colors duration-200 hover:brightness-110"
           >
             Entrar
           </Link>
@@ -261,7 +261,7 @@ function Hero() {
       >
         <Link
           to="/register"
-          className="flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+          className="flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-colors duration-200 hover:brightness-110"
         >
           Começar teste grátis
           <ArrowRight className="h-4 w-4" />
@@ -528,7 +528,7 @@ function Pricing() {
           cta={
             <Link
               to="/register"
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-colors duration-200 hover:brightness-110"
             >
               Começar teste grátis
               <ArrowRight className="h-4 w-4" />
@@ -703,7 +703,7 @@ function FinalCTA() {
       </h2>
       <Link
         to="/register"
-        className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-8 py-4 text-base font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+        className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-8 py-4 text-base font-bold text-black transition-colors duration-200 hover:brightness-110"
       >
         Começar teste grátis
         <ArrowRight className="h-4 w-4" />
