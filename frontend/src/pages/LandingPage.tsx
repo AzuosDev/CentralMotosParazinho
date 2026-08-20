@@ -303,9 +303,7 @@ function SecuritySection() {
     <section id="seguranca" className="scroll-mt-28 bg-bg-card py-16">
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6">
         <div className="mb-10 flex flex-col items-center text-center">
-          <span className="mb-4 grid h-12 w-12 animate-shield-pulse place-items-center rounded-full bg-accent-lime/10">
-            <ShieldCheck className="h-6 w-6 text-accent-lime" />
-          </span>
+          <ShieldCheck className="mb-3 h-6 w-6 text-accent-lime" />
           <h2 className="font-sans text-3xl font-bold text-text-primary">
             Seus dados financeiros, tratados com o cuidado que merecem
           </h2>
@@ -313,7 +311,7 @@ function SecuritySection() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {securityPoints.map(({ icon: Icon, text }, index) => (
             <Reveal key={text} delay={index * 80}>
-              <div className="flex h-full items-start gap-3 rounded-card bg-bg-muted p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent-lime/10">
+              <div className="flex h-full items-start gap-3 rounded-card bg-bg-muted p-5 transition-colors duration-300 hover:bg-bg-overlay">
                 <Icon className="mt-0.5 h-5 w-5 shrink-0 text-accent-lime" />
                 <p className="min-w-0 text-sm leading-relaxed text-text-secondary">{text}</p>
               </div>

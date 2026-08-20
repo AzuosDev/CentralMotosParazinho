@@ -47,15 +47,6 @@ export default {
         sans: ["Syne", "sans-serif"],
         body: ["DM Sans", "sans-serif"],
       },
-      keyframes: {
-        "shield-pulse": {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgba(163, 230, 53, 0.35)" },
-          "50%": { boxShadow: "0 0 0 8px rgba(163, 230, 53, 0)" },
-        },
-      },
-      animation: {
-        "shield-pulse": "shield-pulse 2.5s ease-in-out infinite",
-      },
     },
   },
   plugins: [],
