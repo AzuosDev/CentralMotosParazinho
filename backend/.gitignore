@@ -5,3 +5,6 @@ dist
 # Extratos bancários — nunca commitar dados financeiros reais
 *.ofx
 *.qfx
+
+# Prévias locais de email (npm run email:preview)
+tmp
