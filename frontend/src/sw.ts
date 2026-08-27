@@ -28,30 +28,6 @@ registerRoute(
   }),
 );
 
-// Google Fonts (CSS)
-registerRoute(
-  ({ url }) => url.origin === 'https://fonts.googleapis.com',
-  new CacheFirst({
-    cacheName: 'google-fonts-stylesheets',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }),
-    ],
-  }),
-);
-
-// Google Fonts (arquivos de fonte)
-registerRoute(
-  ({ url }) => url.origin === 'https://fonts.gstatic.com',
-  new CacheFirst({
-    cacheName: 'google-fonts-webfonts',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 }),
-    ],
-  }),
-);
-
 // API: network first, tenta rede, usa cache quando offline (TTL 24h, até 150 entradas)
 registerRoute(
   ({ url }) => url.pathname.startsWith('/api/'),
