@@ -329,7 +329,7 @@ export function CheckoutPage() {
           </div>
           {method === "pix" && (
             <>
-              <p className="mt-2 text-xs text-text-muted">Pagamento único — renovação manual a cada ciclo.</p>
+              <p className="mt-2 text-xs text-text-muted">Pagamento único, renovação manual a cada ciclo.</p>
               <div className="mt-3">
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary">
                   CPF ou CNPJ <span className="text-accent-red">*</span>
@@ -346,7 +346,7 @@ export function CheckoutPage() {
             </>
           )}
           {method === "stripe" && (
-            <p className="mt-2 text-xs text-text-muted">Assinatura recorrente — renovação automática pelo cartão.</p>
+            <p className="mt-2 text-xs text-text-muted">Assinatura recorrente, renovação automática pelo cartão.</p>
           )}
         </div>
 
@@ -364,7 +364,7 @@ export function CheckoutPage() {
           {loading ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Processando…</>
           ) : (
-            <>Assinar — {PLANS[cycle].price}{PLANS[cycle].period} <ArrowRight className="h-4 w-4" /></>
+            <>Assinar por {PLANS[cycle].price}{PLANS[cycle].period} <ArrowRight className="h-4 w-4" /></>
           )}
         </button>
 

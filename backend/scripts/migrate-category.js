@@ -13,7 +13,7 @@
 
 const { MongoClient, ObjectId } = require('mongodb');
 
-// ─── Configuração ─────────────────────────────────────────────────────────────
+// Configuração
 
 const MONGO_URI =
   process.env.MONGO_URI ||
@@ -22,7 +22,7 @@ const MONGO_URI =
 const DB_NAME = 'ContaCerta';
 const DRY_RUN = !process.argv.includes('--apply');
 
-// ─── Lógica de resolução de categoria (espelho fiel de pending.service.ts) ────
+// Lógica de resolução de categoria (espelho fiel de pending.service.ts)
 
 const CATEGORY_KEYWORDS = {
   Transporte: [
@@ -110,7 +110,7 @@ async function resolveCategory(db, categoriaText, isReceber, userId) {
   return null;
 }
 
-// ─── Relatório de log ──────────────────────────────────────────────────────────
+// Relatório de log
 
 function separator(char = '─', len = 70) {
   return char.repeat(len);
@@ -120,7 +120,7 @@ function fmt(date) {
   return date ? new Date(date).toLocaleDateString('pt-BR') : 'N/A';
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// Main
 
 async function main() {
   console.log(separator('═'));
@@ -185,7 +185,7 @@ async function main() {
     results.wouldFix.push({ tx, pending, category });
   }
 
-  // ─── Relatório de dry-run ───────────────────────────────────────────────────
+  // Relatório de dry-run
 
   console.log(separator());
   console.log(`  SERÃO CORRIGIDAS: ${results.wouldFix.length} transaction(s)`);
@@ -250,7 +250,7 @@ async function main() {
   console.log(`  Conta sem categoria      : ${results.noCategoriaOnPending.length}`);
   console.log();
 
-  // ─── Aplicação (apenas com --apply) ────────────────────────────────────────
+  // Aplicação (apenas com --apply)
 
   if (DRY_RUN) {
     console.log('⚠  Dry-run concluído. Nenhuma alteração feita.');

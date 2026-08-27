@@ -23,7 +23,7 @@ interface RequestWithUser extends Request {
 export class WebAuthnController {
   constructor(private readonly webAuthnService: WebAuthnService) {}
 
-  // ── Registration (user must be logged in) ────────────────────────────
+  // Registration (user must be logged in)
 
   @UseGuards(JwtAuthGuard)
   @Post('register/options')
@@ -45,7 +45,7 @@ export class WebAuthnController {
     );
   }
 
-  // ── Authentication (public) ───────────────────────────────────────────
+  // Authentication (public)
 
   @Post('login/options')
   @HttpCode(200)
@@ -62,7 +62,7 @@ export class WebAuthnController {
     );
   }
 
-  // ── Re-authentication (JWT-protected, for password change) ───────────
+  // Re-authentication (JWT-protected, for password change)
 
   @UseGuards(JwtAuthGuard)
   @Post('reauth/options')
@@ -84,7 +84,7 @@ export class WebAuthnController {
     );
   }
 
-  // ── Credential management ─────────────────────────────────────────────
+  // Credential management
 
   @UseGuards(JwtAuthGuard)
   @Get('credentials')

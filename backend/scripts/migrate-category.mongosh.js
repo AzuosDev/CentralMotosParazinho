@@ -1,13 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════
-// Script de migração — rode no mongosh (MongoDB Compass > mongosh)
+// Script de migração, rode no mongosh (MongoDB Compass > mongosh)
 //
 //  DRY-RUN (só lista):  DRY_RUN = true   (padrão)
 //  APPLY   (escreve):   DRY_RUN = false
-// ═══════════════════════════════════════════════════════════════════
 
-const DRY_RUN = true; // ← mude para false para aplicar
+const DRY_RUN = true; // mude para false para aplicar
 
-// ─── Lógica de resolução (espelho de pending.service.ts) ────────────
+// Lógica de resolução (espelho de pending.service.ts)
 
 const CATEGORY_KEYWORDS = {
   'Transporte': [
@@ -85,7 +83,7 @@ function findCategory(categoriaText, isReceber, userId) {
   return null;
 }
 
-// ─── Execução ───────────────────────────────────────────────────────
+// Execução
 
 print('\n' + '═'.repeat(70));
 print(DRY_RUN
@@ -122,7 +120,7 @@ for (const tx of affected) {
   wouldFix.push({ tx, pending, cat });
 }
 
-// ─── Relatório ──────────────────────────────────────────────────────
+// Relatório
 
 print('─'.repeat(70));
 print(`  SERÃO CORRIGIDAS: ${wouldFix.length} transaction(s)`);
@@ -173,7 +171,7 @@ print(`  PendingAccount ausente  : ${pendingNotFound.length}`);
 print(`  Conta sem categoria     : ${noCategoriaOnPending.length}`);
 print('');
 
-// ─── Aplicação ──────────────────────────────────────────────────────
+// Aplicação
 
 if (DRY_RUN) {
   print('⚠  Dry-run concluído. Mude DRY_RUN = false para aplicar.\n');

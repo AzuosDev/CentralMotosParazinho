@@ -21,7 +21,7 @@ const mockGuard = {
   },
 };
 
-// ─── Controller routing tests (mocked services) ──────────────────────────────
+// Controller routing tests (mocked services)
 
 describe('UsersController.changePassword — routing', () => {
   let app: INestApplication;
@@ -96,7 +96,7 @@ describe('UsersController.changePassword — routing', () => {
   });
 });
 
-// ─── consumeReauthToken unit tests (real MongoDB) ────────────────────────────
+// consumeReauthToken unit tests (real MongoDB)
 
 describe('WebAuthnService.consumeReauthToken — single-use e validade', () => {
   let mongod: MongoMemoryServer;

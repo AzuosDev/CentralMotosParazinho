@@ -243,7 +243,7 @@ function renderFooter(baseUrl: string, year: number) {
                       ${BRAND.company}
                     </p>
                     <p style="margin:0;font-family:${FONT_STACK};font-size:13px;line-height:20px;color:${COLORS.textMuted};">
-                      ${BRAND.companyTagline}<br />${BRAND.product} — ${BRAND.productTagline}
+                      ${BRAND.companyTagline}<br />${BRAND.product} · ${BRAND.productTagline}
                     </p>
                   </td>
                   <td class="sm-stack sm-gap" align="right" valign="top">
@@ -275,7 +275,7 @@ function renderFooter(baseUrl: string, year: number) {
                 <a href="${whatsappUrl}" style="color:${COLORS.accentLime};text-decoration:none;white-space:nowrap;">WhatsApp ${BRAND.supportWhatsappDisplay}</a>
               </p>
               <p style="margin:0 0 10px;font-family:${FONT_STACK};font-size:12px;line-height:20px;color:${COLORS.textMuted};">
-                Este é um email automático de segurança da sua conta ${BRAND.product} — não é necessário responder.
+                Este é um email automático de segurança da sua conta ${BRAND.product}. Não é necessário responder.
                 Nunca pedimos sua senha, código de verificação ou dados de cartão por email.
               </p>
               <p style="margin:0;font-family:${FONT_STACK};font-size:12px;line-height:20px;color:${COLORS.textMuted};">
@@ -293,7 +293,7 @@ export function renderEmailText(options: EmailLayoutOptions) {
   const year = new Date().getFullYear();
 
   return [
-    `${BRAND.product} — ${heading}`,
+    `${BRAND.product} · ${heading}`,
     '',
     greeting,
     '',
@@ -306,10 +306,10 @@ export function renderEmailText(options: EmailLayoutOptions) {
     `${notice.title} ${notice.body}`,
     '',
     '---',
-    `${BRAND.company} — ${BRAND.companyTagline}`,
+    `${BRAND.company} · ${BRAND.companyTagline}`,
     `Instagram: ${BRAND.instagramUrl} (${BRAND.instagramHandle})`,
     `Suporte: ${BRAND.supportEmail} · WhatsApp ${BRAND.supportWhatsappDisplay}`,
     baseUrl,
-    `© ${year} ${BRAND.company}. Email automático — não responda.`,
+    `© ${year} ${BRAND.company}. Email automático, não responda.`,
   ].join('\n');
 }

@@ -27,7 +27,7 @@ const features: { icon: LucideIcon; title: string; description: string }[] = [
     icon: LayoutDashboard,
     title: "Dashboard consolidado",
     description:
-      "Veja o saldo de todas as suas carteiras — banco, dinheiro, cartão — num único lugar, atualizado a cada movimentação.",
+      "Veja o saldo de todas as suas carteiras (banco, dinheiro, cartão) num único lugar, atualizado a cada movimentação.",
   },
   {
     icon: Clock,
@@ -63,12 +63,12 @@ const securityPoints: { icon: LucideIcon; text: string }[] = [
   { icon: Lock, text: "Conexão criptografada via HTTPS em toda comunicação com o app." },
   {
     icon: Fingerprint,
-    text: "Login biométrico processado localmente no seu dispositivo — sua senha não precisa trafegar pela rede toda vez que você entra.",
+    text: "Login biométrico processado localmente no seu dispositivo, sua senha não precisa trafegar pela rede toda vez que você entra.",
   },
   { icon: Server, text: "Dados hospedados em infraestrutura totalmente segura." },
   {
     icon: UserCheck,
-    text: "Você é o único com acesso à sua conta — nunca compartilhamos ou visualizamos seus dados.",
+    text: "Você é o único com acesso à sua conta. Nunca compartilhamos ou visualizamos seus dados.",
   },
 ];
 
@@ -103,11 +103,11 @@ const faqs: { question: string; answer: string }[] = [
   {
     question: "Preciso conectar minha conta bancária automaticamente?",
     answer:
-      "Não. Você cadastra suas transações manualmente ou importa o extrato do seu banco via arquivo OFX — o MeuGasto não acessa sua conta bancária diretamente.",
+      "Não. Você cadastra suas transações manualmente ou importa o extrato do seu banco via arquivo OFX. O MeuGasto não acessa sua conta bancária diretamente.",
   },
   {
     question: "Como cancelo?",
-    answer: "A qualquer momento, direto nas configurações da sua conta — sem precisar ligar ou mandar e-mail.",
+    answer: "A qualquer momento, direto nas configurações da sua conta, sem precisar ligar ou mandar e-mail.",
   },
   {
     question: "Meus dados financeiros estão seguros?",
@@ -117,21 +117,21 @@ const faqs: { question: string; answer: string }[] = [
   {
     question: "Qual a diferença entre o plano Básico e o Empresarial?",
     answer:
-      "O Básico dá acesso completo ao MeuGasto para uso pessoal, com assinatura direta pelo app. O Empresarial é uma versão personalizada para o seu negócio, com manutenções corretivas prioritárias e atualizações dedicadas — o valor final e o escopo são definidos em conversa com nosso time.",
+      "O Básico dá acesso completo ao MeuGasto para uso pessoal, com assinatura direta pelo app. O Empresarial é uma versão personalizada para o seu negócio, com manutenções corretivas prioritárias e atualizações dedicadas. O valor final e o escopo são definidos em conversa com nosso time.",
   },
   {
     question: "Posso trocar entre mensal e anual depois de assinar?",
     answer:
-      "Sim. No plano Básico, você troca entre mensal e anual quando quiser, direto nas configurações da conta — a mudança vale a partir do próximo ciclo de cobrança. No Empresarial, qualquer ajuste é combinado direto com nosso time.",
+      "Sim. No plano Básico, você troca entre mensal e anual quando quiser, direto nas configurações da conta, e a mudança vale a partir do próximo ciclo de cobrança. No Empresarial, qualquer ajuste é combinado direto com nosso time.",
   },
   {
     question: "O teste grátis de 15 dias vale para qual plano?",
     answer:
-      "Só para o plano Básico. O Empresarial funciona por consulta comercial — fale com a gente pra montar a melhor proposta pro seu negócio.",
+      "Só para o plano Básico. O Empresarial funciona por consulta comercial, fale com a gente pra montar a melhor proposta pro seu negócio.",
   },
 ];
 
-// ─── Helpers de animação (sem dependência externa) ─────────────────────────
+// Helpers de animação (sem dependência externa)
 
 function useInView<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
@@ -184,7 +184,7 @@ function Reveal({
   );
 }
 
-// ─── Seções ─────────────────────────────────────────────────────────────────
+// Seções
 
 const navLinks = [
   { id: "funcionalidades", label: "Funcionalidades" },
@@ -225,7 +225,7 @@ function Nav() {
 
           <Link
             to="/login"
-            className="shrink-0 cursor-pointer rounded-full bg-accent-lime px-4 py-2 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+            className="shrink-0 cursor-pointer rounded-full bg-accent-lime px-4 py-2 text-sm font-bold text-black transition-colors duration-200 hover:brightness-110"
           >
             Entrar
           </Link>
@@ -243,11 +243,7 @@ function Hero() {
   const state = mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0";
 
   return (
-    <section className="relative mx-auto flex w-full max-w-4xl flex-col items-center overflow-hidden px-4 py-16 text-center sm:px-6 sm:py-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex justify-center">
-        <div className="h-72 w-72 animate-glow-pulse rounded-full bg-accent-lime/20 blur-3xl sm:h-96 sm:w-96" />
-      </div>
-
+    <section className="relative mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-16 text-center sm:px-6 sm:py-24">
       <h1
         className={cn(base, state, "font-sans text-4xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-5xl")}
       >
@@ -265,7 +261,7 @@ function Hero() {
       >
         <Link
           to="/register"
-          className="flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+          className="flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-colors duration-200 hover:brightness-110"
         >
           Começar teste grátis
           <ArrowRight className="h-4 w-4" />
@@ -290,11 +286,9 @@ function Features() {
       <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {features.map(({ icon: Icon, title, description }, index) => (
           <Reveal key={title} delay={index * 80}>
-            <div className="group h-full rounded-card bg-bg-card p-6 ring-1 ring-border-default transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent-lime/10 hover:ring-accent-lime/40">
-              <span className="mb-4 grid h-11 w-11 place-items-center rounded-icon bg-accent-lime/10 transition-transform duration-300 group-hover:scale-110">
-                <Icon className="h-5 w-5 text-accent-lime" />
-              </span>
-              <h3 className="font-sans text-lg font-bold text-text-primary">{title}</h3>
+            <div className="h-full rounded-card bg-bg-card p-6 ring-1 ring-border-default transition-colors duration-300 hover:ring-accent-lime/40">
+              <Icon className="h-6 w-6 text-accent-lime" />
+              <h3 className="mt-4 font-sans text-lg font-bold text-text-primary">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</p>
             </div>
           </Reveal>
@@ -309,9 +303,7 @@ function SecuritySection() {
     <section id="seguranca" className="scroll-mt-28 bg-bg-card py-16">
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6">
         <div className="mb-10 flex flex-col items-center text-center">
-          <span className="mb-4 grid h-12 w-12 animate-shield-pulse place-items-center rounded-full bg-accent-lime/10">
-            <ShieldCheck className="h-6 w-6 text-accent-lime" />
-          </span>
+          <ShieldCheck className="mb-3 h-6 w-6 text-accent-lime" />
           <h2 className="font-sans text-3xl font-bold text-text-primary">
             Seus dados financeiros, tratados com o cuidado que merecem
           </h2>
@@ -319,7 +311,7 @@ function SecuritySection() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {securityPoints.map(({ icon: Icon, text }, index) => (
             <Reveal key={text} delay={index * 80}>
-              <div className="flex h-full items-start gap-3 rounded-card bg-bg-muted p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent-lime/10">
+              <div className="flex h-full items-start gap-3 rounded-card bg-bg-muted p-5 transition-colors duration-300 hover:bg-bg-overlay">
                 <Icon className="mt-0.5 h-5 w-5 shrink-0 text-accent-lime" />
                 <p className="min-w-0 text-sm leading-relaxed text-text-secondary">{text}</p>
               </div>
@@ -334,7 +326,7 @@ function SecuritySection() {
 type BillingCycle = "monthly" | "annual";
 
 // Crossfade: quando `value` muda, primeiro esconde o conteúdo antigo (fade-out) e só troca
-// o valor exibido depois que a transição de saída terminou — evita a troca seca de texto.
+// o valor exibido depois que a transição de saída terminou. Evita a troca seca de texto.
 function useCrossfade<T>(value: T, duration = 200) {
   const [displayValue, setDisplayValue] = useState(value);
   const [visible, setVisible] = useState(true);
@@ -382,7 +374,8 @@ function PricingCard({
     >
       <div
         className={cn(
-          "flex h-full flex-col rounded-card bg-bg-card p-6 shadow-[0_0_50px_-15px_rgba(163,230,53,0.4)] ring-1 ring-accent-lime/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_65px_-10px_rgba(163,230,53,0.6)] hover:ring-accent-lime/50 sm:p-8",
+          "flex h-full flex-col rounded-card bg-bg-card p-6 ring-1 transition-colors duration-300 sm:p-8",
+          highlight ? "ring-accent-lime/40 hover:ring-accent-lime/60" : "ring-border-default hover:ring-accent-lime/30",
         )}
       >
         <p className={cn("text-sm font-semibold uppercase tracking-widest", highlight ? "text-accent-lime" : "text-text-secondary")}>
@@ -522,8 +515,8 @@ function Pricing() {
               </p>
               <p className="mt-2 text-sm text-accent-lime">
                 {displayIsAnnual
-                  ? "Equivale a R$24,99/mês — economize ~2 meses (16%)"
-                  : "ou R$299,90/ano — economize ~2 meses (16%)"}
+                  ? "Equivale a R$24,99/mês, economize ~2 meses (16%)"
+                  : "ou R$299,90/ano, economize ~2 meses (16%)"}
               </p>
             </div>
           }
@@ -532,7 +525,7 @@ function Pricing() {
           cta={
             <Link
               to="/register"
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black transition-colors duration-200 hover:brightness-110"
             >
               Começar teste grátis
               <ArrowRight className="h-4 w-4" />
@@ -635,7 +628,7 @@ function ContactSection() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard indisponível (ex: contexto não seguro) — link mailto continua funcionando.
+      // Clipboard indisponível (ex: contexto não seguro), link mailto continua funcionando.
     }
   };
 
@@ -707,7 +700,7 @@ function FinalCTA() {
       </h2>
       <Link
         to="/register"
-        className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-8 py-4 text-base font-bold text-black transition-all duration-200 hover:scale-105 hover:brightness-110 active:scale-100"
+        className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-accent-lime px-8 py-4 text-base font-bold text-black transition-colors duration-200 hover:brightness-110"
       >
         Começar teste grátis
         <ArrowRight className="h-4 w-4" />

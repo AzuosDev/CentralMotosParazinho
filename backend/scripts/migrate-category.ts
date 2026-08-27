@@ -16,7 +16,7 @@ import mongoose, { Model, Types } from 'mongoose';
 
 const DRY_RUN = !process.argv.includes('--apply');
 
-// ─── Schemas (mínimo necessário para a migração) ───────────────────────────
+// Schemas (mínimo necessário para a migração)
 
 const TransactionSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,
@@ -46,7 +46,7 @@ const CategorySchema = new mongoose.Schema({
   isIncome: Boolean,
 }, { collection: 'categories' });
 
-// ─── Lógica de resolução (espelho de pending.service.ts) ──────────────────
+// Lógica de resolução (espelho de pending.service.ts)
 
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'Transporte': [
@@ -132,7 +132,7 @@ async function findCategory(
 
 function sep(char = '─', len = 70) { return char.repeat(len); }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// Main
 
 async function main() {
   const uri = process.env.MONGODB_URI;
@@ -186,7 +186,7 @@ async function main() {
     wouldFix.push({ tx, pending, cat });
   }
 
-  // ─── Relatório ──────────────────────────────────────────────────────
+  // Relatório
 
   console.log(sep());
   console.log(`  SERÃO CORRIGIDAS: ${wouldFix.length} transaction(s)`);
@@ -240,7 +240,7 @@ async function main() {
   console.log(`  Conta sem categoria     : ${noCategoriaOnPending.length}`);
   console.log('');
 
-  // ─── Aplicação ──────────────────────────────────────────────────────
+  // Aplicação
 
   if (DRY_RUN) {
     console.log('⚠  Dry-run concluído. Rode com --apply para aplicar.\n');

@@ -18,11 +18,11 @@ const sections = [
     emoji: "🔐",
     title: "Login com Biometria",
     items: [
-      "Entre com Face ID, digital ou PIN — sem precisar digitar a senha",
+      "Entre com Face ID, digital ou PIN, sem precisar digitar a senha",
       "O prompt biométrico abre automaticamente ao carregar a tela de login",
       "Gerencie suas chaves biométricas em Minha Conta (adicionar e remover)",
       "Troque a senha confirmando via biometria, sem precisar informar a senha atual",
-      "Sugestão inteligente para ativar biometria após o primeiro login com email e senha",
+      "Sugestão para ativar biometria após o primeiro login com email e senha",
     ],
   },
   {
@@ -32,7 +32,7 @@ const sections = [
       "Importe o extrato do seu banco (.ofx) direto na página da carteira",
       "Categorização automática de PIX, TED e transferências por palavras-chave",
       "Histórico de importações com botão 'Desfazer' para reverter um lote inteiro",
-      "Deduplicação automática — transações já importadas são ignoradas",
+      "Deduplicação automática: transações já importadas são ignoradas",
     ],
   },
 ];
@@ -46,7 +46,7 @@ export function WhatsNewModal({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <ModalShell
       open={open}
-      title="O que há de novo 🚀"
+      title="O que há de novo"
       icon={<Rocket className="h-5 w-5 text-accent-lime" />}
       onClose={handleClose}
       footer={

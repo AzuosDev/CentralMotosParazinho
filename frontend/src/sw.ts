@@ -17,12 +17,10 @@ declare const self: ServiceWorkerGlobalScope;
 self.skipWaiting();
 clientsClaim();
 
-// ─── Precache ────────────────────────────────────────────────────────────────
 // __WB_MANIFEST é substituído pelo vite-plugin-pwa com a lista de assets do build
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// ─── Navegação SPA ───────────────────────────────────────────────────────────
 // Toda rota que não seja /api cai no index.html (React Router cuida do resto)
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('index.html'), {
@@ -30,7 +28,7 @@ registerRoute(
   }),
 );
 
-// ─── Google Fonts (CSS) ──────────────────────────────────────────────────────
+// Google Fonts (CSS)
 registerRoute(
   ({ url }) => url.origin === 'https://fonts.googleapis.com',
   new CacheFirst({
@@ -42,7 +40,7 @@ registerRoute(
   }),
 );
 
-// ─── Google Fonts (arquivos de fonte) ────────────────────────────────────────
+// Google Fonts (arquivos de fonte)
 registerRoute(
   ({ url }) => url.origin === 'https://fonts.gstatic.com',
   new CacheFirst({
@@ -54,8 +52,7 @@ registerRoute(
   }),
 );
 
-// ─── API ─────────────────────────────────────────────────────────────────────
-// Network first: tenta rede, usa cache quando offline (TTL 24h, até 150 entradas)
+// API: network first, tenta rede, usa cache quando offline (TTL 24h, até 150 entradas)
 registerRoute(
   ({ url }) => url.pathname.startsWith('/api/'),
   new NetworkFirst({

@@ -315,7 +315,7 @@ export function AccountModal({
   });
 
   // A data relevante muda conforme o modo: parcelada usa dataInicio, demais usam dueDate.
-  // affectsBalance só vale se a data efetiva for realmente retroativa — evita drift de estado
+  // affectsBalance só vale se a data efetiva for realmente retroativa, evita drift de estado
   // ao trocar de modo (ex: marcar checkbox em parcelada e voltar para não parcelada).
   const effectiveDate = formIsParcelada ? (formParcelas.dataInicio ?? "") : formIsRecorrente ? "" : formDueDate;
   const effectiveAffectsBalance = isPastMonth(effectiveDate) ? formAffectsBalance : true;

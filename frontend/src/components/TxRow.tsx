@@ -50,7 +50,7 @@ export function TxRow({
   const sign = isIncome || isIncomingTransfer ? "+" : "–";
 
   return (
-    // Mobile (abaixo de sm): coluna — descrição em cima, valor+ações embaixo,
+    // Mobile (abaixo de sm): coluna, descrição em cima, valor+ações embaixo,
     // alinhados nas pontas. A partir de sm: volta a ser uma única linha, como antes.
     <div className="group flex flex-col gap-2 border-b border-bg-muted py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">

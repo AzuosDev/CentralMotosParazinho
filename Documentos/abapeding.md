@@ -1,4 +1,4 @@
-# ContaCerta — Prompts de Desenvolvimento Sequenciados
+# MeuGasto — Prompts de Desenvolvimento Sequenciados
 
 Baseado no que já está construido nessa aba do meu sistema
 

@@ -6,7 +6,7 @@ describe("parseCurrencyInput", () => {
     expect(parseCurrencyInput("579.69")).toBe(579.69);
   });
 
-  it("não multiplica por 100 — regressão do bug [^\\.\\d,-]", () => {
+  it("não multiplica por 100 (regressão do bug [^\\.\\d,-])", () => {
     expect(parseCurrencyInput("579.69")).not.toBe(57969);
   });
 

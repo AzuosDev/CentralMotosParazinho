@@ -58,9 +58,9 @@ html.dark {
     --border-strong: #a8b89e; /* foco, cards ativos */
 
     /* semânticas financeiras */
-    --color-income: #3a7d2c; /* ganhos  — AAA 7.2:1 */
-    --color-expense: #b94545; /* gastos  — AA  5.8:1 */
-    --color-pending: #c97a2a; /* pendente — AA  4.6:1 */
+    --color-income: #3a7d2c; /* ganhos, AAA 7.2:1 */
+    --color-expense: #b94545; /* gastos, AA 5.8:1 */
+    --color-pending: #c97a2a; /* pendente, AA 4.6:1 */
 
     /* accent (inalterado) */
     --accent-lime: #A3E635; /* CTA principal */

@@ -59,7 +59,7 @@ export type Wallet = MongoDocument & {
 /**
  * Carteira virtual injetada pelo backend quando uma transação/conta antiga não possui
  * carteiraId (dado anterior à feature de múltiplas carteiras). Não existe na coleção de
- * carteiras real — use sempre com optional chaining (`item.carteira?.nome`).
+ * carteiras real. Use sempre com optional chaining (`item.carteira?.nome`).
  */
 export type VirtualWallet = {
   _id: "legacy-wallet";
