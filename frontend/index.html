@@ -18,6 +18,15 @@
     <meta name="apple-mobile-web-app-title" content="MeuGasto" />
     <meta name="mobile-web-app-capable" content="yes" />
 
+    <!-- DM Sans self-hosted: pesos usados acima da dobra (landing) priorizados via preload -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/files/dm-sans-latin-400-normal.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/files/dm-sans-latin-500-normal.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/files/dm-sans-latin-700-normal.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/files/dm-sans-latin-800-normal.woff2" crossorigin />
+    <!-- CSS de @font-face carregado de forma não bloqueante (evita segurar o first paint) -->
+    <link rel="preload" as="style" href="/fonts/dm-sans.css" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="/fonts/dm-sans.css" /></noscript>
+
     <script>
       (function () {
         try {
