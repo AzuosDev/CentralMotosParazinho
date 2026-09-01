@@ -20,12 +20,24 @@ export class WalletsService {
   }
 
   async create(userId: string, dto: CreateWalletDto) {
+    const userObjectId = this.toObjectId(userId, 'userId');
     return this.walletModel.create({
-      userId: this.toObjectId(userId, 'userId'),
+      userId: userObjectId,
       nome: dto.nome,
       saldo: dto.saldo ?? 0,
       saldoInicial: dto.saldo ?? 0,
       icone: dto.icone,
+      tipo: dto.tipo ?? 'conta',
+      limite: dto.tipo === 'credito' ? dto.limite : undefined,
+      diaFechamento: dto.tipo === 'credito' ? dto.diaFechamento : undefined,
+      diaVencimento: dto.tipo === 'credito' ? dto.diaVencimento : undefined,
+      carteiraPagamentoId:
+        dto.tipo === 'credito' && dto.carteiraPagamentoId && Types.ObjectId.isValid(dto.carteiraPagamentoId)
+          ? new Types.ObjectId(dto.carteiraPagamentoId)
+          : undefined,
+      taxaJurosRotativo: dto.tipo === 'credito' ? dto.taxaJurosRotativo : undefined,
+      bandeira: dto.tipo === 'credito' ? dto.bandeira : undefined,
+      ultimosDigitos: dto.tipo === 'credito' ? dto.ultimosDigitos : undefined,
     });
   }
 
@@ -42,6 +54,12 @@ export class WalletsService {
     };
   }
 
+  // Compra no crédito (faturaId setado) é dívida, não dinheiro saindo da carteira — não
+  // pode entrar na soma de saldo de nenhuma carteira. Mesmo padrão de effectiveSaldoMatch().
+  private excludeCardPurchasesMatch() {
+    return { faturaId: { $exists: false } };
+  }
+
   // Mesma carteira virtual usada em transactions.service.ts/pending.service.ts para
   // dados anteriores à feature de múltiplas carteiras.
   private static readonly LEGACY_WALLET_ID = 'legacy-wallet';
@@ -51,11 +69,15 @@ export class WalletsService {
     // saldoInicial é o valor declarado pelo usuário ao criar a carteira (nunca alterado
     // por $inc). O saldo exibido é: saldoInicial + soma(INCOME) - soma(EXPENSE) + TC - TD.
     // Isso garante corretude independente do histórico de $inc em wallet.saldo.
+    // Cartões de crédito (tipo: 'credito') ficam de fora: eles não têm "saldo" no sentido de
+    // dinheiro disponível, e se entrassem aqui inflariam/corromperiam o Saldo Total somado no
+    // frontend (WalletsPage.tsx). Só aparecem em /api/cartoes.
     const [wallets, saldoAgg, transferCreditsAgg, transferDebitsAgg] = await Promise.all([
-      this.walletModel.find({ userId: userObjectId }).sort({ createdAt: 1 }).exec(),
-      // income - expense por carteira (TRANSFER excluído para não duplicar com TC/TD)
+      this.walletModel.find({ userId: userObjectId, tipo: { $ne: 'credito' } }).sort({ createdAt: 1 }).exec(),
+      // income - expense por carteira (TRANSFER excluído para não duplicar com TC/TD;
+      // compras no crédito excluídas por não serem saída real de dinheiro)
       this.transactionModel.aggregate([
-        { $match: { userId: userObjectId, ...this.effectiveSaldoMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
+        { $match: { userId: userObjectId, ...this.effectiveSaldoMatch(), ...this.excludeCardPurchasesMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
         {
           $group: {
             _id: '$carteiraId',
@@ -125,9 +147,11 @@ export class WalletsService {
 
   async findOne(userId: string, id: string) {
     const userObjectId = new Types.ObjectId(userId);
+    // Cartões de crédito não são servidos por esta rota genérica — ver findAll().
     const wallet = await this.walletModel.findOne({
       _id: this.toObjectId(id, 'id'),
       userId: userObjectId,
+      tipo: { $ne: 'credito' },
     }).exec();
 
     if (!wallet) throw new NotFoundException('Carteira não encontrada');
@@ -144,9 +168,9 @@ export class WalletsService {
         .sort({ date: -1 })
         .limit(20)
         .exec(),
-      // income - expense desta carteira (TRANSFER excluído)
+      // income - expense desta carteira (TRANSFER excluído; compra no crédito excluída)
       this.transactionModel.aggregate([
-        { $match: { userId: userObjectId, carteiraId: wallet._id, ...this.effectiveSaldoMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
+        { $match: { userId: userObjectId, carteiraId: wallet._id, ...this.effectiveSaldoMatch(), ...this.excludeCardPurchasesMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
         { $group: { _id: null, saldo: { $sum: { $cond: [{ $eq: ['$type', TransactionType.INCOME] }, '$value', { $multiply: ['$value', -1] }] } } } },
       ]),
       // Transfers recebidas por esta carteira (carteiraDestino), excluindo agendadas
@@ -180,11 +204,24 @@ export class WalletsService {
 
     if (dto.nome !== undefined) wallet.nome = dto.nome;
     if (dto.icone !== undefined) wallet.icone = dto.icone;
+    if (dto.tipo !== undefined) wallet.tipo = dto.tipo;
+    if (dto.limite !== undefined) wallet.limite = dto.limite;
+    if (dto.diaFechamento !== undefined) wallet.diaFechamento = dto.diaFechamento;
+    if (dto.diaVencimento !== undefined) wallet.diaVencimento = dto.diaVencimento;
+    if (typeof dto.carteiraPagamentoId !== 'undefined') {
+      wallet.carteiraPagamentoId =
+        dto.carteiraPagamentoId && Types.ObjectId.isValid(dto.carteiraPagamentoId)
+          ? new Types.ObjectId(dto.carteiraPagamentoId)
+          : undefined;
+    }
+    if (dto.taxaJurosRotativo !== undefined) wallet.taxaJurosRotativo = dto.taxaJurosRotativo;
+    if (dto.bandeira !== undefined) wallet.bandeira = dto.bandeira;
+    if (dto.ultimosDigitos !== undefined) wallet.ultimosDigitos = dto.ultimosDigitos;
     if (typeof dto.saldo === 'number') {
       wallet.saldoInicial = dto.saldo;
       // Recompõe wallet.saldo para que futuras operações $inc continuem corretas.
       const incExpAgg = await this.transactionModel.aggregate([
-        { $match: { userId: wallet.userId, carteiraId: wallet._id, ...this.effectiveSaldoMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
+        { $match: { userId: wallet.userId, carteiraId: wallet._id, ...this.effectiveSaldoMatch(), ...this.excludeCardPurchasesMatch(), type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] } } },
         { $group: { _id: null, saldo: { $sum: { $cond: [{ $eq: ['$type', TransactionType.INCOME] }, '$value', { $multiply: ['$value', -1] }] } } } },
       ]);
       wallet.saldo = dto.saldo + (incExpAgg[0]?.saldo ?? 0);

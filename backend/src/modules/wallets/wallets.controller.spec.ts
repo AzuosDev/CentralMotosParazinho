@@ -135,4 +135,57 @@ describe('WalletsController (e2e)', () => {
     const orphanEntry = (res.body as Array<{ _id: string }>).find((w) => w._id === orphanWalletId.toString());
     expect(orphanEntry).toBeUndefined();
   });
+
+  it('POST creates a wallet with tipo=credito and the credit-specific fields', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({
+        nome: 'Cartão Nubank',
+        tipo: 'credito',
+        limite: 5000,
+        diaFechamento: 10,
+        diaVencimento: 17,
+        taxaJurosRotativo: 12.5,
+        bandeira: 'Mastercard',
+        ultimosDigitos: '4242',
+      })
+      .expect(201);
+
+    expect(res.body.tipo).toBe('credito');
+    expect(res.body.limite).toBe(5000);
+    expect(res.body.diaFechamento).toBe(10);
+    expect(res.body.diaVencimento).toBe(17);
+    expect(res.body.taxaJurosRotativo).toBe(12.5);
+    expect(res.body.bandeira).toBe('Mastercard');
+    expect(res.body.ultimosDigitos).toBe('4242');
+  });
+
+  it('GET /api/wallets does not include credit-card wallets', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Cartão Excluído da Lista', tipo: 'credito', limite: 1000, diaFechamento: 5, diaVencimento: 12 })
+      .expect(201);
+
+    const res = await request(app.getHttpServer()).get('/api/wallets').expect(200);
+    const found = (res.body as Array<{ _id: string }>).find((w) => w._id === created.body._id);
+    expect(found).toBeUndefined();
+  });
+
+  it('GET /api/wallets/:id returns 404 for a credit-card wallet', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Cartão 404', tipo: 'credito', limite: 1000, diaFechamento: 5, diaVencimento: 12 })
+      .expect(201);
+
+    await request(app.getHttpServer()).get(`/api/wallets/${created.body._id}`).expect(404);
+  });
+
+  it('default wallet creation still defaults tipo to conta', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Carteira Padrão' })
+      .expect(201);
+
+    expect(created.body.tipo).toBe('conta');
+  });
 });
