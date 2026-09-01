@@ -55,9 +55,32 @@ export class Transaction {
 
   @Prop({ type: Types.ObjectId, ref: 'ImportBatch' })
   importBatchId?: Types.ObjectId;
+
+  // Presente apenas em transações de cartão de crédito (compra, juros, estorno). É o
+  // marcador que faz WalletsService excluir a transação do saldo de qualquer carteira —
+  // compra no crédito é dívida sendo criada, não dinheiro saindo de uma conta.
+  @Prop({ type: Types.ObjectId, ref: 'Fatura' })
+  faturaId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Parcelamento' })
+  parcelamentoId?: Types.ObjectId;
+
+  @Prop({ type: Number })
+  numeroParcela?: number;
+
+  @Prop({ type: Number })
+  totalParcelas?: number;
+
+  // Estorno de compra no cartão: EXPENSE com valor positivo (o schema não aceita valor
+  // negativo) que reduz Fatura.valorTotal e é subtraído dos relatórios de categoria em vez
+  // de somado.
+  @Prop({ default: false })
+  isEstorno?: boolean;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
 TransactionSchema.index({ userId: 1, date: -1 });
 TransactionSchema.index({ userId: 1, carteiraId: 1, fitId: 1 }, { sparse: true });
 TransactionSchema.index({ importBatchId: 1 }, { sparse: true });
+TransactionSchema.index({ faturaId: 1 }, { sparse: true });
+TransactionSchema.index({ parcelamentoId: 1 }, { sparse: true });

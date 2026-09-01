@@ -521,6 +521,15 @@ export class PendingService {
       throw new BadRequestException('Esta conta/parcela não está marcada como paga');
     }
 
+    // Fatura de cartão: liquidação genérica (createSettlementTransaction) criaria uma
+    // segunda EXPENSE fora da fatura, duplicando o que as compras já lançaram nela, e não
+    // sabe escolher carteira pagadora nem tratar pagamento parcial/rotativo.
+    if ((willSettle || willUnsettle) && pending.faturaId) {
+      throw new BadRequestException(
+        'Esta conta é a fatura de um cartão. Pague ou reverta o pagamento pela tela de Cartões.',
+      );
+    }
+
     // Cria a transação de liquidação ANTES de persistir paid=true: se isso falhar, a
     // conta nunca fica marcada como paga/recebida sem o lançamento correspondente.
     // Respeitamos affectsBalance: se false, nenhuma transação é gerada.
@@ -622,6 +631,17 @@ export class PendingService {
   async remove(userId: string, id: string) {
     const uid = new Types.ObjectId(userId);
     const oid = new Types.ObjectId(id);
+
+    // Fatura de cartão não pode ser apagada pelo fluxo genérico de contas pendentes — ela é
+    // recriada/gerenciada por CartoesService e tem transações de compra vinculadas por
+    // faturaId, não por pendingAccountId, então o deleteMany abaixo não as alcançaria mesmo.
+    const existing = await this.pendingModel.findOne({ _id: oid, userId: uid }).exec();
+    if (existing?.faturaId) {
+      throw new BadRequestException(
+        'Esta conta é a fatura de um cartão e não pode ser excluída pela tela de Contas.',
+      );
+    }
+
     const result = await this.pendingModel.findOneAndDelete({ _id: oid, userId: uid }).exec() as unknown as PendingAccountDocument | null;
     if (!result) throw new NotFoundException('Pending account not found');
     await this.transactionModel.deleteMany({ userId: uid, pendingAccountId: oid }).exec();
