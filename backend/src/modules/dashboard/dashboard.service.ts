@@ -74,7 +74,9 @@ export class DashboardService {
               ],
               totalExpenses: [
                 { $match: { type: TransactionType.EXPENSE, date: { $gte: startDate, $lte: endDate } } },
-                { $group: { _id: null, total: { $sum: '$value' } } },
+                // Estorno de compra no cartão (isEstorno) é subtraído em vez de somado — senão
+                // uma compra devolvida continuaria contando como gasto no total do mês.
+                { $group: { _id: null, total: { $sum: { $cond: ['$isEstorno', { $multiply: ['$value', -1] }, '$value'] } } } },
               ],
               cumulativeIncome: [
                 { $match: { type: TransactionType.INCOME, date: { $gte: cumulativeStart, $lte: endDate } } },
@@ -82,11 +84,11 @@ export class DashboardService {
               ],
               cumulativeExpenses: [
                 { $match: { type: TransactionType.EXPENSE, date: { $gte: cumulativeStart, $lte: endDate } } },
-                { $group: { _id: null, total: { $sum: '$value' } } },
+                { $group: { _id: null, total: { $sum: { $cond: ['$isEstorno', { $multiply: ['$value', -1] }, '$value'] } } } },
               ],
               expensesByCategory: [
                 { $match: { type: TransactionType.EXPENSE, date: { $gte: startDate, $lte: endDate } } },
-                { $group: { _id: '$categoryId', total: { $sum: '$value' } } },
+                { $group: { _id: '$categoryId', total: { $sum: { $cond: ['$isEstorno', { $multiply: ['$value', -1] }, '$value'] } } } },
                 {
                   $lookup: {
                     from: 'categories',

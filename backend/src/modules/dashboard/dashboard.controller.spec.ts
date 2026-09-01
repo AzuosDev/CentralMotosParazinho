@@ -7,6 +7,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PendingAccount } from '../pending/schemas/pending-account.schema';
+import { Transaction, TransactionType } from '../transactions/schemas/transaction.schema';
+import { Category } from '../categories/schemas/category.schema';
 
 const FAKE_USER_ID = new Types.ObjectId().toString();
 
@@ -14,6 +16,8 @@ describe('DashboardController (e2e)', () => {
   let app: INestApplication;
   let mongod: MongoMemoryServer;
   let pendingModel: Model<PendingAccount>;
+  let transactionModel: Model<Transaction>;
+  let categoryModel: Model<Category>;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -41,6 +45,8 @@ describe('DashboardController (e2e)', () => {
     await app.init();
 
     pendingModel = app.get<Model<PendingAccount>>(getModelToken(PendingAccount.name));
+    transactionModel = app.get<Model<Transaction>>(getModelToken(Transaction.name));
+    categoryModel = app.get<Model<Category>>(getModelToken(Category.name));
   });
 
   afterAll(async () => {
@@ -72,5 +78,41 @@ describe('DashboardController (e2e)', () => {
 
     const items = res.body.pendingAccounts.items as Array<{ _id: string }>;
     expect(items.some((item) => item._id === legacyId.toString())).toBe(true);
+  });
+
+  it('estorno de compra no cartão (isEstorno) é subtraído de expensesByCategory e totalExpenses, não somado', async () => {
+    const cat = await categoryModel.create({ name: 'Roupas Teste', slug: 'roupas-teste-dashboard', isDefault: true, isIncome: false });
+    const userObjectId = new Types.ObjectId(FAKE_USER_ID);
+
+    await transactionModel.create({
+      userId: userObjectId,
+      type: TransactionType.EXPENSE,
+      value: 100,
+      categoryId: cat._id,
+      date: new Date('2026-05-10'),
+      carteiraId: new Types.ObjectId(),
+      faturaId: new Types.ObjectId(),
+    });
+    await transactionModel.create({
+      userId: userObjectId,
+      type: TransactionType.EXPENSE,
+      value: 100,
+      categoryId: cat._id,
+      date: new Date('2026-05-11'),
+      carteiraId: new Types.ObjectId(),
+      faturaId: new Types.ObjectId(),
+      isEstorno: true,
+    });
+
+    const res = await request(app.getHttpServer())
+      .get('/api/dashboard')
+      .query({ month: 5, year: 2026 })
+      .expect(200);
+
+    const categoria = (res.body.expensesByCategory as Array<{ categoryId: string; total: number }>).find(
+      (c) => c.categoryId === cat._id.toString(),
+    );
+    // Compra de 100 + estorno de 100 = líquido zero, não deve aparecer com total 200.
+    expect(categoria?.total ?? 0).toBe(0);
   });
 });
