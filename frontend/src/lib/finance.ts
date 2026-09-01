@@ -104,6 +104,10 @@ export function normalizeTransaction(
     carteiraDestinoId: readString(item.carteiraDestinoId) || undefined,
     agendado: Boolean(item.agendado),
     carteira,
+    faturaId: readString(item.faturaId) || undefined,
+    numeroParcela: typeof item.numeroParcela === "number" ? item.numeroParcela : undefined,
+    totalParcelas: typeof item.totalParcelas === "number" ? item.totalParcelas : undefined,
+    isEstorno: Boolean(item.isEstorno),
     category:
       category ??
       (type === "INCOME"

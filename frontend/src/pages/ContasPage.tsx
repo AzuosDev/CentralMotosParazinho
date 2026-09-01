@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock, Inbox, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Check, Clock, CreditCard, Inbox, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import { api } from "../lib/api";
 
@@ -11,6 +11,7 @@ import { useToast } from "../components/ui/Toast";
 import { ConfirmDeleteModal } from "../components/modals/ConfirmDeleteModal";
 import { PayBillModal } from "../components/modals/PayBillModal";
 import { AccountModal } from "../components/modals/AccountModal";
+import { VincularCartaoModal } from "../components/modals/VincularCartaoModal";
 import type { PendingAccount } from "../types/api";
 
 type AccountType = "PAGAR" | "RECEBER";
@@ -35,6 +36,10 @@ type PendingItem = {
   dueDate: string;
   paid: boolean;
   description?: string;
+  // Presente quando esta conta É a fatura de um cartão — backend bloqueia o fluxo
+  // genérico de pagar/editar/excluir para esses itens, então a UI leva direto ao
+  // detalhe do cartão em vez de tentar as ações normais.
+  faturaId?: string;
 };
 
 
@@ -70,6 +75,7 @@ function normalizeAccounts(data: unknown): PendingItem[] {
       recorrenciaTemplateId: item.recorrenciaTemplateId,
       isVirtual: item.isVirtual,
       templateId: item.templateId,
+      faturaId: item.faturaId,
     }));
   }
 
@@ -138,6 +144,7 @@ export function ContasPage() {
   }, []);
 
   const [payBillItem, setPayBillItem] = useState<PendingDisplayItem | null>(null);
+  const [vincularCartaoItem, setVincularCartaoItem] = useState<PendingDisplayItem | null>(null);
   const [unmarkTarget, setUnmarkTarget] = useState<PendingDisplayItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -375,6 +382,12 @@ export function ContasPage() {
               {(item.isRecorrente || item.isVirtual || item.recorrenciaTemplateId) && (
                 <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-400">Recorrente</span>
               )}
+              {item.faturaId && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-lime/10 px-2.5 py-1 text-[11px] font-semibold text-accent-lime">
+                  <CreditCard className="h-3 w-3" />
+                  Fatura de cartão
+                </span>
+              )}
               <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold", status.className)}>{status.label}</span>
             </div>
             <p className="mt-1 text-sm text-text-secondary">{item.description ?? "Conta"}</p>
@@ -386,51 +399,74 @@ export function ContasPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {!item.paid && (
-            <button
-              type="button"
-              onClick={() => setPayBillItem(item)}
+          {item.faturaId ? (
+            <Link
+              to={`/cartoes/fatura/${item.faturaId}`}
               className="inline-flex items-center gap-2 rounded-xl bg-accent-lime/10 px-3 py-2 text-sm font-semibold text-accent-lime hover:bg-accent-lime/20"
             >
-              <Check className="h-4 w-4" />
-              {activeTab === "RECEBER" ? "Marcar como recebido" : "Marcar como pago"}
-            </button>
+              <CreditCard className="h-4 w-4" />
+              Ver fatura do cartão
+            </Link>
+          ) : (
+            <>
+              {!item.paid && (
+                <button
+                  type="button"
+                  onClick={() => setPayBillItem(item)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-accent-lime/10 px-3 py-2 text-sm font-semibold text-accent-lime hover:bg-accent-lime/20"
+                >
+                  <Check className="h-4 w-4" />
+                  {activeTab === "RECEBER" ? "Marcar como recebido" : "Marcar como pago"}
+                </button>
+              )}
+              {item.paid && (
+                <button
+                  type="button"
+                  onClick={() => setUnmarkTarget(item)}
+                  disabled={unmarkPaid.isPending}
+                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm font-semibold text-text-secondary hover:text-white transition"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Desmarcar
+                </button>
+              )}
+              {item.isParcelada && (
+                <button
+                  type="button"
+                  onClick={() => abrirParcelStatus(item)}
+                  className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+                >
+                  Parcelas
+                </button>
+              )}
+              {activeTab === "PAGAR" && !item.paid && !item.isRecorrente && !item.isVirtual && (
+                <button
+                  type="button"
+                  onClick={() => setVincularCartaoItem(item)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+                  title="Converter esta conta em parcelamento de um cartão"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Vincular a um cartão
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => abrirModalEdicao(item)}
+                className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmarDeletar(item)}
+                disabled={deletePending.isPending}
+                className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-accent-red"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
           )}
-          {item.paid && (
-            <button
-              type="button"
-              onClick={() => setUnmarkTarget(item)}
-              disabled={unmarkPaid.isPending}
-              className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm font-semibold text-text-secondary hover:text-white transition"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Desmarcar
-            </button>
-          )}
-          {item.isParcelada && (
-            <button
-              type="button"
-              onClick={() => abrirParcelStatus(item)}
-              className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
-            >
-              Parcelas
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => abrirModalEdicao(item)}
-            className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            onClick={() => confirmarDeletar(item)}
-            disabled={deletePending.isPending}
-            className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-accent-red"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
         </div>
       </article>
     );
@@ -713,6 +749,11 @@ export function ContasPage() {
             carteiraId,
           });
         }}
+      />
+      <VincularCartaoModal
+        open={!!vincularCartaoItem}
+        onClose={() => setVincularCartaoItem(null)}
+        pending={vincularCartaoItem}
       />
       <ConfirmDeleteModal
         open={deleteModalOpen}

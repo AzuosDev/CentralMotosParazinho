@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Clock,
   Coins,
+  CreditCard,
   Home,
   Landmark,
   LayoutDashboard,
@@ -62,6 +63,7 @@ const navigation: NavItem[] = [
   },
   { to: "/transactions", label: "Transações", icon: List },
   { to: "/carteiras", label: "Carteiras", icon: Landmark },
+  { to: "/cartoes", label: "Cartões", icon: CreditCard },
   { to: "/contas", label: "Contas", icon: Clock },
   { to: "/goals", label: "Metas Financeiras", icon: Target },
 ] as const;
@@ -78,6 +80,7 @@ const pageTitles: Record<string, string> = {
   "/expenses": "Gastos",
   "/transactions": "Transações",
   "/carteiras": "Carteiras",
+  "/cartoes": "Cartões",
   "/contas": "Contas",
   "/goals": "Metas Financeiras",
   "/budget": "Orçamento",
@@ -250,7 +253,9 @@ function SidebarContent({
         {navigation.map(({ to, match, label, icon: Icon }) => {
           const active = match
             ? currentUrl === match
-            : currentPath === to || (to === "/carteiras" && currentPath.startsWith("/carteiras"));
+            : currentPath === to ||
+              (to === "/carteiras" && currentPath.startsWith("/carteiras")) ||
+              (to === "/cartoes" && currentPath.startsWith("/cartoes"));
 
           return (
             <Link
@@ -632,6 +637,13 @@ export function AppLayout() {
               >
                 <Landmark className="h-5 w-5 text-text-secondary" />
                 <span className="font-semibold">Nova Carteira</span>
+              </button>
+              <button
+                onClick={() => { setAddModalOpen(false); navigate("/cartoes?action=create"); }}
+                className="flex items-center gap-3 rounded-xl bg-bg-muted p-4 text-left hover:bg-bg-overlay"
+              >
+                <CreditCard className="h-5 w-5 text-text-secondary" />
+                <span className="font-semibold">Novo Cartão</span>
               </button>
             </div>
           </div>

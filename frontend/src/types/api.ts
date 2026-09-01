@@ -33,6 +33,17 @@ export type AuthTokens = {
 export type TransactionType = "EXPENSE" | "INCOME" | "TRANSFER";
 export type TipoTransacao = "entrada" | "saida" | "transferencia";
 
+// Estado do limite após uma compra no cartão: 80%+ do limite sem estourar. Distinto do
+// bloqueio (409 ConflictException) — presente só quando a compra foi aceita.
+export type AvisoLimite = {
+  limite: number;
+  limiteUsado: number;
+  limiteDisponivel: number;
+  percentualUsado: number;
+  excedeLimite: boolean;
+  avisoProximoLimite: boolean;
+} | null;
+
 export type Transaction = MongoDocument & {
   userId: ApiId;
   type: TransactionType;
@@ -45,7 +56,17 @@ export type Transaction = MongoDocument & {
   carteiraDestinoId?: ApiId;
   agendado?: boolean;
   carteira?: VirtualWallet;
+  // Presentes só em transações de cartão de crédito.
+  faturaId?: ApiId;
+  parcelamentoId?: ApiId;
+  numeroParcela?: number;
+  totalParcelas?: number;
+  isEstorno?: boolean;
+  // Anexado (não-persistido) pela API de criação quando a compra passou de 80% do limite.
+  avisoLimite?: AvisoLimite;
 };
+
+export type WalletTipo = "conta" | "dinheiro" | "credito";
 
 export type Wallet = MongoDocument & {
   userId: ApiId;
@@ -53,7 +74,64 @@ export type Wallet = MongoDocument & {
   saldo: number;
   saldoInicial?: number;
   icone?: string;
-  tipo?: "VIRTUAL";
+  tipo?: WalletTipo | "VIRTUAL";
+  // Campos abaixo só têm sentido quando tipo === 'credito'.
+  limite?: number;
+  diaFechamento?: number;
+  diaVencimento?: number;
+  carteiraPagamentoId?: ApiId;
+  taxaJurosRotativo?: number;
+  bandeira?: string;
+  ultimosDigitos?: string;
+};
+
+// Cartão de crédito: resposta de GET /api/cartoes e /api/cartoes/:id — Wallet(tipo=credito)
+// enriquecida com os campos calculados pelo backend.
+export type Cartao = Wallet & {
+  limiteUsado: number;
+  limiteDisponivel?: number;
+  faturaAberta?: Fatura | null;
+  faturas?: Fatura[];
+};
+
+export type FaturaStatus = "aberta" | "fechada" | "parcial" | "paga";
+
+export type Fatura = MongoDocument & {
+  userId: ApiId;
+  carteiraId: ApiId;
+  mesReferencia: string;
+  dataInicio: ApiDate;
+  dataFechamento: ApiDate;
+  dataVencimento: ApiDate;
+  valorTotal: number;
+  valorPago: number;
+  status: FaturaStatus;
+  saldoRotativoAnterior: number;
+  jurosAplicados: number;
+  pendingAccountId?: ApiId;
+  transacoes?: Transaction[];
+};
+
+export type Parcelamento = MongoDocument & {
+  userId: ApiId;
+  carteiraId: ApiId;
+  categoryId?: ApiId;
+  descricao: string;
+  valorTotal: number;
+  totalParcelas: number;
+  dataCompra: ApiDate;
+  transacoes: Transaction[];
+  parcelasPagas: number;
+  parcelasRestantes: number;
+  valorRestante: number;
+};
+
+export type PreviewFatura = {
+  mesReferencia: string;
+  dataInicio: ApiDate;
+  dataFechamento: ApiDate;
+  dataVencimento: ApiDate;
+  faturaId: ApiId | null;
 };
 
 /**
@@ -149,6 +227,10 @@ export type PendingAccount = MongoDocument & {
   description?: string;
   carteiraId?: ApiId;
   carteira?: VirtualWallet;
+  // Presente quando esta conta pendente É a fatura de um cartão — bloqueia o fluxo
+  // genérico de "marcar como paga" (o backend rejeita); a UI deve levar ao detalhe do
+  // cartão em vez de abrir o PayBillModal.
+  faturaId?: ApiId;
 };
 
 export type Goal = MongoDocument & {

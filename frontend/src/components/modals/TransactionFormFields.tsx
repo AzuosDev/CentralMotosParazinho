@@ -4,13 +4,13 @@ import { Controller } from "react-hook-form";
 import type { Control, FieldErrors, FieldValues, Path, UseFormRegister, UseFormWatch } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CurrencyInput } from "../ui/CurrencyInput";
-import { X } from "lucide-react";
+import { CreditCard, X } from "lucide-react";
 
 import { DynamicIcon } from "../DynamicIcon";
 import { api } from "../../lib/api";
 import { asArray, normalizeCategory } from "../../lib/finance";
 import { cn } from "../../lib/utils";
-import type { Category as ApiCategory } from "../../types/api";
+import type { Category as ApiCategory, PreviewFatura, Wallet } from "../../types/api";
 import type { Category } from "../../types/finance";
 
 export type TransactionFormValues = {
@@ -53,9 +53,11 @@ export function useIncomeCategories() {
 export function AmountField<TFieldValues extends FieldValues>({
   control,
   errors,
+  disabled,
 }: {
   control: Control<TFieldValues>;
   errors: FieldErrors<TFieldValues>;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -69,7 +71,8 @@ export function AmountField<TFieldValues extends FieldValues>({
               value={field.value ?? 0}
               onChange={field.onChange}
               onBlur={field.onBlur}
-              className="w-full bg-transparent text-center font-sans text-3xl font-bold text-accent-lime outline-none"
+              disabled={disabled}
+              className="w-full bg-transparent text-center font-sans text-3xl font-bold text-accent-lime outline-none disabled:opacity-60"
             />
           )}
         />
@@ -176,6 +179,114 @@ export function useWallets() {
   });
 }
 
+// Inclui cartões de crédito junto das carteiras — usado no seletor de forma de pagamento
+// de despesas (POST /api/transactions aceita carteiraId de cartão). useWallets() acima
+// continua sem cartões: ganhos, transferências e a carteira pagadora de contas não usam.
+export function useWalletsWithCartoes() {
+  return useQuery<Wallet[]>({
+    queryKey: ["wallets", "incluir-cartoes"],
+    queryFn: async () => {
+      const { data } = await api.get<Wallet[]>("/api/wallets", { params: { incluirCartoes: "true" } });
+      return Array.isArray(data) ? data : [];
+    },
+  });
+}
+
+// Preview read-only de em qual fatura uma compra cairia numa data — não cria nada no
+// backend (CartoesService#previsualizarFatura). Usado para mostrar a regra de fechamento
+// antes do usuário confirmar a compra.
+export function useFaturaPreview(cartaoId: string | undefined, data: string | undefined) {
+  return useQuery<PreviewFatura>({
+    queryKey: ["cartoes", cartaoId, "preview-fatura", data],
+    queryFn: async () => {
+      const { data: res } = await api.get<PreviewFatura>(`/api/cartoes/${cartaoId}/preview-fatura`, {
+        params: { data },
+      });
+      return res;
+    },
+    enabled: Boolean(cartaoId && data),
+    staleTime: 60_000,
+  });
+}
+
+export function PaymentMethodField({
+  wallets,
+  value,
+  onChange,
+  error,
+  loading,
+  disabled,
+}: {
+  wallets: Wallet[];
+  value?: string;
+  onChange: (id: string) => void;
+  error?: string;
+  loading: boolean;
+  disabled?: boolean;
+}) {
+  if (loading) return <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />;
+
+  const contas = wallets.filter((w) => w.tipo !== "credito");
+  const cartoes = wallets.filter((w) => w.tipo === "credito");
+
+  if (wallets.length === 0) {
+    return (
+      <div className="rounded-xl bg-yellow-500/10 p-3 text-sm text-yellow-400">
+        ⚠️ Nenhuma carteira encontrada.{" "}
+        <Link to="/carteiras" className="font-bold underline underline-offset-2 hover:text-yellow-300">
+          Criar carteira agora →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <span className="mb-2 block text-sm text-text-secondary">Forma de pagamento</span>
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime disabled:opacity-60"
+      >
+        <option value="">Selecione…</option>
+        <optgroup label="Carteiras">
+          {contas.map((w) => (
+            <option key={w._id} value={w._id}>{w.nome}</option>
+          ))}
+        </optgroup>
+        {cartoes.length > 0 && (
+          <optgroup label="Cartões de crédito">
+            {cartoes.map((w) => (
+              <option key={w._id} value={w._id}>{w.nome}</option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+      {error && <p className="mt-2 text-xs text-accent-red">{error}</p>}
+    </div>
+  );
+}
+
+export function FaturaPreviewHint({ cartaoId, data }: { cartaoId?: string; data?: string }) {
+  const previewQuery = useFaturaPreview(cartaoId, data);
+  if (!cartaoId || !data) return null;
+  if (previewQuery.isLoading) return <div className="h-8 animate-pulse rounded-lg bg-bg-muted" />;
+  if (!previewQuery.data) return null;
+
+  const [ano, mes] = previewQuery.data.mesReferencia.split("-").map(Number);
+  const label = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    new Date(Date.UTC(ano, mes - 1, 1)),
+  );
+
+  return (
+    <div className="flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-xs text-text-secondary">
+      <CreditCard className="h-3.5 w-3.5 shrink-0 text-accent-lime" />
+      Essa compra vai cair na fatura de <span className="font-semibold text-white">{label}</span>.
+    </div>
+  );
+}
+
 export function WalletField({
   wallets,
   value,
@@ -225,11 +336,13 @@ export function DateAndDescriptionFields({
   watch,
   errors,
   descriptionPlaceholder = "Observação opcional",
+  disabledDate,
 }: {
   register: UseFormRegister<any>;
   watch: UseFormWatch<any>;
   errors: any;
   descriptionPlaceholder?: string;
+  disabledDate?: boolean;
 }) {
   const description = watch("description") ?? "";
   const count = useMemo(() => description.length, [description]);
@@ -240,7 +353,8 @@ export function DateAndDescriptionFields({
         <span className="mb-2 block text-sm text-text-secondary">Data</span>
         <input
           type="date"
-          className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+          disabled={disabledDate}
+          className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime disabled:opacity-60"
           {...register("date")}
         />
         {errors.date && (

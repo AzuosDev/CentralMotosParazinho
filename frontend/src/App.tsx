@@ -25,6 +25,9 @@ const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage").then((m
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })));
 const WalletPage = lazy(() => import("./pages/WalletPage").then((m) => ({ default: m.WalletPage })));
 const WalletsPage = lazy(() => import("./pages/WalletsPage").then((m) => ({ default: m.WalletsPage })));
+const CartoesPage = lazy(() => import("./pages/CartoesPage").then((m) => ({ default: m.CartoesPage })));
+const CartaoPage = lazy(() => import("./pages/CartaoPage").then((m) => ({ default: m.CartaoPage })));
+const FaturaRedirectPage = lazy(() => import("./pages/FaturaRedirectPage").then((m) => ({ default: m.FaturaRedirectPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage").then((m) => ({ default: m.CheckoutPage })));
 
@@ -168,6 +171,9 @@ export default function App() {
                     <Route path="/pending" element={<Navigate to="/contas" replace />} />
                     <Route path="/carteiras" element={<WalletsPage />} />
                     <Route path="/carteiras/:id" element={<WalletPage />} />
+                    <Route path="/cartoes" element={<CartoesPage />} />
+                    <Route path="/cartoes/:id" element={<CartaoPage />} />
+                    <Route path="/cartoes/fatura/:faturaId" element={<FaturaRedirectPage />} />
                     <Route path="/configuracoes" element={<SettingsPage />} />
                   </Route>
                 </Route>
