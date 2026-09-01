@@ -1,0 +1,396 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe, ExecutionContext } from '@nestjs/common';
+import request from 'supertest';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model, Types } from 'mongoose';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { WalletsModule } from '../wallets/wallets.module';
+import { TransactionsModule } from '../transactions/transactions.module';
+import { PendingModule } from '../pending/pending.module';
+import { CartoesModule } from './cartoes.module';
+import { CartoesService } from './cartoes.service';
+import { Wallet } from '../wallets/schemas/wallet.schema';
+import { Transaction } from '../transactions/schemas/transaction.schema';
+import { PendingAccount } from '../pending/schemas/pending-account.schema';
+import { Fatura } from './schemas/fatura.schema';
+import { Category } from '../categories/schemas/category.schema';
+
+const FAKE_USER_ID = new Types.ObjectId().toString();
+
+describe('CartoesController (e2e)', () => {
+  let app: INestApplication;
+  let mongod: MongoMemoryServer;
+  let cartoesService: CartoesService;
+  let walletModel: Model<Wallet>;
+  let transactionModel: Model<Transaction>;
+  let pendingModel: Model<PendingAccount>;
+  let faturaModel: Model<Fatura>;
+  let categoryModel: Model<Category>;
+
+  beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
+    const mongoUri = mongod.getUri();
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRootAsync({ useFactory: () => ({ uri: mongoUri }) }),
+        WalletsModule,
+        TransactionsModule,
+        PendingModule,
+        CartoesModule,
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          const req = context.switchToHttp().getRequest();
+          req.user = { _id: new Types.ObjectId(FAKE_USER_ID) };
+          return true;
+        },
+      })
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+    await app.init();
+
+    cartoesService = app.get(CartoesService);
+    walletModel = app.get<Model<Wallet>>(getModelToken(Wallet.name));
+    transactionModel = app.get<Model<Transaction>>(getModelToken(Transaction.name));
+    pendingModel = app.get<Model<PendingAccount>>(getModelToken(PendingAccount.name));
+    faturaModel = app.get<Model<Fatura>>(getModelToken(Fatura.name));
+    categoryModel = app.get<Model<Category>>(getModelToken(Category.name));
+
+    await categoryModel.create({ name: 'Compras', slug: 'compras-teste', isDefault: true, isIncome: false });
+    await categoryModel.create({ name: 'Taxas', slug: 'taxas', isDefault: true, isIncome: false });
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await mongod.stop();
+  });
+
+  async function criarCartao(overrides: Record<string, unknown> = {}) {
+    const res = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({
+        nome: 'Cartão Teste',
+        tipo: 'credito',
+        diaFechamento: 10,
+        diaVencimento: 17,
+        ...overrides,
+      })
+      .expect(201);
+    return res.body as { _id: string };
+  }
+
+  async function categoriaId(): Promise<string> {
+    const cat = await categoryModel.findOne({ slug: 'compras-teste' }).exec();
+    return cat!._id.toString();
+  }
+
+  it('compra avulsa antes do fechamento cria fatura lazy, não mexe em saldo de carteira e cresce a conta pendente', async () => {
+    const carteira = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Corrente', saldo: 500 })
+      .expect(201);
+
+    const cartao = await criarCartao();
+    const catId = await categoriaId();
+
+    const saldoAntes = (
+      await request(app.getHttpServer()).get(`/api/wallets/${carteira.body._id}`).expect(200)
+    ).body.saldo;
+
+    const tx = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 100, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    expect(tx.body.faturaId).toBeDefined();
+
+    const saldoDepois = (
+      await request(app.getHttpServer()).get(`/api/wallets/${carteira.body._id}`).expect(200)
+    ).body.saldo;
+    expect(saldoDepois).toBe(saldoAntes);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(fatura).toBeDefined();
+    expect(fatura.valorTotal).toBe(100);
+
+    const pending = await pendingModel.findById(fatura.pendingAccountId).exec();
+    expect(pending!.value).toBe(100);
+    expect(pending!.paid).toBe(false);
+
+    // Segunda compra no mesmo ciclo: fatura cresce, não duplica conta pendente.
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 50, categoryId: catId, date: '2026-09-06', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe2 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura2 = detalhe2.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(fatura2.valorTotal).toBe(150);
+    expect(fatura2.pendingAccountId).toBe(fatura.pendingAccountId);
+  });
+
+  it('compra depois do fechamento cai na fatura do ciclo seguinte', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Ciclo' });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 70, categoryId: catId, date: '2026-09-15', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaSetembro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    const faturaOutubro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-10');
+    expect(faturaSetembro).toBeUndefined();
+    expect(faturaOutubro).toBeDefined();
+    expect(faturaOutubro.valorTotal).toBe(70);
+  });
+
+  it('bloqueia compra que ultrapassa o limite e libera com confirmarMesmoAssim', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Limite', limite: 150 });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 100, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const bloqueado = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 100, categoryId: catId, date: '2026-09-06', carteiraId: cartao._id })
+      .expect(409);
+    expect(bloqueado.body.limiteDisponivel).toBe(50);
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({
+        type: 'EXPENSE', value: 100, categoryId: catId, date: '2026-09-06',
+        carteiraId: cartao._id, confirmarMesmoAssim: true,
+      })
+      .expect(201);
+
+    const cartoesLista = await request(app.getHttpServer()).get('/api/cartoes').expect(200);
+    const listado = cartoesLista.body.find((c: { _id: string }) => c._id === cartao._id);
+    expect(listado.limiteUsado).toBe(200);
+  });
+
+  it('pagamento total quita a fatura, cria TRANSFER e reduz saldo da carteira pagadora', async () => {
+    const pagadora = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Pagadora', saldo: 1000 })
+      .expect(201);
+
+    const cartao = await criarCartao({ nome: 'Cartão Pagamento', carteiraPagamentoId: pagadora.body._id });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 300, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/pagar`)
+      .send({ valor: 300 })
+      .expect(200);
+
+    const faturaPaga = await faturaModel.findById(fatura._id).exec();
+    expect(faturaPaga!.status).toBe('paga');
+    expect(faturaPaga!.valorPago).toBe(300);
+
+    const pending = await pendingModel.findById(fatura.pendingAccountId).exec();
+    expect(pending!.paid).toBe(true);
+
+    const saldoPagadora = (
+      await request(app.getHttpServer()).get(`/api/wallets/${pagadora.body._id}`).expect(200)
+    ).body.saldo;
+    expect(saldoPagadora).toBe(700);
+
+    // Pagar fatura já paga é rejeitado.
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/pagar`)
+      .send({ valor: 10 })
+      .expect(400);
+
+    // A fatura paga não pode ser liquidada/apagada pelo fluxo genérico de contas pendentes.
+    await request(app.getHttpServer())
+      .delete(`/api/accounts/${fatura.pendingAccountId}`)
+      .expect(400);
+  });
+
+  it('pagamento parcial gera saldoRotativoAnterior e cobra juros no fechamento da fatura seguinte', async () => {
+    const pagadora = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Pagadora Rotativo', saldo: 1000 })
+      .expect(201);
+
+    const cartao = await criarCartao({
+      nome: 'Cartão Rotativo',
+      diaFechamento: 5,
+      diaVencimento: 12,
+      taxaJurosRotativo: 10,
+      carteiraPagamentoId: pagadora.body._id,
+    });
+    const catId = await categoriaId();
+
+    // Compra de julho — fecha em 5/jul.
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 1000, categoryId: catId, date: '2026-07-01', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe1 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaJulho = detalhe1.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-07');
+    expect(faturaJulho.valorTotal).toBe(1000);
+
+    // Paga só 400 dos 1000.
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${faturaJulho._id}/pagar`)
+      .send({ valor: 400 })
+      .expect(200);
+
+    const julhoParcial = await faturaModel.findById(faturaJulho._id).exec();
+    expect(julhoParcial!.status).toBe('parcial');
+
+    // Compra de agosto — fecha em 5/ago, cria a 2ª fatura.
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 200, categoryId: catId, date: '2026-08-01', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe2 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaAgosto = detalhe2.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-08');
+
+    // Simula o cron rodando depois do fechamento de agosto (05/08).
+    await cartoesService.fecharFaturasVencidas(new Date('2026-08-06T12:00:00Z'));
+
+    const faturaAgostoFechada = await faturaModel.findById(faturaAgosto._id).exec();
+    expect(faturaAgostoFechada!.status).toBe('fechada');
+    expect(faturaAgostoFechada!.saldoRotativoAnterior).toBe(600); // 1000 - 400 pago
+    expect(faturaAgostoFechada!.jurosAplicados).toBe(60); // 600 * 10%
+    expect(faturaAgostoFechada!.valorTotal).toBe(260); // 200 da compra + 60 de juros
+
+    const pendingAgosto = await pendingModel.findById(faturaAgostoFechada!.pendingAccountId).exec();
+    expect(pendingAgosto!.value).toBe(860); // 260 + 600 de rotativo carregado
+
+    // _id vindo de JSON é string — precisa de cast explícito pra filtrar por um campo
+    // ObjectId custom (mesma convenção defensiva já usada em todo o resto do backend).
+    const jurosTx = await transactionModel
+      .findOne({ faturaId: new Types.ObjectId(faturaAgosto._id), description: 'Juros rotativo do cartão' })
+      .exec();
+    expect(jurosTx).not.toBeNull();
+    expect(jurosTx!.value).toBe(60);
+  });
+
+  it('parcelamento gera N transações, uma por ciclo, com sobra de arredondamento na primeira', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Parcelado', diaFechamento: 28, diaVencimento: 5 });
+    const catId = await categoriaId();
+
+    const res = await request(app.getHttpServer())
+      .post('/api/cartoes/parcelamentos')
+      .send({
+        carteiraId: cartao._id,
+        categoryId: catId,
+        descricao: 'Notebook',
+        valorTotal: 100,
+        totalParcelas: 3,
+        dataCompra: '2026-09-01',
+      })
+      .expect(201);
+
+    const transacoes = res.body.transacoes as Array<{ numeroParcela: number; value: number; agendado: boolean }>;
+    expect(transacoes).toHaveLength(3);
+    const total = transacoes.reduce((s, t) => s + t.value, 0);
+    expect(Number(total.toFixed(2))).toBe(100);
+    expect(transacoes[0].numeroParcela).toBe(1);
+    expect(transacoes[0].agendado).toBe(false); // mês corrente
+    expect(transacoes[1].agendado).toBe(true);
+    expect(transacoes[2].agendado).toBe(true);
+
+    const parcelamentos = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}/parcelamentos`).expect(200);
+    expect(parcelamentos.body).toHaveLength(1);
+    expect(parcelamentos.body[0].parcelasPagas).toBe(1);
+    expect(parcelamentos.body[0].parcelasRestantes).toBe(2);
+  });
+
+  it('estorno reduz valorTotal da fatura sem gravar valor negativo em Transaction', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Estorno' });
+    const catId = await categoriaId();
+
+    const compra = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 300, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const estorno = await request(app.getHttpServer())
+      .post(`/api/cartoes/transacoes/${compra.body._id}/estorno`)
+      .expect(201);
+
+    expect(estorno.body.value).toBeGreaterThan(0);
+    expect(estorno.body.value).toBe(300);
+    expect(estorno.body.isEstorno).toBe(true);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(fatura.valorTotal).toBe(0);
+  });
+
+  it('vincular-conta-pendente converte uma PendingAccount parcelada existente em Parcelamento do cartão', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Migração', diaFechamento: 28, diaVencimento: 5 });
+
+    const criada = await request(app.getHttpServer())
+      .post('/api/accounts')
+      .send({
+        title: 'Geladeira',
+        value: 500,
+        dueDate: '2026-01-01',
+        categoria: 'Casa',
+        formatoPagamento: 'Cartão de Crédito',
+        isParcelada: true,
+        parcelas: { totalParcelas: 5, dataInicio: '2026-01-01', dataFim: '2026-05-01' },
+      })
+      .expect(201);
+
+    const grupoParceladoId = criada.body[0].grupoParceladoId as string;
+    const primeiraParcelaId = criada.body[0]._id as string;
+
+    const res = await request(app.getHttpServer())
+      .post('/api/cartoes/vincular-conta-pendente')
+      .send({
+        pendingAccountId: primeiraParcelaId,
+        carteiraId: cartao._id,
+        parcelasJaPagas: 2,
+        parcelasRestantes: 3,
+      })
+      .expect(201);
+
+    expect(res.body.parcelamento.totalParcelas).toBe(5);
+    expect(res.body.parcelamento.valorTotal).toBe(500);
+
+    const restantes = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}/parcelamentos`).expect(200);
+    expect(restantes.body).toHaveLength(1);
+    expect(restantes.body[0].transacoes).toHaveLength(3);
+    expect(restantes.body[0].transacoes[0].numeroParcela).toBe(3);
+    expect(restantes.body[0].transacoes[2].numeroParcela).toBe(5);
+
+    // O grupo antigo de contas pendentes desaparece por completo.
+    await request(app.getHttpServer()).get(`/api/accounts/group/${grupoParceladoId}`).expect(200, []);
+  });
+
+  it('GET /api/cartoes/:id 404 quando o id não é um cartão de crédito', async () => {
+    const carteiraComum = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Não-Cartão' })
+      .expect(201);
+
+    await request(app.getHttpServer()).get(`/api/cartoes/${carteiraComum.body._id}`).expect(404);
+  });
+});

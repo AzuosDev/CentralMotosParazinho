@@ -5,6 +5,7 @@ import { Transaction, TransactionDocument, TransactionType } from './schemas/tra
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
 import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
+import { CartoesService } from '../cartoes/cartoes.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
@@ -15,6 +16,7 @@ export class TransactionsService {
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
     @InjectModel(Goal.name) private goalModel: Model<GoalDocument>,
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    private cartoesService: CartoesService,
   ) {}
 
   // Dados anteriores à feature de múltiplas carteiras não têm carteiraId. Em vez de
@@ -65,6 +67,28 @@ export class TransactionsService {
 
     const isScheduled = dto.date > new Date().toISOString().slice(0, 10);
 
+    // Cartão de crédito é uma Wallet (tipo: 'credito') — compra não mexe em saldo (é dívida
+    // sendo criada, não dinheiro saindo), então precisa saber o tipo da carteira antes de
+    // decidir o cascade. CartoesService resolve/cria a fatura do ciclo e valida o limite;
+    // quem persiste a Transaction continua sendo este método, para manter um único caminho
+    // de criação e manter o incrementLinkedGoal abaixo funcionando igual pros dois casos.
+    let wallet: WalletDocument | null = null;
+    if (carteiraObjectId) {
+      wallet = await this.walletModel.findOne({ _id: carteiraObjectId, userId: userObjectId }).exec();
+    }
+    const isCredito = wallet?.tipo === 'credito';
+
+    let faturaId: Types.ObjectId | undefined;
+    if (isCredito && wallet) {
+      const resolved = await this.cartoesService.registrarCompra(userObjectId, wallet, {
+        type: dto.type,
+        value: dto.value,
+        date: new Date(dto.date),
+        confirmarMesmoAssim: dto.confirmarMesmoAssim,
+      });
+      faturaId = resolved.faturaId;
+    }
+
     const transaction = await this.transactionModel.create({
       userId: userObjectId,
       type: dto.type,
@@ -75,6 +99,7 @@ export class TransactionsService {
       carteiraId: carteiraObjectId,
       agendado: isScheduled,
       fitId: dto.fitId ?? undefined,
+      faturaId,
     });
 
     if (!isScheduled) {
@@ -82,13 +107,17 @@ export class TransactionsService {
         await this.incrementLinkedGoal(userObjectId, categoryObjectId, dto.value);
       }
 
-      if (carteiraObjectId) {
+      if (carteiraObjectId && !isCredito) {
         const inc = dto.type === TransactionType.INCOME ? dto.value : -dto.value;
         await this.walletModel.findOneAndUpdate(
           { _id: carteiraObjectId, userId: userObjectId },
           { $inc: { saldo: inc } },
         ).exec();
       }
+    }
+
+    if (faturaId) {
+      await this.cartoesService.recomputeValorTotal(faturaId);
     }
 
     return transaction;
@@ -172,6 +201,24 @@ export class TransactionsService {
     }).exec();
     if (!transaction) {
       throw new NotFoundException('Transaction not found');
+    }
+
+    // Transação de cartão de crédito: valor/data não são editáveis (reatribuiria a fatura
+    // silenciosamente) — corrija estornando e lançando de novo. Descrição e categoria podem
+    // mudar livremente; nunca houve efeito de saldo/wallet a desfazer aqui.
+    if (transaction.faturaId) {
+      const blockedFields: Array<keyof UpdateTransactionDto> = ['value', 'date', 'carteiraId', 'carteiraDestinoId'];
+      const attemptedBlocked = blockedFields.filter((f) => typeof dto[f] !== 'undefined');
+      if (attemptedBlocked.length > 0 || (dto.type && dto.type !== transaction.type)) {
+        throw new BadRequestException(
+          'Transações de cartão de crédito só permitem editar descrição e categoria. Para corrigir valor ou data, estorne e lance novamente.',
+        );
+      }
+
+      if (typeof dto.description !== 'undefined') transaction.description = dto.description;
+      if (dto.categoryId) transaction.categoryId = this.toObjectId(dto.categoryId, 'categoryId');
+      await transaction.save();
+      return transaction;
     }
 
     const oldCarteiraId = transaction.carteiraId as Types.ObjectId | undefined;
@@ -258,18 +305,27 @@ export class TransactionsService {
       throw new NotFoundException('Transaction not found');
     }
 
+    const faturaId = transaction.faturaId as Types.ObjectId | undefined;
+
     await transaction.deleteOne();
 
-    if (transaction.type === TransactionType.EXPENSE && transaction.categoryId) {
+    // Estorno já decrementou a meta na criação — apagar o estorno não deveria decrementar
+    // de novo (ficaria assimétrico, mas evita um segundo decremento incorreto).
+    if (transaction.type === TransactionType.EXPENSE && transaction.categoryId && !transaction.isEstorno) {
       await this.decrementLinkedGoal(userObjectId, transaction.categoryId as Types.ObjectId, transaction.value);
     }
 
-    if (!transaction.agendado && transaction.carteiraId && transaction.type !== TransactionType.TRANSFER) {
+    // Transação de cartão nunca teve efeito de saldo em nenhuma carteira — nada a reverter.
+    if (!transaction.agendado && transaction.carteiraId && transaction.type !== TransactionType.TRANSFER && !faturaId) {
       const reversal = transaction.type === TransactionType.INCOME ? -transaction.value : transaction.value;
       await this.walletModel.findOneAndUpdate(
         { _id: transaction.carteiraId, userId: userObjectId },
         { $inc: { saldo: reversal } },
       ).exec();
+    }
+
+    if (faturaId) {
+      await this.cartoesService.recomputeValorTotal(faturaId);
     }
 
     return { deleted: true };
