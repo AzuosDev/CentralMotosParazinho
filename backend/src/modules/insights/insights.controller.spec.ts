@@ -833,4 +833,23 @@ describe('InsightsController - wallets-evolution (e2e)', () => {
     expect(walletResult.currentBalance).toBe(600);
     expect(walletResult.points[11].balance).toBe(600);
   });
+
+  it('exclui cartões de crédito da evolução de patrimônio, igual à listagem de carteiras', async () => {
+    const conta = await walletModel.create({ userId: new Types.ObjectId(FAKE_USER_ID), nome: 'Conta', saldo: 500 });
+    const cartao = await walletModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      nome: 'Cartão',
+      tipo: 'credito',
+      saldo: 0,
+      limite: 1000,
+      diaFechamento: 5,
+      diaVencimento: 12,
+    });
+
+    const res = await request(app.getHttpServer()).get('/api/insights/wallets-evolution').expect(200);
+
+    const ids = (res.body as Array<{ id: string }>).map((w) => w.id);
+    expect(ids).toContain(conta._id.toString());
+    expect(ids).not.toContain(cartao._id.toString());
+  });
 });

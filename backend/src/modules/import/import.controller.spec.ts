@@ -463,4 +463,42 @@ describe('ImportController (e2e)', () => {
     const cartaoAposImport = await walletModel.findById(cartao._id).exec();
     expect(cartaoAposImport!.saldo).toBe(0);
   });
+
+  it('confirm: transações importadas em datas de lados opostos do fechamento caem em faturas diferentes', async () => {
+    const cartao = await walletModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      nome: 'Cartão Importado Ciclos',
+      tipo: 'credito',
+      diaFechamento: 20,
+      diaVencimento: 27,
+    });
+
+    const res = await request(app.getHttpServer())
+      .post('/api/import/ofx/confirm')
+      .send({
+        carteiraId: cartao._id.toString(),
+        transactions: [
+          // Antes do fechamento (dia 20) → ciclo de junho.
+          { fitId: 'CICLO-ANTES', date: '2026-06-15', value: 40.0, type: TransactionType.EXPENSE, description: 'Compra antes do fechamento' },
+          // Depois do fechamento → cai no ciclo seguinte (julho), não em junho.
+          { fitId: 'CICLO-DEPOIS', date: '2026-06-25', value: 60.0, type: TransactionType.EXPENSE, description: 'Compra depois do fechamento' },
+        ],
+      })
+      .expect(201);
+
+    expect(res.body).toEqual(expect.objectContaining({ imported: 2, skipped: 0 }));
+
+    const txAntes = await transactionModel.findOne({ userId: new Types.ObjectId(FAKE_USER_ID), fitId: 'CICLO-ANTES' }).exec();
+    const txDepois = await transactionModel.findOne({ userId: new Types.ObjectId(FAKE_USER_ID), fitId: 'CICLO-DEPOIS' }).exec();
+    expect(txAntes!.faturaId).toBeDefined();
+    expect(txDepois!.faturaId).toBeDefined();
+    expect(txAntes!.faturaId!.toString()).not.toBe(txDepois!.faturaId!.toString());
+
+    const faturaAntes = await faturaModel.findById(txAntes!.faturaId).exec();
+    const faturaDepois = await faturaModel.findById(txDepois!.faturaId).exec();
+    expect(faturaAntes!.mesReferencia).toBe('2026-06');
+    expect(faturaAntes!.valorTotal).toBe(40);
+    expect(faturaDepois!.mesReferencia).toBe('2026-07');
+    expect(faturaDepois!.valorTotal).toBe(60);
+  });
 });

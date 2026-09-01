@@ -180,6 +180,35 @@ describe('CartoesController (e2e)', () => {
     expect(listado.limiteUsado).toBe(200);
   });
 
+  it('avisa (sem bloquear) ao ultrapassar 80% do limite, e não avisa mais depois de bloquear', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Aviso 80%', limite: 100 });
+    const catId = await categoriaId();
+
+    // 75/100 = 75% — abaixo do limiar, sem aviso.
+    const semAviso = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 75, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+    expect(semAviso.body.avisoLimite).toBeNull();
+
+    // 75 + 10 = 85/100 = 85% — acima de 80% mas não estoura: aviso, sem bloquear.
+    const comAviso = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 10, categoryId: catId, date: '2026-09-06', carteiraId: cartao._id })
+      .expect(201);
+    expect(comAviso.body.avisoLimite).toEqual(
+      expect.objectContaining({ percentualUsado: 85, excedeLimite: false, avisoProximoLimite: true }),
+    );
+
+    // 85 + 50 = 135/100 — estoura: bloqueia (409), a resposta de bloqueio é distinguível do aviso.
+    const bloqueado = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 50, categoryId: catId, date: '2026-09-07', carteiraId: cartao._id })
+      .expect(409);
+    expect(bloqueado.body.limiteDisponivel).toBe(15);
+    expect(bloqueado.body.avisoLimite).toBeUndefined();
+  });
+
   it('pagamento total quita a fatura, cria TRANSFER e reduz saldo da carteira pagadora', async () => {
     const pagadora = await request(app.getHttpServer())
       .post('/api/wallets')
@@ -383,6 +412,59 @@ describe('CartoesController (e2e)', () => {
 
     // O grupo antigo de contas pendentes desaparece por completo.
     await request(app.getHttpServer()).get(`/api/accounts/group/${grupoParceladoId}`).expect(200, []);
+  });
+
+  it('preview-fatura mostra em qual fatura uma compra cairia, sem criar nada', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Preview', diaFechamento: 20, diaVencimento: 27 });
+
+    // Antes do fechamento: cai no ciclo do próprio mês, fatura ainda não existe (faturaId null).
+    const antes = await request(app.getHttpServer())
+      .get(`/api/cartoes/${cartao._id}/preview-fatura`)
+      .query({ data: '2026-09-10' })
+      .expect(200);
+    expect(antes.body.mesReferencia).toBe('2026-09');
+    expect(antes.body.faturaId).toBeNull();
+
+    // Depois do fechamento: cai no ciclo seguinte.
+    const depois = await request(app.getHttpServer())
+      .get(`/api/cartoes/${cartao._id}/preview-fatura`)
+      .query({ data: '2026-09-25' })
+      .expect(200);
+    expect(depois.body.mesReferencia).toBe('2026-10');
+
+    // Nenhuma fatura foi criada pela preview (é read-only).
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    expect(detalhe.body.faturas).toHaveLength(0);
+
+    // Depois de uma compra real, o preview passa a apontar o faturaId existente.
+    const catId = await categoriaId();
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 20, categoryId: catId, date: '2026-09-10', carteiraId: cartao._id })
+      .expect(201);
+    const antesComFatura = await request(app.getHttpServer())
+      .get(`/api/cartoes/${cartao._id}/preview-fatura`)
+      .query({ data: '2026-09-11' })
+      .expect(200);
+    expect(antesComFatura.body.faturaId).not.toBeNull();
+  });
+
+  it('GET /api/cartoes/faturas/:faturaId/cartao resolve o cartão dono da fatura', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Resolver Fatura' });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 40, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas[0];
+
+    const res = await request(app.getHttpServer()).get(`/api/cartoes/faturas/${fatura._id}/cartao`).expect(200);
+    expect(res.body.cartaoId).toBe(cartao._id);
+
+    await request(app.getHttpServer()).get(`/api/cartoes/faturas/${new Types.ObjectId().toString()}/cartao`).expect(404);
   });
 
   it('GET /api/cartoes/:id 404 quando o id não é um cartão de crédito', async () => {

@@ -147,18 +147,46 @@ export class CartoesService {
     return Math.max(0, Number(total.toFixed(2)));
   }
 
-  async checkLimite(userId: Types.ObjectId, wallet: WalletDocument, valorNovo: number, confirmarMesmoAssim?: boolean): Promise<void> {
-    if (typeof wallet.limite !== 'number') return;
+  // Estado do limite após somar valorNovo, sem lançar exceção — usado tanto por
+  // checkLimite (que decide bloquear ou não) quanto para compor o aviso de 80% que
+  // acompanha a resposta de uma compra bem-sucedida.
+  async avaliarLimite(
+    userId: Types.ObjectId,
+    wallet: WalletDocument,
+    valorNovo: number,
+  ): Promise<{ limite: number; limiteUsado: number; limiteDisponivel: number; percentualUsado: number; excedeLimite: boolean; avisoProximoLimite: boolean } | null> {
+    if (typeof wallet.limite !== 'number' || wallet.limite <= 0) return null;
     const limiteUsadoAtual = await this.calcularLimiteUsado(userId, wallet._id as Types.ObjectId);
     const novoUsado = limiteUsadoAtual + valorNovo;
-    if (novoUsado > wallet.limite && !confirmarMesmoAssim) {
+    const percentualUsado = Number(((novoUsado / wallet.limite) * 100).toFixed(1));
+    const excedeLimite = novoUsado > wallet.limite;
+    return {
+      limite: wallet.limite,
+      limiteUsado: limiteUsadoAtual,
+      limiteDisponivel: Math.max(0, Number((wallet.limite - limiteUsadoAtual).toFixed(2))),
+      percentualUsado,
+      excedeLimite,
+      // Só é "aviso" quando NÃO bloqueia — acima de 100% já é bloqueio (ou override), não aviso.
+      avisoProximoLimite: !excedeLimite && percentualUsado >= 80,
+    };
+  }
+
+  async checkLimite(
+    userId: Types.ObjectId,
+    wallet: WalletDocument,
+    valorNovo: number,
+    confirmarMesmoAssim?: boolean,
+  ): Promise<ReturnType<CartoesService['avaliarLimite']>> {
+    const info = await this.avaliarLimite(userId, wallet, valorNovo);
+    if (info?.excedeLimite && !confirmarMesmoAssim) {
       throw new ConflictException({
         message: 'Esta compra ultrapassa o limite disponível do cartão.',
-        limite: wallet.limite,
-        limiteUsado: limiteUsadoAtual,
-        limiteDisponivel: Math.max(0, Number((wallet.limite - limiteUsadoAtual).toFixed(2))),
+        limite: info.limite,
+        limiteUsado: info.limiteUsado,
+        limiteDisponivel: info.limiteDisponivel,
       });
     }
+    return info;
   }
 
   // Recalcula valorTotal por agregação sobre as Transactions da fatura (nunca via $inc, para
@@ -194,13 +222,33 @@ export class CartoesService {
     userId: Types.ObjectId,
     wallet: WalletDocument,
     params: { type: TransactionType; value: number; date: Date; confirmarMesmoAssim?: boolean },
-  ): Promise<{ faturaId: Types.ObjectId }> {
+  ): Promise<{ faturaId: Types.ObjectId; avisoLimite: Awaited<ReturnType<CartoesService['avaliarLimite']>> }> {
     if (params.type !== TransactionType.EXPENSE) {
       throw new BadRequestException('Carteira de cartão de crédito só aceita transações do tipo despesa.');
     }
     const fatura = await this.resolverFaturaParaCompra(userId, wallet, params.date);
-    await this.checkLimite(userId, wallet, params.value, params.confirmarMesmoAssim);
-    return { faturaId: fatura._id as Types.ObjectId };
+    const limiteInfo = await this.checkLimite(userId, wallet, params.value, params.confirmarMesmoAssim);
+    return { faturaId: fatura._id as Types.ObjectId, avisoLimite: limiteInfo?.avisoProximoLimite ? limiteInfo : null };
+  }
+
+  // Calcula em que fatura (ciclo) uma compra cairia numa data, sem persistir nada —
+  // usado pelo frontend para mostrar "vai cair na fatura de tal mês" antes de confirmar.
+  async previsualizarFatura(userId: string, cartaoId: string, data: string) {
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const wallet = await this.walletModel
+      .findOne({ _id: this.toObjectId(cartaoId, 'cartaoId'), userId: userObjectId, tipo: 'credito' })
+      .exec();
+    if (!wallet) throw new NotFoundException('Cartão não encontrado');
+    if (typeof wallet.diaFechamento !== 'number' || typeof wallet.diaVencimento !== 'number') {
+      throw new BadRequestException(
+        'Configure o dia de fechamento e o dia de vencimento do cartão antes de lançar compras.',
+      );
+    }
+    const ciclo = this.resolverCicloFatura(wallet, new Date(data));
+    const faturaExistente = await this.faturaModel
+      .findOne({ userId: userObjectId, carteiraId: wallet._id, mesReferencia: ciclo.mesReferencia })
+      .exec();
+    return { ...ciclo, faturaId: faturaExistente?._id ?? null };
   }
 
   async criarParcelamento(userId: string, dto: CreateParcelamentoDto) {
@@ -218,7 +266,7 @@ export class CartoesService {
       if (!valid) throw new BadRequestException('Invalid category for this user');
     }
 
-    await this.checkLimite(userObjectId, wallet, dto.valorTotal, dto.confirmarMesmoAssim);
+    const limiteInfo = await this.checkLimite(userObjectId, wallet, dto.valorTotal, dto.confirmarMesmoAssim);
 
     const dataCompra = new Date(dto.dataCompra);
     const valorParcelaBase = Math.floor((dto.valorTotal / dto.totalParcelas) * 100) / 100;
@@ -271,7 +319,11 @@ export class CartoesService {
       await this.recomputeValorTotal(new Types.ObjectId(fid));
     }
 
-    return { parcelamento, transacoes: transacoesCriadas };
+    return {
+      parcelamento,
+      transacoes: transacoesCriadas,
+      avisoLimite: limiteInfo?.avisoProximoLimite ? limiteInfo : null,
+    };
   }
 
   async pagar(userId: string, cartaoId: string, faturaId: string, dto: PagarFaturaDto) {
@@ -440,6 +492,18 @@ export class CartoesService {
     }
 
     return { parcelamento };
+  }
+
+  // Resolve o cartão dono de uma fatura — usado pelo frontend para navegar direto de
+  // "essa conta pendente é uma fatura" (tela de Contas) até o detalhe do cartão, sem o
+  // cliente precisar varrer todos os cartões do usuário procurando a fatura.
+  async cartaoIdPorFatura(userId: string, faturaId: string): Promise<{ cartaoId: string }> {
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const fatura = await this.faturaModel
+      .findOne({ _id: this.toObjectId(faturaId, 'faturaId'), userId: userObjectId })
+      .exec();
+    if (!fatura) throw new NotFoundException('Fatura não encontrada');
+    return { cartaoId: fatura.carteiraId.toString() };
   }
 
   async listarCartoes(userId: string) {

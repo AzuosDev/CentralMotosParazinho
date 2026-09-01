@@ -1060,7 +1060,9 @@ export class InsightsService {
   // créditos de transferência em carteiraDestinoId), aplicada progressivamente no tempo.
   async getWalletsEvolution(userId: string, dto?: GetCashflowDto): Promise<WalletEvolution[]> {
     const userObjectId = new Types.ObjectId(userId);
-    const wallets = await this.walletModel.find({ userId: userObjectId }).sort({ createdAt: 1 }).exec();
+    // Cartão de crédito não tem "saldo" no sentido de dinheiro disponível (ver
+    // wallets.service.ts#findAll) — incluí-lo aqui contaminaria a evolução de patrimônio.
+    const wallets = await this.walletModel.find({ userId: userObjectId, tipo: { $ne: 'credito' } }).sort({ createdAt: 1 }).exec();
 
     const { anchor } = this.resolveReportAnchor(dto);
     const monthsBack = 12;

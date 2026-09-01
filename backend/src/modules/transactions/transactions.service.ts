@@ -79,6 +79,7 @@ export class TransactionsService {
     const isCredito = wallet?.tipo === 'credito';
 
     let faturaId: Types.ObjectId | undefined;
+    let avisoLimite: Awaited<ReturnType<CartoesService['avaliarLimite']>> = null;
     if (isCredito && wallet) {
       const resolved = await this.cartoesService.registrarCompra(userObjectId, wallet, {
         type: dto.type,
@@ -87,6 +88,7 @@ export class TransactionsService {
         confirmarMesmoAssim: dto.confirmarMesmoAssim,
       });
       faturaId = resolved.faturaId;
+      avisoLimite = resolved.avisoLimite;
     }
 
     const transaction = await this.transactionModel.create({
@@ -120,6 +122,11 @@ export class TransactionsService {
       await this.cartoesService.recomputeValorTotal(faturaId);
     }
 
+    // avisoLimite só é anexado (não-persistido) quando a compra é no cartão e passou de 80%
+    // do limite sem estourar — o frontend usa isso para distinguir aviso de bloqueio (409).
+    if (isCredito) {
+      return { ...transaction.toObject(), avisoLimite };
+    }
     return transaction;
   }
 

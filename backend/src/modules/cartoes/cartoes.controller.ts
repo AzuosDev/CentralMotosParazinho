@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CartoesService } from './cartoes.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -7,6 +7,7 @@ import { ICurrentUser } from '../../common/types/current-user.type';
 import { CreateParcelamentoDto } from './dto/create-parcelamento.dto';
 import { PagarFaturaDto } from './dto/pagar-fatura.dto';
 import { VincularContaPendenteDto } from './dto/vincular-conta-pendente.dto';
+import { PreviewFaturaDto } from './dto/preview-fatura.dto';
 
 @ApiTags('Cartoes')
 @ApiBearerAuth()
@@ -18,6 +19,11 @@ export class CartoesController {
   @Get()
   listar(@CurrentUser() user: ICurrentUser) {
     return this.cartoesService.listarCartoes(user._id.toString());
+  }
+
+  @Get('faturas/:faturaId/cartao')
+  cartaoDaFatura(@CurrentUser() user: ICurrentUser, @Param('faturaId') faturaId: string) {
+    return this.cartoesService.cartaoIdPorFatura(user._id.toString(), faturaId);
   }
 
   @Post('parcelamentos')
@@ -43,6 +49,11 @@ export class CartoesController {
   @Get(':id/parcelamentos')
   listarParcelamentos(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
     return this.cartoesService.listarParcelamentos(user._id.toString(), id);
+  }
+
+  @Get(':id/preview-fatura')
+  previewFatura(@CurrentUser() user: ICurrentUser, @Param('id') id: string, @Query() query: PreviewFaturaDto) {
+    return this.cartoesService.previsualizarFatura(user._id.toString(), id, query.data);
   }
 
   @Get(':id/faturas/:faturaId')

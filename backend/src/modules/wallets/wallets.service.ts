@@ -64,7 +64,10 @@ export class WalletsService {
   // dados anteriores à feature de múltiplas carteiras.
   private static readonly LEGACY_WALLET_ID = 'legacy-wallet';
 
-  async findAll(userId: string) {
+  // incluirCartoes: o seletor de forma de pagamento (transação/conta pendente) precisa dos
+  // cartões junto das carteiras de dinheiro/conta — mas o Saldo Total do patrimônio
+  // (WalletsPage.tsx) continua sem eles, por isso o default é excluir.
+  async findAll(userId: string, incluirCartoes = false) {
     const userObjectId = new Types.ObjectId(userId);
     // saldoInicial é o valor declarado pelo usuário ao criar a carteira (nunca alterado
     // por $inc). O saldo exibido é: saldoInicial + soma(INCOME) - soma(EXPENSE) + TC - TD.
@@ -140,6 +143,11 @@ export class WalletsService {
         tipo: 'VIRTUAL',
         saldo: legacySaldo,
       });
+    }
+
+    if (incluirCartoes) {
+      const cartoes = await this.walletModel.find({ userId: userObjectId, tipo: 'credito' }).sort({ createdAt: 1 }).exec();
+      result.push(...cartoes.map((w) => ({ ...w.toObject() })));
     }
 
     return result;

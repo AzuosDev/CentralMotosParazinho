@@ -171,6 +171,27 @@ describe('WalletsController (e2e)', () => {
     expect(found).toBeUndefined();
   });
 
+  it('GET /api/wallets?incluirCartoes=true includes credit-card wallets alongside the rest', async () => {
+    const cartao = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Cartão Incluído no Seletor', tipo: 'credito', limite: 1000, diaFechamento: 5, diaVencimento: 12 })
+      .expect(201);
+    const conta = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta do Seletor', saldo: 100 })
+      .expect(201);
+
+    const semParam = await request(app.getHttpServer()).get('/api/wallets').expect(200);
+    expect((semParam.body as Array<{ _id: string }>).some((w) => w._id === cartao.body._id)).toBe(false);
+
+    const comParam = await request(app.getHttpServer()).get('/api/wallets').query({ incluirCartoes: 'true' }).expect(200);
+    const ids = (comParam.body as Array<{ _id: string; tipo?: string }>).map((w) => w._id);
+    expect(ids).toContain(cartao.body._id);
+    expect(ids).toContain(conta.body._id);
+    const cartaoNaLista = (comParam.body as Array<{ _id: string; tipo?: string }>).find((w) => w._id === cartao.body._id);
+    expect(cartaoNaLista!.tipo).toBe('credito');
+  });
+
   it('GET /api/wallets/:id returns 404 for a credit-card wallet', async () => {
     const created = await request(app.getHttpServer())
       .post('/api/wallets')
