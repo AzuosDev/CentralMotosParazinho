@@ -12,6 +12,8 @@ import { CategoriesModule } from '../categories/categories.module';
 import { Transaction, TransactionType } from '../transactions/schemas/transaction.schema';
 import { Wallet } from '../wallets/schemas/wallet.schema';
 import { ImportBatch } from './schemas/import-batch.schema';
+import { CartoesModule } from '../cartoes/cartoes.module';
+import { Fatura } from '../cartoes/schemas/fatura.schema';
 
 const FAKE_USER_ID = new Types.ObjectId().toString();
 
@@ -143,6 +145,7 @@ describe('ImportController (e2e)', () => {
   let transactionModel: Model<Transaction>;
   let walletModel: Model<Wallet>;
   let importBatchModel: Model<ImportBatch>;
+  let faturaModel: Model<Fatura>;
   let walletId: string;
 
   beforeAll(async () => {
@@ -154,6 +157,7 @@ describe('ImportController (e2e)', () => {
         TransactionsModule,
         WalletsModule,
         CategoriesModule,
+        CartoesModule,
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -173,6 +177,7 @@ describe('ImportController (e2e)', () => {
     transactionModel = app.get<Model<Transaction>>(getModelToken(Transaction.name));
     walletModel = app.get<Model<Wallet>>(getModelToken(Wallet.name));
     importBatchModel = app.get<Model<ImportBatch>>(getModelToken(ImportBatch.name));
+    faturaModel = app.get<Model<Fatura>>(getModelToken(Fatura.name));
 
     const wallet = await walletModel.create({
       userId: new Types.ObjectId(FAKE_USER_ID),
@@ -423,5 +428,39 @@ describe('ImportController (e2e)', () => {
 
     const other = candidates.find((c) => c.fitId === 'TEST-002');
     expect(other?.alreadyImported).toBe(false);
+  });
+
+  it('confirm: importar extrato de fatura contra um cartão de crédito cria fatura via faturaId, sem tocar em saldo', async () => {
+    const cartao = await walletModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      nome: 'Cartão Importado',
+      tipo: 'credito',
+      diaFechamento: 20,
+      diaVencimento: 27,
+    });
+
+    const res = await request(app.getHttpServer())
+      .post('/api/import/ofx/confirm')
+      .send({
+        carteiraId: cartao._id.toString(),
+        transactions: [
+          { fitId: 'CARTAO-001', date: '2026-06-01', value: 30.0, type: TransactionType.EXPENSE, description: 'Padaria Central' },
+        ],
+      })
+      .expect(201);
+
+    expect(res.body).toEqual(expect.objectContaining({ imported: 1, skipped: 0 }));
+
+    const tx = await transactionModel.findOne({ userId: new Types.ObjectId(FAKE_USER_ID), fitId: 'CARTAO-001' }).exec();
+    expect(tx).not.toBeNull();
+    expect(tx!.faturaId).toBeDefined();
+
+    const fatura = await faturaModel.findById(tx!.faturaId).exec();
+    expect(fatura).not.toBeNull();
+    expect(fatura!.valorTotal).toBe(30);
+
+    // Cartão não recebeu $inc de saldo (compra no crédito não mexe em saldo de carteira).
+    const cartaoAposImport = await walletModel.findById(cartao._id).exec();
+    expect(cartaoAposImport!.saldo).toBe(0);
   });
 });
