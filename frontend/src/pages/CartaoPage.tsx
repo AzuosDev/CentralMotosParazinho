@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Loader2, RotateCcw, Wallet as WalletIcon } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, Loader2, RotateCcw, Wallet as WalletIcon } from "lucide-react";
 
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
@@ -10,6 +10,7 @@ import { getApiErrorMessages } from "../lib/errors";
 import { BankLogo } from "../components/ui/BankLogo";
 import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { ModalShell } from "../components/modals/ModalShell";
+import { ArchiveCartaoModal } from "../components/modals/ArchiveCartaoModal";
 import { useToast } from "../components/ui/Toast";
 import type { Cartao, Fatura, FaturaStatus, Parcelamento, Transaction, Wallet } from "../types/api";
 
@@ -208,6 +209,7 @@ export function CartaoPage() {
   const [selectedFaturaId, setSelectedFaturaId] = useState<string | null>(null);
   const [payOpen, setPayOpen] = useState(false);
   const [estornoTarget, setEstornoTarget] = useState<Transaction | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const cartaoQuery = useQuery<Cartao>({
     queryKey: ["cartoes", id],
@@ -263,6 +265,22 @@ export function CartaoPage() {
     },
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: async () => {
+      await api.post(`/api/wallets/${id}/arquivar`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartoes"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      addToast("Cartão arquivado. O histórico continua disponível nos relatórios.", "success");
+      navigate("/cartoes");
+    },
+    onError: (error) => {
+      addToast(getApiErrorMessages(error, "Não foi possível arquivar este cartão.")[0], "error");
+      setArchiveOpen(false);
+    },
+  });
+
   if (cartaoQuery.isLoading) {
     return (
       <section className="space-y-6">
@@ -314,6 +332,14 @@ export function CartaoPage() {
             </div>
             <p className="mt-1 text-xs text-text-secondary">{formatCurrency(cartao.limiteDisponivel ?? 0)} disponível</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setArchiveOpen(true)}
+            className="rounded-xl border border-bg-muted p-2 text-text-secondary transition hover:bg-bg-muted hover:text-white"
+            title="Arquivar cartão"
+          >
+            <Archive className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -377,9 +403,14 @@ export function CartaoPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-text-secondary">Total da fatura</p>
-                      <p className="font-sans text-2xl font-extrabold text-white">
-                        {formatCurrency(Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2)))}
+                      <p className="text-sm text-text-secondary">
+                        {fatura.valorTotal + fatura.saldoRotativoAnterior < 0 ? "Crédito nesta fatura" : "Total da fatura"}
+                      </p>
+                      <p className={cn(
+                        "font-sans text-2xl font-extrabold",
+                        fatura.valorTotal + fatura.saldoRotativoAnterior < 0 ? "text-accent-lime" : "text-white",
+                      )}>
+                        {formatCurrency(Math.abs(Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2))))}
                       </p>
                       {fatura.valorPago > 0 && (
                         <p className="text-xs text-accent-lime">{formatCurrency(fatura.valorPago)} já pago</p>
@@ -387,12 +418,21 @@ export function CartaoPage() {
                     </div>
                   </div>
 
-                  {fatura.saldoRotativoAnterior > 0 && (
+                  {fatura.saldoRotativoAnterior !== 0 && (
                     <div className="mt-4 rounded-xl bg-bg-muted p-3 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-text-secondary">Saldo rotativo do mês anterior</span>
-                        <span className="font-semibold text-white">{formatCurrency(fatura.saldoRotativoAnterior)}</span>
+                        <span className="text-text-secondary">
+                          {fatura.saldoRotativoAnterior > 0 ? "Saldo rotativo do mês anterior" : "Crédito do mês anterior"}
+                        </span>
+                        <span className={cn("font-semibold", fatura.saldoRotativoAnterior > 0 ? "text-white" : "text-accent-lime")}>
+                          {fatura.saldoRotativoAnterior > 0 ? "" : "− "}{formatCurrency(Math.abs(fatura.saldoRotativoAnterior))}
+                        </span>
                       </div>
+                      {fatura.saldoRotativoAnterior < 0 && (
+                        <p className="mt-1 text-xs text-text-secondary">
+                          A fatura anterior ficou paga a mais (ex: um estorno chegou depois do pagamento) — o crédito abate esta fatura.
+                        </p>
+                      )}
                       {fatura.jurosAplicados > 0 && (
                         <div className="mt-1 flex justify-between text-accent-yellow">
                           <span>Juros do rotativo aplicados</span>
@@ -402,7 +442,7 @@ export function CartaoPage() {
                     </div>
                   )}
 
-                  {fatura.status !== "paga" && (
+                  {fatura.status !== "paga" && fatura.valorTotal + fatura.saldoRotativoAnterior - fatura.valorPago > 0.005 && (
                     <button
                       type="button"
                       onClick={() => setPayOpen(true)}
@@ -544,6 +584,14 @@ export function CartaoPage() {
           </div>
         </div>
       )}
+
+      <ArchiveCartaoModal
+        isOpen={archiveOpen}
+        onClose={() => setArchiveOpen(false)}
+        onConfirm={() => archiveMutation.mutate()}
+        cartaoNome={cartao.nome}
+        isLoading={archiveMutation.isPending}
+      />
     </section>
   );
 }

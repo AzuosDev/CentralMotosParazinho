@@ -152,6 +152,25 @@ describe('CartoesController (e2e)', () => {
     expect(faturaOutubro.valorTotal).toBe(70);
   });
 
+  it('compra no próprio dia do fechamento fica no ciclo atual, não pula pro seguinte', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Dia do Fechamento', diaFechamento: 10, diaVencimento: 17 });
+    const catId = await categoriaId();
+
+    // date === diaFechamento (dia 10): regra é "day > D" pula de ciclo, então o próprio dia
+    // do fechamento ainda fica no ciclo atual (cartoes.service.ts#resolverCicloFatura).
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 90, categoryId: catId, date: '2026-09-10', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaSetembro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    const faturaOutubro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-10');
+    expect(faturaSetembro).toBeDefined();
+    expect(faturaSetembro.valorTotal).toBe(90);
+    expect(faturaOutubro).toBeUndefined();
+  });
+
   it('bloqueia compra que ultrapassa o limite e libera com confirmarMesmoAssim', async () => {
     const cartao = await criarCartao({ nome: 'Cartão Limite', limite: 150 });
     const catId = await categoriaId();
@@ -319,6 +338,75 @@ describe('CartoesController (e2e)', () => {
     expect(jurosTx!.value).toBe(60);
   });
 
+  it('estorno depois de fatura paga deixa saldoRotativoAnterior negativo, e o crédito abate a fatura seguinte', async () => {
+    const pagadora = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Pagadora Crédito', saldo: 1000 })
+      .expect(201);
+
+    const cartao = await criarCartao({
+      nome: 'Cartão Crédito Rotativo',
+      diaFechamento: 5,
+      diaVencimento: 12,
+      taxaJurosRotativo: 10,
+      carteiraPagamentoId: pagadora.body._id,
+    });
+    const catId = await categoriaId();
+
+    // Compra de julho, paga integralmente antes do fechamento — sem pendência nenhuma.
+    const compraJulho = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 300, categoryId: catId, date: '2026-07-01', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe1 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaJulho = detalhe1.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-07');
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${faturaJulho._id}/pagar`)
+      .send({ valor: 300 })
+      .expect(200);
+
+    const julhoPaga = await faturaModel.findById(faturaJulho._id).exec();
+    expect(julhoPaga!.status).toBe('paga');
+
+    // Estorno chega DEPOIS do pagamento: valorTotal de julho recalcula pra 0, mas valorPago
+    // continua 300 — julho ficou "pago a mais" (mesmo cenário de uma loja que só processa o
+    // reembolso depois que a fatura já foi quitada).
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/transacoes/${compraJulho.body._id}/estorno`)
+      .expect(201);
+
+    const julhoEstornada = await faturaModel.findById(faturaJulho._id).exec();
+    expect(julhoEstornada!.valorTotal).toBe(0);
+    expect(julhoEstornada!.valorPago).toBe(300); // não mexe em valorPago, só no que ela devia
+
+    // Compra de agosto, pequena — abre a 2ª fatura.
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 50, categoryId: catId, date: '2026-08-01', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe2 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaAgosto = detalhe2.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-08');
+
+    await cartoesService.fecharFaturasVencidas(new Date('2026-08-06T12:00:00Z'));
+
+    const faturaAgostoFechada = await faturaModel.findById(faturaAgosto._id).exec();
+    expect(faturaAgostoFechada!.status).toBe('fechada');
+    // devidoAnterior (0) - valorPago (300) = -300: o crédito de julho vira saldo negativo em agosto.
+    expect(faturaAgostoFechada!.saldoRotativoAnterior).toBe(-300);
+    expect(faturaAgostoFechada!.jurosAplicados).toBe(0); // juros só incidem sobre restante > 0
+    expect(faturaAgostoFechada!.valorTotal).toBe(50);
+
+    // 50 (compra) + (-300) de crédito = -250: fatura fica credora de fato. Como o schema de
+    // PendingAccount não aceita value <= 0, não existe "conta a pagar" real pra mostrar — a
+    // correção pós-auditoria remove a PendingAccount em vez de floorar pra 0.01 fictício.
+    expect(faturaAgostoFechada!.pendingAccountId).toBeUndefined();
+    const pendingAgosto = await pendingModel.findOne({ faturaId: faturaAgostoFechada!._id }).exec();
+    expect(pendingAgosto).toBeNull();
+  });
+
   it('parcelamento gera N transações, uma por ciclo, com sobra de arredondamento na primeira', async () => {
     const cartao = await criarCartao({ nome: 'Cartão Parcelado', diaFechamento: 28, diaVencimento: 5 });
     const catId = await categoriaId();
@@ -359,6 +447,11 @@ describe('CartoesController (e2e)', () => {
       .send({ type: 'EXPENSE', value: 300, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
       .expect(201);
 
+    const detalheAntes = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaAntes = detalheAntes.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    const pendingAntes = await pendingModel.findById(faturaAntes.pendingAccountId).exec();
+    expect(pendingAntes!.value).toBe(300);
+
     const estorno = await request(app.getHttpServer())
       .post(`/api/cartoes/transacoes/${compra.body._id}/estorno`)
       .expect(201);
@@ -370,6 +463,28 @@ describe('CartoesController (e2e)', () => {
     const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
     const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
     expect(fatura.valorTotal).toBe(0);
+
+    // Nada mais é devido (valorTotal 0 + saldoRotativoAnterior 0): a PendingAccount some em
+    // vez de mostrar um R$0,01 fictício — o schema nem aceita value <= 0 (min: 0.01).
+    expect(fatura.pendingAccountId).toBeUndefined();
+    const pendingDepois = await pendingModel.findById(faturaAntes.pendingAccountId).exec();
+    expect(pendingDepois).toBeNull();
+
+    // Nova compra no mesmo ciclo traz o total de volta ao positivo: a conta a pagar é
+    // recriada (não paga), com o valor certo.
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 45, categoryId: catId, date: '2026-09-06', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalheRecriada = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaRecriada = detalheRecriada.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(faturaRecriada.valorTotal).toBe(45);
+    expect(faturaRecriada.pendingAccountId).toBeDefined();
+
+    const pendingRecriada = await pendingModel.findById(faturaRecriada.pendingAccountId).exec();
+    expect(pendingRecriada!.value).toBe(45);
+    expect(pendingRecriada!.paid).toBe(false);
   });
 
   it('vincular-conta-pendente converte uma PendingAccount parcelada existente em Parcelamento do cartão', async () => {
@@ -474,5 +589,74 @@ describe('CartoesController (e2e)', () => {
       .expect(201);
 
     await request(app.getHttpServer()).get(`/api/cartoes/${carteiraComum.body._id}`).expect(404);
+  });
+
+  it('POST /api/wallets/:id/arquivar bloqueia cartão com fatura não paga', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Não Arquiva Fatura Aberta' });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 80, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    await request(app.getHttpServer()).post(`/api/wallets/${cartao._id}/arquivar`).expect(400);
+  });
+
+  it('POST /api/wallets/:id/arquivar bloqueia cartão com parcelas futuras pendentes', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Não Arquiva Parcelado', diaFechamento: 28, diaVencimento: 5 });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/cartoes/parcelamentos')
+      .send({
+        carteiraId: cartao._id,
+        categoryId: catId,
+        descricao: 'Geladeira',
+        valorTotal: 300,
+        totalParcelas: 3,
+        dataCompra: '2026-09-01',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer()).post(`/api/wallets/${cartao._id}/arquivar`).expect(400);
+  });
+
+  it('POST /api/wallets/:id/arquivar funciona com o cartão quitado: some de GET /api/cartoes, GET detalhe continua e bloqueia nova compra', async () => {
+    const pagadora = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Pagadora Pra Arquivar', saldo: 500 })
+      .expect(201);
+
+    const cartao = await criarCartao({ nome: 'Cartão Quitado Pra Arquivar', carteiraPagamentoId: pagadora.body._id });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 60, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/pagar`)
+      .send({ valor: 60 })
+      .expect(200);
+
+    await request(app.getHttpServer()).post(`/api/wallets/${cartao._id}/arquivar`).expect(201);
+
+    const lista = await request(app.getHttpServer()).get('/api/cartoes').expect(200);
+    expect((lista.body as Array<{ _id: string }>).some((c) => c._id === cartao._id)).toBe(false);
+
+    // Histórico continua navegável — arquivar não é excluir.
+    const detalheDepois = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    expect(detalheDepois.body.faturas).toHaveLength(1);
+
+    // Cartão arquivado não aceita nova compra.
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 20, categoryId: catId, date: '2026-09-06', carteiraId: cartao._id })
+      .expect(400);
   });
 });

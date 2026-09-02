@@ -22,14 +22,22 @@ export class CreateWalletDto {
   tipo?: 'conta' | 'dinheiro' | 'credito';
 
   @IsOptional()
-  @ValidateIf((o) => o.tipo === 'credito')
+  // tipo !== 'credito' (explícito) é o único caso que pula a validação — se `tipo` não vier
+  // no payload (comum num PATCH parcial que só atualiza limite/dia de um cartão já
+  // existente), o campo continua validado. Ver correção pós-auditoria: um PATCH que não
+  // reenviava `tipo` deixava esses campos passarem sem checar tipo/faixa.
+  @ValidateIf((o) => o.tipo !== 'conta' && o.tipo !== 'dinheiro')
   @IsNumber()
   @Min(0)
   @Type(() => Number)
   limite?: number;
 
   @IsOptional()
-  @ValidateIf((o) => o.tipo === 'credito')
+  // tipo !== 'credito' (explícito) é o único caso que pula a validação — se `tipo` não vier
+  // no payload (comum num PATCH parcial que só atualiza limite/dia de um cartão já
+  // existente), o campo continua validado. Ver correção pós-auditoria: um PATCH que não
+  // reenviava `tipo` deixava esses campos passarem sem checar tipo/faixa.
+  @ValidateIf((o) => o.tipo !== 'conta' && o.tipo !== 'dinheiro')
   @IsNumber()
   @Min(1)
   @Max(31)
@@ -37,7 +45,11 @@ export class CreateWalletDto {
   diaFechamento?: number;
 
   @IsOptional()
-  @ValidateIf((o) => o.tipo === 'credito')
+  // tipo !== 'credito' (explícito) é o único caso que pula a validação — se `tipo` não vier
+  // no payload (comum num PATCH parcial que só atualiza limite/dia de um cartão já
+  // existente), o campo continua validado. Ver correção pós-auditoria: um PATCH que não
+  // reenviava `tipo` deixava esses campos passarem sem checar tipo/faixa.
+  @ValidateIf((o) => o.tipo !== 'conta' && o.tipo !== 'dinheiro')
   @IsNumber()
   @Min(1)
   @Max(31)
@@ -45,12 +57,20 @@ export class CreateWalletDto {
   diaVencimento?: number;
 
   @IsOptional()
-  @ValidateIf((o) => o.tipo === 'credito')
+  // tipo !== 'credito' (explícito) é o único caso que pula a validação — se `tipo` não vier
+  // no payload (comum num PATCH parcial que só atualiza limite/dia de um cartão já
+  // existente), o campo continua validado. Ver correção pós-auditoria: um PATCH que não
+  // reenviava `tipo` deixava esses campos passarem sem checar tipo/faixa.
+  @ValidateIf((o) => o.tipo !== 'conta' && o.tipo !== 'dinheiro')
   @IsString()
   carteiraPagamentoId?: string;
 
   @IsOptional()
-  @ValidateIf((o) => o.tipo === 'credito')
+  // tipo !== 'credito' (explícito) é o único caso que pula a validação — se `tipo` não vier
+  // no payload (comum num PATCH parcial que só atualiza limite/dia de um cartão já
+  // existente), o campo continua validado. Ver correção pós-auditoria: um PATCH que não
+  // reenviava `tipo` deixava esses campos passarem sem checar tipo/faixa.
+  @ValidateIf((o) => o.tipo !== 'conta' && o.tipo !== 'dinheiro')
   @IsNumber()
   @Min(0)
   @Type(() => Number)

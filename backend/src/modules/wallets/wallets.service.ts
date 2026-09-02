@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Wallet, WalletDocument } from './schemas/wallet.schema';
 import { Transaction, TransactionDocument, TransactionType } from '../transactions/schemas/transaction.schema';
+import { Fatura, FaturaDocument } from '../cartoes/schemas/fatura.schema';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { TransferWalletDto } from './dto/transfer-wallet.dto';
@@ -12,6 +13,7 @@ export class WalletsService {
   constructor(
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
+    @InjectModel(Fatura.name) private faturaModel: Model<FaturaDocument>,
   ) {}
 
   private toObjectId(value: string, field: string) {
@@ -75,7 +77,11 @@ export class WalletsService {
     // Cartões de crédito (tipo: 'credito') ficam de fora: eles não têm "saldo" no sentido de
     // dinheiro disponível, e se entrassem aqui inflariam/corromperiam o Saldo Total somado no
     // frontend (WalletsPage.tsx). Só aparecem em /api/cartoes.
-    const [wallets, saldoAgg, transferCreditsAgg, transferDebitsAgg] = await Promise.all([
+    // Busca TODAS as carteiras (inclusive arquivadas) para não deixar as transações de uma
+    // carteira arquivada vazarem pro balde de "Saldo Histórico" abaixo (ver realWalletIds) —
+    // a carteira arquivada só é removida do array `wallets` (o que vira `result`/soma de
+    // patrimônio) depois, sem afetar o casamento de transação → carteira.
+    const [allWallets, saldoAgg, transferCreditsAgg, transferDebitsAgg] = await Promise.all([
       this.walletModel.find({ userId: userObjectId, tipo: { $ne: 'credito' } }).sort({ createdAt: 1 }).exec(),
       // income - expense por carteira (TRANSFER excluído para não duplicar com TC/TD;
       // compras no crédito excluídas por não serem saída real de dinheiro)
@@ -105,7 +111,11 @@ export class WalletsService {
     // até um ObjectId válido mas órfão (carteira que nunca existiu para este usuário).
     // Qualquer grupo que não corresponda a uma carteira real do usuário cai no saldo
     // legado — assim nenhum valor desaparece silenciosamente por não bater com nada.
-    const realWalletIds = new Set(wallets.map((w) => w._id.toString()));
+    // Usa allWallets (não o `wallets` filtrado abaixo) para que uma carteira arquivada
+    // ainda seja reconhecida como "real" aqui — senão seu saldo vazaria pro balde de
+    // Saldo Histórico em vez de simplesmente ficar de fora da soma.
+    const realWalletIds = new Set(allWallets.map((w) => w._id.toString()));
+    const wallets = allWallets.filter((w) => !w.arquivadaEm);
     const saldoAggMap = new Map<string, number>();
     let legacySaldo = 0;
     saldoAgg.forEach((r) => {
@@ -146,7 +156,10 @@ export class WalletsService {
     }
 
     if (incluirCartoes) {
-      const cartoes = await this.walletModel.find({ userId: userObjectId, tipo: 'credito' }).sort({ createdAt: 1 }).exec();
+      const cartoes = await this.walletModel
+        .find({ userId: userObjectId, tipo: 'credito', arquivadaEm: { $exists: false } })
+        .sort({ createdAt: 1 })
+        .exec();
       result.push(...cartoes.map((w) => ({ ...w.toObject() })));
     }
 
@@ -236,6 +249,57 @@ export class WalletsService {
     }
 
     await wallet.save();
+    return wallet;
+  }
+
+  // Arquivar existe pra carteiras (sobretudo cartões) que saíram de uso mas cujo histórico
+  // não pode sumir dos relatórios de meses passados — diferente de remove(), que apaga.
+  // Arquivada some de findAll() (listagem/seletor/soma de patrimônio) mas segue existindo
+  // e continua aparecendo em qualquer consulta que agregue Transaction diretamente
+  // (dashboard, insights), já que essas nunca filtram pela lista de carteiras.
+  async arquivar(userId: string, id: string) {
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const wallet = await this.walletModel.findOne({ _id: this.toObjectId(id, 'id'), userId: userObjectId }).exec();
+    if (!wallet) throw new NotFoundException('Carteira não encontrada');
+    if (wallet.arquivadaEm) throw new BadRequestException('Esta carteira já está arquivada.');
+
+    if (wallet.tipo === 'credito') {
+      // Mesma definição de "não quitada" usada em cartoes.service.ts#calcularLimiteUsado —
+      // aberta, fechada ou parcial contam como pendência, só 'paga' libera o arquivamento.
+      const faturaPendente = await this.faturaModel.exists({
+        userId: userObjectId,
+        carteiraId: wallet._id,
+        status: { $ne: 'paga' },
+      });
+      if (faturaPendente) {
+        throw new BadRequestException('Não é possível arquivar um cartão com fatura em aberto ou não paga.');
+      }
+
+      // agendado no banco não expira sozinho (ver effectiveSaldoMatch) — checar a própria
+      // data em vez do flag evita um falso bloqueio por uma parcela cujo flag ficou obsoleto.
+      const parcelaFutura = await this.transactionModel.exists({
+        userId: userObjectId,
+        carteiraId: wallet._id,
+        parcelamentoId: { $exists: true },
+        date: { $gt: new Date() },
+      });
+      if (parcelaFutura) {
+        throw new BadRequestException('Não é possível arquivar um cartão com parcelas futuras pendentes.');
+      }
+    }
+
+    wallet.arquivadaEm = new Date();
+    await wallet.save();
+    return wallet;
+  }
+
+  async desarquivar(userId: string, id: string) {
+    const wallet = await this.walletModel.findOneAndUpdate(
+      { _id: this.toObjectId(id, 'id'), userId: this.toObjectId(userId, 'userId') },
+      { $unset: { arquivadaEm: 1 } },
+      { new: true },
+    ).exec();
+    if (!wallet) throw new NotFoundException('Carteira não encontrada');
     return wallet;
   }
 

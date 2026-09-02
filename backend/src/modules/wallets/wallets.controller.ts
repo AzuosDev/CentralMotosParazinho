@@ -49,4 +49,16 @@ export class WalletsController {
   remove(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
     return this.walletsService.remove(user._id.toString(), id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/arquivar')
+  arquivar(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
+    return this.walletsService.arquivar(user._id.toString(), id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/desarquivar')
+  desarquivar(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
+    return this.walletsService.desarquivar(user._id.toString(), id);
+  }
 }

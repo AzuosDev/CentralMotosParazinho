@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Transaction, TransactionDocument, TransactionType } from '../transactions/schemas/transaction.schema';
 import { PendingAccount, PendingAccountDocument } from '../pending/schemas/pending-account.schema';
 import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
+import { SIGNED_VALUE_EXPR } from '../transactions/transaction-aggregation.util';
 import { GetDashboardDto } from './dto/get-dashboard.dto';
 
 @Injectable()
@@ -76,7 +77,7 @@ export class DashboardService {
                 { $match: { type: TransactionType.EXPENSE, date: { $gte: startDate, $lte: endDate } } },
                 // Estorno de compra no cartão (isEstorno) é subtraído em vez de somado — senão
                 // uma compra devolvida continuaria contando como gasto no total do mês.
-                { $group: { _id: null, total: { $sum: { $cond: ['$isEstorno', { $multiply: ['$value', -1] }, '$value'] } } } },
+                { $group: { _id: null, total: { $sum: SIGNED_VALUE_EXPR } } },
               ],
               cumulativeIncome: [
                 { $match: { type: TransactionType.INCOME, date: { $gte: cumulativeStart, $lte: endDate } } },
@@ -84,11 +85,11 @@ export class DashboardService {
               ],
               cumulativeExpenses: [
                 { $match: { type: TransactionType.EXPENSE, date: { $gte: cumulativeStart, $lte: endDate } } },
-                { $group: { _id: null, total: { $sum: { $cond: ['$isEstorno', { $multiply: ['$value', -1] }, '$value'] } } } },
+                { $group: { _id: null, total: { $sum: SIGNED_VALUE_EXPR } } },
               ],
               expensesByCategory: [
                 { $match: { type: TransactionType.EXPENSE, date: { $gte: startDate, $lte: endDate } } },
-                { $group: { _id: '$categoryId', total: { $sum: { $cond: ['$isEstorno', { $multiply: ['$value', -1] }, '$value'] } } } },
+                { $group: { _id: '$categoryId', total: { $sum: SIGNED_VALUE_EXPR } } },
                 {
                   $lookup: {
                     from: 'categories',
@@ -113,7 +114,7 @@ export class DashboardService {
                 {
                   $group: {
                     _id: { month: { $month: '$date' }, type: '$type' },
-                    total: { $sum: '$value' },
+                    total: { $sum: SIGNED_VALUE_EXPR },
                   },
                 },
                 {

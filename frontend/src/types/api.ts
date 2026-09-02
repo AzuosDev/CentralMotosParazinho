@@ -83,6 +83,9 @@ export type Wallet = MongoDocument & {
   taxaJurosRotativo?: number;
   bandeira?: string;
   ultimosDigitos?: string;
+  // Presente quando a carteira foi arquivada — some de listagens/seletores/soma de
+  // patrimônio, mas o histórico de transações continua intacto.
+  arquivadaEm?: ApiDate;
 };
 
 // Cartão de crédito: resposta de GET /api/cartoes e /api/cartoes/:id — Wallet(tipo=credito)

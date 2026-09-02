@@ -76,6 +76,12 @@ export class TransactionsService {
     if (carteiraObjectId) {
       wallet = await this.walletModel.findOne({ _id: carteiraObjectId, userId: userObjectId }).exec();
     }
+    // Carteira arquivada (WalletsService#arquivar) não aceita lançamento novo — o caso de
+    // cartão é bloqueado de novo, mais abaixo, dentro de resolverFaturaParaCompra; aqui cobre
+    // o caso de carteira comum, que nunca passa por lá.
+    if (wallet?.arquivadaEm) {
+      throw new BadRequestException('Esta carteira está arquivada e não aceita novos lançamentos.');
+    }
     const isCredito = wallet?.tipo === 'credito';
 
     let faturaId: Types.ObjectId | undefined;
@@ -119,7 +125,7 @@ export class TransactionsService {
     }
 
     if (faturaId) {
-      await this.cartoesService.recomputeValorTotal(faturaId);
+      await this.cartoesService.recomputeValorTotal(userObjectId, faturaId);
     }
 
     // avisoLimite só é anexado (não-persistido) quando a compra é no cartão e passou de 80%
@@ -332,7 +338,7 @@ export class TransactionsService {
     }
 
     if (faturaId) {
-      await this.cartoesService.recomputeValorTotal(faturaId);
+      await this.cartoesService.recomputeValorTotal(userObjectId, faturaId);
     }
 
     return { deleted: true };

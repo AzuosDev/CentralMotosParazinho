@@ -11,6 +11,7 @@ import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { CreateParcelamentoDto } from './dto/create-parcelamento.dto';
 import { PagarFaturaDto } from './dto/pagar-fatura.dto';
 import { VincularContaPendenteDto } from './dto/vincular-conta-pendente.dto';
+import { SIGNED_VALUE_EXPR } from '../transactions/transaction-aggregation.util';
 
 @Injectable()
 export class CartoesService {
@@ -98,6 +99,11 @@ export class CartoesService {
   // Cria (lazy) a fatura do ciclo que contém dataCompra, e a PendingAccount que a
   // representa — uma por ciclo, criada na 1ª compra, valor crescendo a cada nova compra.
   async resolverFaturaParaCompra(userId: Types.ObjectId, wallet: WalletDocument, dataCompra: Date): Promise<FaturaDocument> {
+    // Único ponto de entrada comum a compra avulsa, parcelamento e vincular-conta-pendente —
+    // bloquear aqui cobre os três sem precisar repetir o check em cada um.
+    if (wallet.arquivadaEm) {
+      throw new BadRequestException('Este cartão está arquivado e não aceita novos lançamentos.');
+    }
     if (typeof wallet.diaFechamento !== 'number' || typeof wallet.diaVencimento !== 'number') {
       throw new BadRequestException(
         'Configure o dia de fechamento e o dia de vencimento do cartão antes de lançar compras.',
@@ -190,9 +196,12 @@ export class CartoesService {
   }
 
   // Recalcula valorTotal por agregação sobre as Transactions da fatura (nunca via $inc, para
-  // não dar drift) e mantém PendingAccount.value = valorTotal + saldoRotativoAnterior em dia.
-  async recomputeValorTotal(faturaId: Types.ObjectId): Promise<FaturaDocument | null> {
-    const fatura = await this.faturaModel.findById(faturaId).exec();
+  // não dar drift) e mantém a PendingAccount da fatura em dia. Exige userId (mesmo sendo um
+  // método interno, nunca chamado direto por um controller): o resto do módulo filtra tudo
+  // por userId e este era o único método que não filtrava — sem isso, um call site novo que
+  // repassasse um faturaId de outro tenant recalcularia a fatura errada sem nenhum guard-rail.
+  async recomputeValorTotal(userId: Types.ObjectId, faturaId: Types.ObjectId): Promise<FaturaDocument | null> {
+    const fatura = await this.faturaModel.findOne({ _id: faturaId, userId }).exec();
     if (!fatura) return null;
 
     const agg = await this.transactionModel.aggregate([
@@ -200,18 +209,44 @@ export class CartoesService {
       {
         $group: {
           _id: null,
-          total: { $sum: { $cond: ['$isEstorno', { $multiply: ['$value', -1] }, '$value'] } },
+          total: { $sum: SIGNED_VALUE_EXPR },
         },
       },
     ]);
     fatura.valorTotal = Number((agg[0]?.total ?? 0).toFixed(2));
-    await fatura.save();
+    const valorDevido = Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2));
 
     if (fatura.pendingAccountId) {
-      const valorDevido = Math.max(0.01, Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2)));
-      await this.pendingModel.findByIdAndUpdate(fatura.pendingAccountId, { $set: { value: valorDevido } }).exec();
+      const pending = await this.pendingModel.findById(fatura.pendingAccountId).exec();
+      if (pending && !pending.paid && valorDevido <= 0) {
+        // Estorno maior que o total deixou a fatura credora: não existe conta a pagar real, e
+        // o schema de PendingAccount nem aceita value <= 0 (min: 0.01) — em vez de mostrar um
+        // R$0,01 fictício, remove a conta. Se novas compras trouxerem a fatura de volta ao
+        // positivo, uma nova é recriada abaixo.
+        await this.pendingModel.deleteOne({ _id: pending._id }).exec();
+        fatura.pendingAccountId = undefined;
+      } else if (pending && valorDevido > 0) {
+        pending.value = valorDevido;
+        await pending.save();
+      }
+    } else if (valorDevido > 0) {
+      const wallet = await this.walletModel.findById(fatura.carteiraId).exec();
+      const pending = await this.pendingModel.create({
+        userId,
+        title: `Fatura ${wallet?.nome ?? 'Cartão'}`,
+        value: valorDevido,
+        dueDate: fatura.dataVencimento,
+        paid: false,
+        isParcelada: false,
+        isRecorrente: false,
+        tipo: 'PAGAR',
+        categoria: 'Cartão de Crédito',
+        faturaId: fatura._id,
+      });
+      fatura.pendingAccountId = pending._id as Types.ObjectId;
     }
 
+    await fatura.save();
     return fatura;
   }
 
@@ -316,7 +351,7 @@ export class CartoesService {
     }
 
     for (const fid of faturaIdsAfetadas) {
-      await this.recomputeValorTotal(new Types.ObjectId(fid));
+      await this.recomputeValorTotal(userObjectId, new Types.ObjectId(fid));
     }
 
     return {
@@ -405,7 +440,7 @@ export class CartoesService {
       isEstorno: true,
     });
 
-    await this.recomputeValorTotal(original.faturaId as Types.ObjectId);
+    await this.recomputeValorTotal(userObjectId, original.faturaId as Types.ObjectId);
 
     if (!original.agendado && original.categoryId) {
       await this.decrementLinkedGoal(userObjectId, original.categoryId as Types.ObjectId, original.value);
@@ -478,7 +513,7 @@ export class CartoesService {
     }
 
     for (const fid of faturaIdsAfetadas) {
-      await this.recomputeValorTotal(new Types.ObjectId(fid));
+      await this.recomputeValorTotal(userObjectId, new Types.ObjectId(fid));
     }
 
     if (pending.grupoParceladoId) {
@@ -508,7 +543,12 @@ export class CartoesService {
 
   async listarCartoes(userId: string) {
     const userObjectId = this.toObjectId(userId, 'userId');
-    const wallets = await this.walletModel.find({ userId: userObjectId, tipo: 'credito' }).sort({ createdAt: 1 }).exec();
+    // Cartão arquivado some da listagem/seletor (WalletsService#arquivar), mas continua
+    // acessível via detalharCartao (histórico precisa continuar navegável).
+    const wallets = await this.walletModel
+      .find({ userId: userObjectId, tipo: 'credito', arquivadaEm: { $exists: false } })
+      .sort({ createdAt: 1 })
+      .exec();
 
     const result = [];
     for (const wallet of wallets) {
@@ -638,7 +678,7 @@ export class CartoesService {
       }
 
       await fatura.save();
-      await this.recomputeValorTotal(fatura._id as Types.ObjectId);
+      await this.recomputeValorTotal(fatura.userId as Types.ObjectId, fatura._id as Types.ObjectId);
     }
 
     return vencidas.length;

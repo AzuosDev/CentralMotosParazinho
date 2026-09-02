@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Loader2, Plus } from "lucide-react";
+import { Archive, CreditCard, Loader2, Plus } from "lucide-react";
 
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { formatCurrency, formatDisplayDate } from "../lib/finance";
 import { detectBankIcon } from "../lib/bankIcons";
+import { getApiErrorMessages } from "../lib/errors";
 import { BankLogo } from "../components/ui/BankLogo";
 import { CurrencyInput } from "../components/ui/CurrencyInput";
+import { ArchiveCartaoModal } from "../components/modals/ArchiveCartaoModal";
+import { useToast } from "../components/ui/Toast";
 import type { Cartao, Wallet } from "../types/api";
 
 const BANKS = [
@@ -49,10 +52,12 @@ const emptyForm: CardFormState = {
 
 export function CartoesPage() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [isCustomBank, setIsCustomBank] = useState(false);
   const [form, setForm] = useState<CardFormState>(emptyForm);
+  const [cartaoToArchive, setCartaoToArchive] = useState<Cartao | null>(null);
 
   useEffect(() => {
     if (searchParams.get("action") === "create") {
@@ -130,6 +135,22 @@ export function CartoesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cartoes"] });
       closeForm();
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.post(`/api/wallets/${id}/arquivar`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cartoes"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      addToast("Cartão arquivado. O histórico continua disponível nos relatórios.", "success");
+      setCartaoToArchive(null);
+    },
+    onError: (error) => {
+      addToast(getApiErrorMessages(error, "Não foi possível arquivar este cartão.")[0], "error");
+      setCartaoToArchive(null);
     },
   });
 
@@ -394,12 +415,28 @@ export function CartoesPage() {
                   >
                     Editar
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setCartaoToArchive(cartao)}
+                    className="rounded-xl border border-bg-muted px-3 py-2 text-sm font-semibold text-text-secondary transition hover:bg-bg-muted hover:text-white"
+                    title="Arquivar cartão"
+                  >
+                    <Archive className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <ArchiveCartaoModal
+        isOpen={!!cartaoToArchive}
+        onClose={() => setCartaoToArchive(null)}
+        onConfirm={() => cartaoToArchive && archiveMutation.mutate(cartaoToArchive._id)}
+        cartaoNome={cartaoToArchive?.nome ?? ""}
+        isLoading={archiveMutation.isPending}
+      />
     </section>
   );
 }

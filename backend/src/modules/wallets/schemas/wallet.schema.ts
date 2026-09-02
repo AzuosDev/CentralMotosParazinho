@@ -28,7 +28,9 @@ export class Wallet {
   tipo!: WalletTipo;
 
   // Campos abaixo só têm sentido quando tipo === 'credito'.
-  @Prop({ type: Number })
+  // min:0 aqui é defesa em profundidade — não confie só no DTO: um PATCH que não reenvia
+  // `tipo` pula a validação condicional de create-wallet.dto.ts (ver correção pós-auditoria).
+  @Prop({ type: Number, min: 0 })
   limite?: number;
 
   @Prop({ type: Number, min: 1, max: 31 })
@@ -49,6 +51,13 @@ export class Wallet {
 
   @Prop({ type: String, maxlength: 4 })
   ultimosDigitos?: string;
+
+  // Presente quando a carteira foi arquivada pelo usuário. Uma carteira arquivada some das
+  // listagens, dos seletores de forma de pagamento e da soma de patrimônio, mas o histórico
+  // (transações, relatórios de meses passados) continua intacto — é por isso que existe
+  // "arquivar" em vez de excluir. Ver WalletsService#arquivar/#desarquivar.
+  @Prop({ type: Date })
+  arquivadaEm?: Date;
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet);

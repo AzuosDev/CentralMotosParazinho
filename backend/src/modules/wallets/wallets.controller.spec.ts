@@ -209,4 +209,63 @@ describe('WalletsController (e2e)', () => {
 
     expect(created.body.tipo).toBe('conta');
   });
+
+  it('PATCH {nome} numa carteira tipo=conta não passa a exigir campos de cartão (regressão do @ValidateIf)', async () => {
+    // A condição do @ValidateIf (tipo !== 'conta' && tipo !== 'dinheiro') é verdadeira quando
+    // `tipo` não vem no PATCH — mas todo campo exclusivo de cartão também tem @IsOptional(),
+    // e o class-validator faz AND das duas condições, então ausência do campo nunca vira
+    // obrigatoriedade. Este teste trava esse comportamento.
+    const created = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Corrente', tipo: 'conta', saldo: 100 })
+      .expect(201);
+
+    const patched = await request(app.getHttpServer())
+      .patch(`/api/wallets/${created.body._id}`)
+      .send({ nome: 'Conta Corrente Renomeada' })
+      .expect(200);
+
+    expect(patched.body.nome).toBe('Conta Corrente Renomeada');
+  });
+
+  it('POST /:id/arquivar tira a carteira de GET /api/wallets (listagem/patrimônio) mas GET /:id continua funcionando', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Carteira Pra Arquivar', saldo: 250 })
+      .expect(201);
+
+    const listaAntes = await request(app.getHttpServer()).get('/api/wallets').expect(200);
+    expect((listaAntes.body as Array<{ _id: string }>).some((w) => w._id === created.body._id)).toBe(true);
+
+    const arquivada = await request(app.getHttpServer())
+      .post(`/api/wallets/${created.body._id}/arquivar`)
+      .expect(201);
+    expect(arquivada.body.arquivadaEm).toBeDefined();
+
+    const listaDepois = await request(app.getHttpServer()).get('/api/wallets').expect(200);
+    expect((listaDepois.body as Array<{ _id: string }>).some((w) => w._id === created.body._id)).toBe(false);
+
+    // Histórico continua acessível por id — arquivar não é excluir.
+    const detalhe = await request(app.getHttpServer()).get(`/api/wallets/${created.body._id}`).expect(200);
+    expect(detalhe.body.saldo).toBe(250);
+
+    // Arquivar de novo é rejeitado.
+    await request(app.getHttpServer()).post(`/api/wallets/${created.body._id}/arquivar`).expect(400);
+  });
+
+  it('POST /:id/desarquivar faz a carteira voltar a aparecer em GET /api/wallets', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Carteira Vai e Volta' })
+      .expect(201);
+
+    await request(app.getHttpServer()).post(`/api/wallets/${created.body._id}/arquivar`).expect(201);
+    const desarquivada = await request(app.getHttpServer())
+      .post(`/api/wallets/${created.body._id}/desarquivar`)
+      .expect(201);
+    expect(desarquivada.body.arquivadaEm).toBeUndefined();
+
+    const lista = await request(app.getHttpServer()).get('/api/wallets').expect(200);
+    expect((lista.body as Array<{ _id: string }>).some((w) => w._id === created.body._id)).toBe(true);
+  });
 });
