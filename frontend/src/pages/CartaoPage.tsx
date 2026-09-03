@@ -222,6 +222,11 @@ export function CartaoPage() {
   const cartao = cartaoQuery.data;
   const faturasData = cartao?.faturas;
   const faturas = useMemo(() => faturasData ?? [], [faturasData]);
+  // O backend devolve as faturas da mais recente pra mais antiga (útil pra achar a aberta
+  // por padrão, mais abaixo) — mas numa tira horizontal de abas isso lê "ao contrário" da
+  // esquerda pra direita. Só a exibição é invertida; qual fatura abre por padrão continua
+  // baseado na ordem original.
+  const faturasCronologicas = useMemo(() => [...faturas].reverse(), [faturas]);
 
   useEffect(() => {
     if (!selectedFaturaId && faturas.length > 0) {
@@ -376,7 +381,7 @@ export function CartaoPage() {
           ) : (
             <>
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {faturas.map((f) => {
+                {faturasCronologicas.map((f) => {
                   const cfg = statusConfig[f.status];
                   const active = f._id === selectedFaturaId;
                   return (
