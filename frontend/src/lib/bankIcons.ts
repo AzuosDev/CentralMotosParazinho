@@ -95,6 +95,10 @@ export function detectBankIcon(nome: string): string | null {
 }
 
 export function getWalletIcon(wallet: { nome: string; icone?: string }): string {
-  if (wallet.icone && wallet.icone !== "🏦") return wallet.icone;
-  return detectBankIcon(wallet.nome) ?? wallet.icone ?? "🏦";
+  // O ícone é um campo próprio, deliberadamente escolhido (via seleção de banco ou
+  // digitado) — uma vez salvo, não deve mudar sozinho só porque o nome foi editado
+  // depois. Só recorre ao nome quando não existe NENHUM ícone salvo (carteira antiga
+  // sem o campo, por exemplo).
+  if (wallet.icone) return wallet.icone;
+  return detectBankIcon(wallet.nome) ?? "🏦";
 }
