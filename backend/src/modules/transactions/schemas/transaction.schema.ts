@@ -76,6 +76,12 @@ export class Transaction {
   // de somado.
   @Prop({ default: false })
   isEstorno?: boolean;
+
+  // Presente só na Transaction de estorno, aponta pra compra original que ela reverte —
+  // é o que permite CartoesService#estornar recusar um segundo estorno da mesma compra
+  // (sem isso não havia como saber se uma compra já tinha sido estornada).
+  @Prop({ type: Types.ObjectId, ref: 'Transaction' })
+  estornoDeTransacaoId?: Types.ObjectId;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
@@ -84,3 +90,4 @@ TransactionSchema.index({ userId: 1, carteiraId: 1, fitId: 1 }, { sparse: true }
 TransactionSchema.index({ importBatchId: 1 }, { sparse: true });
 TransactionSchema.index({ faturaId: 1 }, { sparse: true });
 TransactionSchema.index({ parcelamentoId: 1 }, { sparse: true });
+TransactionSchema.index({ estornoDeTransacaoId: 1 }, { sparse: true });

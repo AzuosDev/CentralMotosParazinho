@@ -62,6 +62,8 @@ export type Transaction = MongoDocument & {
   numeroParcela?: number;
   totalParcelas?: number;
   isEstorno?: boolean;
+  // Presente só na transação de estorno, aponta pra compra original que ela reverte.
+  estornoDeTransacaoId?: ApiId;
   // Anexado (não-persistido) pela API de criação quando a compra passou de 80% do limite.
   avisoLimite?: AvisoLimite;
 };

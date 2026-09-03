@@ -487,6 +487,29 @@ describe('CartoesController (e2e)', () => {
     expect(pendingRecriada!.paid).toBe(false);
   });
 
+  it('estornar a mesma compra duas vezes é rejeitado (não dá pra estornar infinitamente)', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Estorno Duplo' });
+    const catId = await categoriaId();
+
+    const compra = await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 200, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/transacoes/${compra.body._id}/estorno`)
+      .expect(201);
+
+    // Segunda tentativa de estornar a MESMA compra original é recusada — sem esse guard,
+    // cada chamada criava mais um estorno e derrubava valorTotal/Goal indefinidamente.
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/transacoes/${compra.body._id}/estorno`)
+      .expect(400);
+
+    const estornos = await transactionModel.find({ estornoDeTransacaoId: new Types.ObjectId(compra.body._id) }).exec();
+    expect(estornos).toHaveLength(1);
+  });
+
   it('vincular-conta-pendente converte uma PendingAccount parcelada existente em Parcelamento do cartão', async () => {
     const cartao = await criarCartao({ nome: 'Cartão Migração', diaFechamento: 28, diaVencimento: 5 });
 

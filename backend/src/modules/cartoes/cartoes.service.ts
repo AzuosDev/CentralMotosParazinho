@@ -427,6 +427,14 @@ export class CartoesService {
     if (!original) throw new NotFoundException('Transação de cartão não encontrada');
     if (original.isEstorno) throw new BadRequestException('Não é possível estornar um estorno.');
 
+    // Sem este guard, a mesma compra podia ser estornada repetidamente — cada chamada
+    // criava mais uma Transaction de estorno, derrubando valorTotal/Goal.currentValue de
+    // novo a cada clique, sem limite.
+    const jaEstornada = await this.transactionModel
+      .exists({ userId: userObjectId, estornoDeTransacaoId: original._id })
+      .exec();
+    if (jaEstornada) throw new BadRequestException('Esta compra já foi estornada.');
+
     const estorno = await this.transactionModel.create({
       userId: userObjectId,
       type: TransactionType.EXPENSE,
@@ -438,6 +446,7 @@ export class CartoesService {
       agendado: false,
       faturaId: original.faturaId,
       isEstorno: true,
+      estornoDeTransacaoId: original._id,
     });
 
     await this.recomputeValorTotal(userObjectId, original.faturaId as Types.ObjectId);

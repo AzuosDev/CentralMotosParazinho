@@ -239,7 +239,15 @@ export function CartaoPage() {
     enabled: !!id && !!selectedFaturaId,
   });
   const fatura = faturaQuery.data;
-  const transacoes = fatura?.transacoes ?? [];
+  const transacoesData = fatura?.transacoes;
+  const transacoes = useMemo(() => transacoesData ?? [], [transacoesData]);
+  // Compras já revertidas não podem ser estornadas de novo — o backend recusa (400), mas
+  // esconder o botão evita o usuário nem tentar. A própria fatura já traz as duas pontas
+  // (compra original + estorno), então dá pra calcular isso sem outra chamada.
+  const estornadasIds = useMemo(
+    () => new Set(transacoes.filter((t) => t.isEstorno && t.estornoDeTransacaoId).map((t) => t.estornoDeTransacaoId as string)),
+    [transacoes],
+  );
 
   const parcelamentosQuery = useQuery<Parcelamento[]>({
     queryKey: ["cartoes", id, "parcelamentos"],
@@ -475,6 +483,11 @@ export function CartaoPage() {
                                     Estorno
                                   </span>
                                 )}
+                                {!tx.isEstorno && estornadasIds.has(tx._id) && (
+                                  <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+                                    Já estornada
+                                  </span>
+                                )}
                               </div>
                               <p className="text-xs text-text-secondary">{formatDisplayDate(tx.date)}</p>
                             </div>
@@ -482,7 +495,7 @@ export function CartaoPage() {
                               <span className={cn("font-bold tabular-nums", tx.isEstorno ? "text-accent-lime" : "text-white")}>
                                 {tx.isEstorno ? "+" : ""}{formatCurrency(tx.value)}
                               </span>
-                              {!tx.isEstorno && !isJuros && (
+                              {!tx.isEstorno && !isJuros && !estornadasIds.has(tx._id) && (
                                 <button
                                   type="button"
                                   onClick={() => setEstornoTarget(tx)}
