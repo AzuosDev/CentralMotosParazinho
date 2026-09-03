@@ -53,6 +53,8 @@ If `node`/`npm` are not on PATH in the shell, prepend `C:\Program Files\nodejs` 
 
 An estorno can only reverse a transaction once: `Transaction.estornoDeTransacaoId` points from the estorno back to the original purchase, and `CartoesService#estornar` checks for an existing one before creating another — without it, the same purchase could be estornado repeatedly, each call further wrecking `valorTotal`/`Goal.currentValue`.
 
+`CartoesService#vincularContaPendente` (converting a pending account into a card charge) anchors every installment's date on the account's *original* due date, never "today" — and when it resolves to exactly one installment, it becomes a plain `Transaction` (via the new `criarCompraAvulsa` helper) rather than a `Parcelamento` (whose schema requires `totalParcelas >= 2`, same floor as the "criar parcelamento" form).
+
 **Notifications**: a daily cron (`notifications-cron.service.ts`, `@nestjs/schedule`, gated behind `CRON_NOTIFICATIONS=true`, `America/Sao_Paulo` timezone) scans `PendingAccount` documents due today or overdue and upserts notifications. The frontend also triggers an on-demand sync (`POST /api/notifications/sync`) right after login/boot.
 
 **Billing**: `billing.service.ts` integrates two payment rails — Stripe (card, subscriptions) and Asaas (PIX). Subscription/access state (`isLegacyFree`, `subscriptionStatus`, `trialEndsAt`, `subscriptionExpiresAt`) lives on the `User` document; `AuthContext.computeHasAccess` on the frontend is the single place that interprets those fields into an access/no-access boolean.

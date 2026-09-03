@@ -266,6 +266,41 @@ export class CartoesService {
     return { faturaId: fatura._id as Types.ObjectId, avisoLimite: limiteInfo?.avisoProximoLimite ? limiteInfo : null };
   }
 
+  // Registra uma compra avulsa direto na fatura do ciclo da data informada, sem passar
+  // pelo aviso/bloqueio de limite (que é pra decisão de compra nova, com opção de
+  // confirmar mesmo assim) — usado por quem já está registrando um gasto que decidiu
+  // acontecer de outra forma: vincular uma conta pendente avulsa ao cartão, ou liquidar
+  // uma conta (inclusive recorrente) cuja forma de pagamento é um cartão.
+  async criarCompraAvulsa(
+    userId: Types.ObjectId,
+    wallet: WalletDocument,
+    params: { value: number; categoryId?: Types.ObjectId; description?: string; date: Date },
+  ): Promise<TransactionDocument> {
+    const fatura = await this.resolverFaturaParaCompra(userId, wallet, params.date);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const agendado = params.date.toISOString().slice(0, 10) > todayStr;
+
+    const tx = await this.transactionModel.create({
+      userId,
+      type: TransactionType.EXPENSE,
+      value: params.value,
+      categoryId: params.categoryId,
+      description: params.description,
+      date: params.date,
+      carteiraId: wallet._id,
+      agendado,
+      faturaId: fatura._id,
+    });
+
+    await this.recomputeValorTotal(userId, fatura._id as Types.ObjectId);
+
+    if (!agendado && params.categoryId) {
+      await this.incrementLinkedGoal(userId, params.categoryId, params.value);
+    }
+
+    return tx;
+  }
+
   // Calcula em que fatura (ciclo) uma compra cairia numa data, sem persistir nada —
   // usado pelo frontend para mostrar "vai cair na fatura de tal mês" antes de confirmar.
   async previsualizarFatura(userId: string, cartaoId: string, data: string) {
@@ -479,45 +514,63 @@ export class CartoesService {
     const valorParcela = pending.parcelas?.valorParcela ?? pending.value;
     const descricao = pending.title;
     const categoryObjectId = pending.categoryId as Types.ObjectId | undefined;
+    // Data de quando a compra de fato aconteceu — nunca "hoje". Vincular é registrar algo
+    // que já aconteceu (às vezes meses atrás), não uma compra nova; usar "hoje" jogava a
+    // conta inteira pra fatura do mês corrente, perdendo a data original.
     const dataCompraBase = pending.parcelas?.dataInicio ?? pending.dueDate;
-
-    const parcelamento = await this.parcelamentoModel.create({
-      userId: userObjectId,
-      carteiraId: wallet._id,
-      categoryId: categoryObjectId,
-      descricao,
-      valorTotal: Number((valorParcela * totalParcelas).toFixed(2)),
-      totalParcelas,
-      dataCompra: dataCompraBase,
-    });
-
-    const today = new Date();
+    const todayStr = new Date().toISOString().slice(0, 10);
     const faturaIdsAfetadas = new Set<string>();
 
-    for (let i = 0; i < dto.parcelasRestantes; i++) {
-      const numeroParcela = dto.parcelasJaPagas + i + 1;
-      const data = i === 0 ? today : this.addMonths(today, i);
-      const fatura = await this.resolverFaturaParaCompra(userObjectId, wallet, data);
-      const agendado = i > 0;
+    let parcelamento: ParcelamentoDocument | null = null;
 
-      await this.transactionModel.create({
-        userId: userObjectId,
-        type: TransactionType.EXPENSE,
+    if (totalParcelas === 1) {
+      // Uma cobrança avulsa não é um "parcelamento de 1x" — o schema de Parcelamento exige
+      // >= 2 parcelas (mesma regra do formulário de "criar parcelamento"), e semanticamente
+      // a aba "Compras parceladas" é só pra compras genuinamente parceladas. Vira uma
+      // Transaction normal na fatura do mês da compra, sem parcelamentoId.
+      const tx = await this.criarCompraAvulsa(userObjectId, wallet, {
         value: valorParcela,
         categoryId: categoryObjectId,
         description: descricao,
-        date: data,
-        carteiraId: wallet._id,
-        agendado,
-        faturaId: fatura._id,
-        parcelamentoId: parcelamento._id,
-        numeroParcela,
-        totalParcelas,
+        date: dataCompraBase,
       });
-      faturaIdsAfetadas.add((fatura._id as Types.ObjectId).toString());
+      faturaIdsAfetadas.add((tx.faturaId as Types.ObjectId).toString());
+    } else {
+      parcelamento = await this.parcelamentoModel.create({
+        userId: userObjectId,
+        carteiraId: wallet._id,
+        categoryId: categoryObjectId,
+        descricao,
+        valorTotal: Number((valorParcela * totalParcelas).toFixed(2)),
+        totalParcelas,
+        dataCompra: dataCompraBase,
+      });
 
-      if (!agendado && categoryObjectId) {
-        await this.incrementLinkedGoal(userObjectId, categoryObjectId, valorParcela);
+      for (let i = 0; i < dto.parcelasRestantes; i++) {
+        const numeroParcela = dto.parcelasJaPagas + i + 1;
+        const data = this.addMonths(dataCompraBase, dto.parcelasJaPagas + i);
+        const fatura = await this.resolverFaturaParaCompra(userObjectId, wallet, data);
+        const agendado = data.toISOString().slice(0, 10) > todayStr;
+
+        await this.transactionModel.create({
+          userId: userObjectId,
+          type: TransactionType.EXPENSE,
+          value: valorParcela,
+          categoryId: categoryObjectId,
+          description: descricao,
+          date: data,
+          carteiraId: wallet._id,
+          agendado,
+          faturaId: fatura._id,
+          parcelamentoId: parcelamento._id,
+          numeroParcela,
+          totalParcelas,
+        });
+        faturaIdsAfetadas.add((fatura._id as Types.ObjectId).toString());
+
+        if (!agendado && categoryObjectId) {
+          await this.incrementLinkedGoal(userObjectId, categoryObjectId, valorParcela);
+        }
       }
     }
 

@@ -552,6 +552,36 @@ describe('CartoesController (e2e)', () => {
     await request(app.getHttpServer()).get(`/api/accounts/group/${grupoParceladoId}`).expect(200, []);
   });
 
+  it('vincular-conta-pendente de uma conta avulsa antiga cai na fatura do mês original, não na de hoje', async () => {
+    // Conta pendente comum (não parcelada) registrada meses atrás, só agora vinculada ao
+    // cartão — regressão do bug em que toda parcela vinculada virava "hoje", perdendo a
+    // data de quando a compra de fato aconteceu.
+    const cartao = await criarCartao({ nome: 'Cartão Retroativo', diaFechamento: 28, diaVencimento: 5 });
+
+    const criada = await request(app.getHttpServer())
+      .post('/api/accounts')
+      .send({ title: 'Farmácia de março', value: 120, dueDate: '2026-03-10', categoria: 'Saúde' })
+      .expect(201);
+
+    const pendingId = Array.isArray(criada.body) ? criada.body[0]._id : criada.body._id;
+    await request(app.getHttpServer())
+      .post('/api/cartoes/vincular-conta-pendente')
+      .send({
+        pendingAccountId: pendingId,
+        carteiraId: cartao._id,
+        parcelasJaPagas: 0,
+        parcelasRestantes: 1,
+      })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaMarco = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-03');
+    const faturaHoje = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia !== '2026-03');
+    expect(faturaMarco).toBeDefined();
+    expect(faturaMarco.valorTotal).toBe(120);
+    expect(faturaHoje).toBeUndefined();
+  });
+
   it('preview-fatura mostra em qual fatura uma compra cairia, sem criar nada', async () => {
     const cartao = await criarCartao({ nome: 'Cartão Preview', diaFechamento: 20, diaVencimento: 27 });
 
