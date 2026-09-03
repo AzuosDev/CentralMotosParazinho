@@ -55,7 +55,6 @@ export function CartoesPage() {
   const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
-  const [isCustomBank, setIsCustomBank] = useState(false);
   const [form, setForm] = useState<CardFormState>(emptyForm);
   const [cartaoToArchive, setCartaoToArchive] = useState<Cartao | null>(null);
 
@@ -85,7 +84,6 @@ export function CartoesPage() {
 
   function openCreate() {
     setForm(emptyForm);
-    setIsCustomBank(false);
     setShowForm(true);
   }
 
@@ -102,13 +100,11 @@ export function CartoesPage() {
       carteiraPagamentoId: cartao.carteiraPagamentoId ?? "",
       taxaJurosRotativo: cartao.taxaJurosRotativo?.toString() ?? "",
     });
-    setIsCustomBank(!BANKS.includes(cartao.nome));
     setShowForm(true);
   }
 
   function closeForm() {
     setShowForm(false);
-    setIsCustomBank(false);
     setForm(emptyForm);
   }
 
@@ -184,56 +180,35 @@ export function CartoesPage() {
               <BankLogo nome={form.nome} icone={form.icone} className="h-8 w-8" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="block">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">
-                    {isCustomBank ? "Nome do cartão *" : "Banco *"}
-                  </span>
-                  {isCustomBank && (
-                    <button
-                      type="button"
-                      onClick={() => { setIsCustomBank(false); setForm((f) => ({ ...f, nome: "", icone: "💳" })); }}
-                      className="text-xs text-accent-lime hover:underline"
-                    >
-                      ← Voltar para a lista
-                    </button>
-                  )}
-                </div>
-                {isCustomBank ? (
-                  <input
-                    autoFocus
-                    value={form.nome}
-                    onChange={(e) => {
-                      const nome = e.target.value;
-                      const auto = detectBankIcon(nome);
-                      setForm((f) => ({ ...f, nome, icone: auto || f.icone }));
-                    }}
-                    placeholder="Ex: Cartão Safra Black…"
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
-                  />
-                ) : (
-                  <select
-                    value={form.nome}
-                    onChange={(e) => {
-                      if (e.target.value === "__outro__") {
-                        setIsCustomBank(true);
-                        setForm((f) => ({ ...f, nome: "", icone: "💳" }));
-                      } else {
-                        const nome = e.target.value;
-                        const auto = detectBankIcon(nome);
-                        setForm((f) => ({ ...f, nome, icone: auto || "💳" }));
-                      }
-                    }}
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
-                  >
-                    <option value="">Selecione um banco…</option>
-                    {BANKS.map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                    <option value="__outro__">Outro (Digitar nome)</option>
-                  </select>
-                )}
-              </div>
+              <label className="block">
+                <span className="mb-1 block text-sm text-text-secondary">Nome do cartão *</span>
+                <input
+                  value={form.nome}
+                  onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+                  placeholder="Ex: Nubank Empresarial, Cartão da viagem…"
+                  maxLength={100}
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm text-text-secondary">Banco (preenche o nome e o ícone)</span>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const banco = e.target.value;
+                    if (!banco) return;
+                    const auto = detectBankIcon(banco);
+                    setForm((f) => ({ ...f, nome: banco, icone: auto || f.icone }));
+                  }}
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+                >
+                  <option value="">Selecione para preencher…</option>
+                  {BANKS.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </label>
 
               <label className="block">
                 <span className="mb-1 block text-sm text-text-secondary">Bandeira</span>
