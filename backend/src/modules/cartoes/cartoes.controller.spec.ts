@@ -713,6 +713,52 @@ describe('CartoesController (e2e)', () => {
       .expect(400);
   });
 
+  it('vincular-recorrente cobra na hora se o vencimento deste mês já passou (não espera o cron)', async () => {
+    // Sem cobrança imediata, o usuário só veria a assinatura entrar na fatura no dia
+    // seguinte via cron — e só se CRON_NOTIFICATIONS estivesse ligado, o que nem está no
+    // ambiente local. Vinculando depois que o vencimento do mês já passou, a cobrança tem
+    // que acontecer no mesmo request de vincular.
+    const cartao = await criarCartao({ nome: 'Cartão Vínculo Imediato', diaFechamento: 20, diaVencimento: 27 });
+    const catId = await categoriaId();
+
+    const criada = await request(app.getHttpServer())
+      .post('/api/accounts')
+      .send({
+        title: 'Disney+',
+        value: 33,
+        dueDate: '2026-08-10',
+        categoryId: catId,
+        isRecorrente: true,
+        // dataTermino em setembro pra não ser varrida pelo cron de outubro do teste
+        // seguinte — os testes deste arquivo compartilham o mesmo banco (sem limpeza
+        // entre `it()`s), e cobrarRecorrentesVinculados varre TODOS os moldes vinculados.
+        recorrencia: { periodoRecorrencia: 'Mensal', dataTermino: '2026-09-30' },
+      })
+      .expect(201);
+    const templateId = criada.body._id as string;
+
+    await cartoesService.vincularRecorrente(
+      FAKE_USER_ID,
+      { templateId, carteiraId: cartao._id },
+      new Date('2026-09-10T12:00:00Z'),
+    );
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaSetembro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(faturaSetembro).toBeDefined();
+    expect(faturaSetembro.valorTotal).toBe(33);
+
+    const instanciaSetembro = await pendingModel.findOne({ recorrenciaTemplateId: templateId }).exec();
+    expect(instanciaSetembro).not.toBeNull();
+    expect(instanciaSetembro!.paid).toBe(true);
+
+    // O cron rodando no mesmo mês depois não duplica a cobrança já feita no vincular.
+    const cobrados = await cartoesService.cobrarRecorrentesVinculados(new Date('2026-09-15T12:00:00Z'));
+    expect(cobrados).toBe(0);
+    const instancias = await pendingModel.find({ recorrenciaTemplateId: templateId }).exec();
+    expect(instancias).toHaveLength(1);
+  });
+
   it('vincular-recorrente + cron cobra a assinatura automaticamente todo mês, sem duplicar', async () => {
     const cartao = await criarCartao({ nome: 'Cartão Assinatura', diaFechamento: 20, diaVencimento: 27 });
     const catId = await categoriaId();
