@@ -321,6 +321,15 @@ export function AccountModal({
   const effectiveAffectsBalance = isPastMonth(effectiveDate) ? formAffectsBalance : true;
 
   const isSaving = createMutation.isPending || editMutation.isPending;
+  // Sem isto, faltar a data (em qualquer um dos 3 formatos que o modo determina) só era
+  // pego no backend, chegando como erro cru de validação ("dueDate must be a valid ISO
+  // 8601 date string") em vez de simplesmente impedir o clique.
+  const hasRequiredDate = formIsParcelada
+    ? !!formParcelas.dataInicio
+    : formIsRecorrente
+      ? (editAccount ? !!formRecorrencia.dataProxima : !!formRecorrenciaDay)
+      : !!formDueDate;
+  const canSubmit = formTitle.trim().length > 0 && formValue > 0 && hasRequiredDate;
   const tipoLabel = formTipo === "RECEBER" ? "a receber" : "a pagar";
   const modalTitle = editAccount ? `Editar conta ${tipoLabel}` : `Nova conta ${tipoLabel}`;
 
@@ -342,7 +351,7 @@ export function AccountModal({
           </button>
           <button
             type="button"
-            disabled={isSaving}
+            disabled={isSaving || !canSubmit}
             className="flex items-center justify-center gap-2 rounded-xl bg-accent-lime px-6 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
             onClick={() => (editAccount ? editMutation.mutate() : createMutation.mutate())}
           >
