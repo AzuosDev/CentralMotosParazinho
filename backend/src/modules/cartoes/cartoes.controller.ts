@@ -7,6 +7,7 @@ import { ICurrentUser } from '../../common/types/current-user.type';
 import { CreateParcelamentoDto } from './dto/create-parcelamento.dto';
 import { PagarFaturaDto } from './dto/pagar-fatura.dto';
 import { VincularContaPendenteDto } from './dto/vincular-conta-pendente.dto';
+import { VincularRecorrenteDto } from './dto/vincular-recorrente.dto';
 import { PreviewFaturaDto } from './dto/preview-fatura.dto';
 
 @ApiTags('Cartoes')
@@ -39,6 +40,11 @@ export class CartoesController {
   @Post('vincular-conta-pendente')
   vincularContaPendente(@CurrentUser() user: ICurrentUser, @Body() dto: VincularContaPendenteDto) {
     return this.cartoesService.vincularContaPendente(user._id.toString(), dto);
+  }
+
+  @Post('vincular-recorrente')
+  vincularRecorrente(@CurrentUser() user: ICurrentUser, @Body() dto: VincularRecorrenteDto) {
+    return this.cartoesService.vincularRecorrente(user._id.toString(), dto);
   }
 
   @Get(':id')

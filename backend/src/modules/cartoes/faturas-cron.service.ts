@@ -26,6 +26,12 @@ export class FaturasCronService {
       this.logger.log(`${count} fatura(s) fechada(s)`);
     } catch (err) {
       this.logger.error('Error closing faturas', err);
+    }
+    try {
+      const cobrados = await this.cartoesService.cobrarRecorrentesVinculados();
+      this.logger.log(`${cobrados} recorrência(s) vinculada(s) a cartão cobrada(s)`);
+    } catch (err) {
+      this.logger.error('Error charging linked recurring accounts', err);
     } finally {
       this.isRunning = false;
     }

@@ -12,6 +12,7 @@ import { ConfirmDeleteModal } from "../components/modals/ConfirmDeleteModal";
 import { PayBillModal } from "../components/modals/PayBillModal";
 import { AccountModal } from "../components/modals/AccountModal";
 import { VincularCartaoModal } from "../components/modals/VincularCartaoModal";
+import { VincularRecorrenteModal } from "../components/modals/VincularRecorrenteModal";
 import type { PendingAccount } from "../types/api";
 
 type AccountType = "PAGAR" | "RECEBER";
@@ -145,6 +146,7 @@ export function ContasPage() {
 
   const [payBillItem, setPayBillItem] = useState<PendingDisplayItem | null>(null);
   const [vincularCartaoItem, setVincularCartaoItem] = useState<PendingDisplayItem | null>(null);
+  const [vincularRecorrenteItem, setVincularRecorrenteItem] = useState<PendingDisplayItem | null>(null);
   const [unmarkTarget, setUnmarkTarget] = useState<PendingDisplayItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -450,6 +452,17 @@ export function ContasPage() {
                   Vincular a um cartão
                 </button>
               )}
+              {activeTab === "PAGAR" && !item.paid && (item.isRecorrente || item.isVirtual || item.recorrenciaTemplateId) && (
+                <button
+                  type="button"
+                  onClick={() => setVincularRecorrenteItem(item)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+                  title="Cobrar esta assinatura automaticamente num cartão, todo mês"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Vincular a um cartão
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => abrirModalEdicao(item)}
@@ -749,6 +762,15 @@ export function ContasPage() {
             carteiraId,
           });
         }}
+      />
+      <VincularRecorrenteModal
+        open={!!vincularRecorrenteItem}
+        onClose={() => setVincularRecorrenteItem(null)}
+        template={
+          vincularRecorrenteItem
+            ? { id: vincularRecorrenteItem.recorrenciaTemplateId ?? vincularRecorrenteItem.id, title: vincularRecorrenteItem.title }
+            : null
+        }
       />
       <VincularCartaoModal
         open={!!vincularCartaoItem}

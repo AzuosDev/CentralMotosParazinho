@@ -712,4 +712,115 @@ describe('CartoesController (e2e)', () => {
       .send({ type: 'EXPENSE', value: 20, categoryId: catId, date: '2026-09-06', carteiraId: cartao._id })
       .expect(400);
   });
+
+  it('vincular-recorrente + cron cobra a assinatura automaticamente todo mês, sem duplicar', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Assinatura', diaFechamento: 20, diaVencimento: 27 });
+    const catId = await categoriaId();
+
+    const criada = await request(app.getHttpServer())
+      .post('/api/accounts')
+      .send({
+        title: 'Netflix',
+        value: 50,
+        dueDate: '2026-08-10',
+        categoryId: catId,
+        isRecorrente: true,
+        recorrencia: { periodoRecorrencia: 'Mensal' },
+      })
+      .expect(201);
+    const templateId = criada.body._id as string;
+
+    await request(app.getHttpServer())
+      .post('/api/cartoes/vincular-recorrente')
+      .send({ templateId, carteiraId: cartao._id })
+      .expect(201);
+
+    // Simula o cron rodando em setembro: dia 10 já passou o vencimento projetado do mês,
+    // dentro do ciclo de fechamento dia 20 → cai na fatura de setembro.
+    const cobradosSetembro = await cartoesService.cobrarRecorrentesVinculados(new Date('2026-09-10T12:00:00Z'));
+    expect(cobradosSetembro).toBe(1);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaSetembro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(faturaSetembro).toBeDefined();
+    expect(faturaSetembro.valorTotal).toBe(50);
+
+    const instanciaSetembro = await pendingModel.findOne({ recorrenciaTemplateId: templateId }).exec();
+    expect(instanciaSetembro).not.toBeNull();
+    expect(instanciaSetembro!.paid).toBe(true);
+    expect(instanciaSetembro!.faturaId?.toString()).toBe(faturaSetembro._id);
+
+    // Rodar de novo no mesmo mês não duplica a cobrança.
+    const cobradosDeNovo = await cartoesService.cobrarRecorrentesVinculados(new Date('2026-09-15T12:00:00Z'));
+    expect(cobradosDeNovo).toBe(0);
+    const instancias = await pendingModel.find({ recorrenciaTemplateId: templateId }).exec();
+    expect(instancias).toHaveLength(1);
+    const transacoesNetflix = await transactionModel.find({ faturaId: new Types.ObjectId(faturaSetembro._id) }).exec();
+    expect(transacoesNetflix).toHaveLength(1);
+
+    // Mês seguinte: nova cobrança, fatura diferente.
+    const cobradosOutubro = await cartoesService.cobrarRecorrentesVinculados(new Date('2026-10-11T12:00:00Z'));
+    expect(cobradosOutubro).toBe(1);
+    const detalhe2 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaOutubro = detalhe2.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-10');
+    expect(faturaOutubro.valorTotal).toBe(50);
+  });
+
+  it('pay-month de uma conta recorrente com carteiraId de cartão cai na fatura, não vira Transaction solta', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Pagar Recorrente', diaFechamento: 20, diaVencimento: 27 });
+    const catId = await categoriaId();
+
+    const criada = await request(app.getHttpServer())
+      .post('/api/accounts')
+      .send({
+        title: 'Spotify',
+        value: 25,
+        dueDate: '2026-09-05',
+        categoryId: catId,
+        isRecorrente: true,
+        recorrencia: { periodoRecorrencia: 'Mensal' },
+      })
+      .expect(201);
+    const templateId = criada.body._id as string;
+
+    const pago = await request(app.getHttpServer())
+      .post(`/api/accounts/${templateId}/pay-month`)
+      .send({ month: 9, year: 2026, carteiraId: cartao._id })
+      .expect(200);
+    expect(pago.body.faturaId).toBeDefined();
+    expect(pago.body.paid).toBe(true);
+
+    // Não criou uma Transaction solta com pendingAccountId — foi pra fatura, igual
+    // qualquer outra compra no cartão.
+    const transacaoSolta = await transactionModel.findOne({ pendingAccountId: pago.body._id }).exec();
+    expect(transacaoSolta).toBeNull();
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(fatura.valorTotal).toBe(25);
+  });
+
+  it('PATCH marca uma conta avulsa como paga com carteiraId de cartão e ela cai na fatura', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Conta Avulsa', diaFechamento: 20, diaVencimento: 27 });
+    const catId = await categoriaId();
+
+    const criada = await request(app.getHttpServer())
+      .post('/api/accounts')
+      .send({ title: 'Farmácia', value: 80, dueDate: '2026-09-08', categoryId: catId })
+      .expect(201);
+    const pendingId = criada.body._id as string;
+
+    const paga = await request(app.getHttpServer())
+      .patch(`/api/accounts/${pendingId}`)
+      .send({ paid: true, carteiraId: cartao._id })
+      .expect(200);
+    expect(paga.body.faturaId).toBeDefined();
+
+    const transacaoSolta = await transactionModel.findOne({ pendingAccountId: pendingId }).exec();
+    expect(transacaoSolta).toBeNull();
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(fatura.valorTotal).toBe(80);
+  });
 });

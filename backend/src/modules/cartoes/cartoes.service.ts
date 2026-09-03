@@ -11,6 +11,7 @@ import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { CreateParcelamentoDto } from './dto/create-parcelamento.dto';
 import { PagarFaturaDto } from './dto/pagar-fatura.dto';
 import { VincularContaPendenteDto } from './dto/vincular-conta-pendente.dto';
+import { VincularRecorrenteDto } from './dto/vincular-recorrente.dto';
 import { SIGNED_VALUE_EXPR } from '../transactions/transaction-aggregation.util';
 
 @Injectable()
@@ -589,6 +590,109 @@ export class CartoesService {
     }
 
     return { parcelamento };
+  }
+
+  // Vincula o MOLDE recorrente inteiro a um cartão (não uma ocorrência isolada): a partir
+  // daqui, cobrarRecorrentesVinculados() cobra automaticamente cada mês na fatura certa,
+  // sem o usuário precisar repetir a ação — é a diferença entre isto e
+  // vincularContaPendente (que converte uma conta avulsa/já parcelada, de uma vez só).
+  async vincularRecorrente(userId: string, dto: VincularRecorrenteDto) {
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const walletObjectId = this.toObjectId(dto.carteiraId, 'carteiraId');
+
+    const wallet = await this.walletModel.findOne({ _id: walletObjectId, userId: userObjectId, tipo: 'credito' }).exec();
+    if (!wallet) throw new NotFoundException('Cartão não encontrado');
+
+    const template = await this.pendingModel
+      .findOne({
+        _id: this.toObjectId(dto.templateId, 'templateId'),
+        userId: userObjectId,
+        isRecorrente: true,
+        recorrenciaTemplateId: { $exists: false },
+      })
+      .exec();
+    if (!template) throw new NotFoundException('Conta recorrente não encontrada');
+
+    template.carteiraId = wallet._id as Types.ObjectId;
+    await template.save();
+    return template;
+  }
+
+  // Cobra automaticamente, na fatura do ciclo certo, os moldes recorrentes vinculados a um
+  // cartão (vincularRecorrente) cujo vencimento do mês já chegou e ainda não foi lançado.
+  // Chamado pelo cron diário (FaturasCronService), junto de fecharFaturasVencidas.
+  // Diferente de uma compra nova, não bloqueia por limite nem pede confirmação — o usuário
+  // já decidiu que essa assinatura é cobrada no cartão quando vinculou o molde.
+  async cobrarRecorrentesVinculados(now: Date = new Date()): Promise<number> {
+    const templates = await this.pendingModel
+      .find({ isRecorrente: true, recorrenciaTemplateId: { $exists: false }, carteiraId: { $exists: true, $ne: null } })
+      .exec();
+
+    let cobrados = 0;
+
+    for (const template of templates) {
+      // periodoRecorrencia só suporta Mensal por enquanto — Diário/Semanal/Anual têm
+      // regras de projeção próprias (ver pending.service.ts#findAll) que exigiriam
+      // replicar aqui; deixado de fora até existir um caso real pra cobrar no cartão.
+      if ((template.recorrencia?.periodoRecorrencia ?? 'Mensal') !== 'Mensal') continue;
+
+      const wallet = await this.walletModel.findOne({ _id: template.carteiraId, tipo: 'credito' }).exec();
+      if (!wallet || wallet.arquivadaEm) continue;
+
+      const year = now.getUTCFullYear();
+      const month = now.getUTCMonth() + 1;
+      const startDate = new Date(template.dueDate);
+      const startYear = startDate.getUTCFullYear();
+      const startMonth = startDate.getUTCMonth() + 1;
+      if (year < startYear || (year === startYear && month < startMonth)) continue;
+
+      const day = Math.min(startDate.getUTCDate(), this.daysInMonthUtc(year, month));
+      const dueDate = new Date(Date.UTC(year, month - 1, day));
+      if (dueDate > now) continue;
+      if (template.recorrencia?.dataTermino && dueDate > template.recorrencia.dataTermino) continue;
+
+      const templateId = (template._id as Types.ObjectId).toString();
+      const jaExiste = await this.pendingModel.exists({
+        userId: template.userId,
+        recorrenciaTemplateId: templateId,
+        dueDate: { $gte: new Date(Date.UTC(year, month - 1, 1)), $lte: new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)) },
+      });
+      if (jaExiste) continue;
+
+      const tx = await this.criarCompraAvulsa(template.userId as Types.ObjectId, wallet, {
+        value: template.value,
+        categoryId: template.categoryId as Types.ObjectId | undefined,
+        description: template.title,
+        date: dueDate,
+      });
+
+      // A instância recorrente ganha faturaId (mesmo campo que a PendingAccount da própria
+      // fatura usa) só pra sinalizar "isto é negócio de cartão" — o frontend já sabe
+      // renderizar isso como um link pra tela de Cartões em vez das ações genéricas de
+      // pagar/editar/excluir (ver ContasPage.tsx).
+      await this.pendingModel.create({
+        userId: template.userId,
+        title: template.title,
+        value: template.value,
+        dueDate,
+        description: template.description,
+        isParcelada: false,
+        isRecorrente: false,
+        categoria: template.categoria,
+        formatoPagamento: template.formatoPagamento,
+        tipo: template.tipo,
+        carteiraId: template.carteiraId,
+        categoryId: template.categoryId,
+        recorrenciaTemplateId: templateId,
+        paid: true,
+        paidAt: now,
+        faturaId: tx.faturaId,
+      });
+
+      cobrados++;
+    }
+
+    return cobrados;
   }
 
   // Resolve o cartão dono de uma fatura — usado pelo frontend para navegar direto de
