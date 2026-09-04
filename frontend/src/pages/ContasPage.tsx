@@ -13,7 +13,7 @@ import { PayBillModal } from "../components/modals/PayBillModal";
 import { AccountModal } from "../components/modals/AccountModal";
 import { VincularCartaoModal } from "../components/modals/VincularCartaoModal";
 import { VincularRecorrenteModal } from "../components/modals/VincularRecorrenteModal";
-import type { PendingAccount } from "../types/api";
+import type { Cartao, PendingAccount } from "../types/api";
 
 type AccountType = "PAGAR" | "RECEBER";
 
@@ -205,6 +205,22 @@ export function ContasPage() {
     },
   });
 
+  // Pra saber quando uma conta recorrente já está vinculada a um cartão (carteiraId
+  // aponta pra um cartão) mesmo antes da primeira cobrança no ciclo — ver linkedCardName
+  // em renderAccountCard. Sem isso o item "Recorrente" continua oferecendo "Vincular a um
+  // cartão" de novo depois de já vinculado, como se nada tivesse mudado.
+  const cartoesQuery = useQuery<Cartao[]>({
+    queryKey: ["cartoes"],
+    queryFn: async () => {
+      const { data } = await api.get<Cartao[]>("/api/cartoes");
+      return Array.isArray(data) ? data : [];
+    },
+  });
+  const cartaoNomeById = useMemo(
+    () => new Map((cartoesQuery.data ?? []).map((c) => [c._id, c.nome])),
+    [cartoesQuery.data],
+  );
+
   const activeQuery = activeTab === "PAGAR" ? pagarQuery : receberQuery;
   const items = useMemo(() => activeQuery.data ?? [], [activeQuery.data]);
 
@@ -360,6 +376,11 @@ export function ContasPage() {
     const dueDateStr = utcDateStr(item.dueDate);
     const todayStr = localDateString();
     const installmentLabel = item.installmentLabel ?? (item.numeroParcela && item.parcelas?.totalParcelas ? `parcela ${item.numeroParcela}/${item.parcelas.totalParcelas}` : undefined);
+    // Molde recorrente já vinculado a um cartão (CartoesService#vincularRecorrente), mas
+    // ainda sem faturaId porque o vencimento deste ciclo não chegou — a cobrança automática
+    // só acontece na data certa (ver cobrarOcorrenciaSeVencida). Sem isso, o item continua
+    // parecendo "não vinculado" até o dia da cobrança.
+    const linkedCardNome = !item.faturaId && item.carteiraId ? cartaoNomeById.get(item.carteiraId) : undefined;
 
     return (
       <article
@@ -390,6 +411,15 @@ export function ContasPage() {
                   Fatura de cartão
                 </span>
               )}
+              {linkedCardNome && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-400"
+                  title="Cobrada automaticamente neste cartão quando o vencimento chegar"
+                >
+                  <CreditCard className="h-3 w-3" />
+                  Vinculada a {linkedCardNome}
+                </span>
+              )}
               <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold", status.className)}>{status.label}</span>
             </div>
             <p className="mt-1 text-sm text-text-secondary">{item.description ?? "Conta"}</p>
@@ -411,7 +441,7 @@ export function ContasPage() {
             </Link>
           ) : (
             <>
-              {!item.paid && (
+              {!item.paid && !linkedCardNome && (
                 <button
                   type="button"
                   onClick={() => setPayBillItem(item)}
@@ -420,6 +450,11 @@ export function ContasPage() {
                   <Check className="h-4 w-4" />
                   {activeTab === "RECEBER" ? "Marcar como recebido" : "Marcar como pago"}
                 </button>
+              )}
+              {!item.paid && linkedCardNome && (
+                <p className="flex items-center gap-2 text-xs text-text-muted">
+                  A cobrança entra na fatura sozinha quando o vencimento chegar — não precisa marcar como paga.
+                </p>
               )}
               {item.paid && (
                 <button
@@ -452,7 +487,7 @@ export function ContasPage() {
                   Vincular a um cartão
                 </button>
               )}
-              {activeTab === "PAGAR" && !item.paid && (item.isRecorrente || item.isVirtual || item.recorrenciaTemplateId) && (
+              {activeTab === "PAGAR" && !item.paid && !linkedCardNome && (item.isRecorrente || item.isVirtual || item.recorrenciaTemplateId) && (
                 <button
                   type="button"
                   onClick={() => setVincularRecorrenteItem(item)}
