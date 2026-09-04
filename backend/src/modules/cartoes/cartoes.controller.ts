@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CartoesService } from './cartoes.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -57,6 +57,16 @@ export class CartoesController {
     return this.cartoesService.listarParcelamentos(user._id.toString(), id);
   }
 
+  @Delete(':id/parcelamentos/:parcelamentoId')
+  @HttpCode(200)
+  excluirParcelamento(
+    @CurrentUser() user: ICurrentUser,
+    @Param('id') id: string,
+    @Param('parcelamentoId') parcelamentoId: string,
+  ) {
+    return this.cartoesService.excluirParcelamento(user._id.toString(), id, parcelamentoId);
+  }
+
   @Get(':id/preview-fatura')
   previewFatura(@CurrentUser() user: ICurrentUser, @Param('id') id: string, @Query() query: PreviewFaturaDto) {
     return this.cartoesService.previsualizarFatura(user._id.toString(), id, query.data);
@@ -80,5 +90,15 @@ export class CartoesController {
     @Body() dto: PagarFaturaDto,
   ) {
     return this.cartoesService.pagar(user._id.toString(), id, faturaId, dto);
+  }
+
+  @Post(':id/faturas/:faturaId/desfazer-pagamento')
+  @HttpCode(200)
+  desfazerPagamento(
+    @CurrentUser() user: ICurrentUser,
+    @Param('id') id: string,
+    @Param('faturaId') faturaId: string,
+  ) {
+    return this.cartoesService.desfazerPagamento(user._id.toString(), id, faturaId);
   }
 }

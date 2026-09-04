@@ -65,7 +65,6 @@ export class CartoesService {
   // Vencimento no mesmo mês do fechamento se diaVencimento > diaFechamento, senão mês seguinte.
   private resolverCicloFatura(wallet: WalletDocument, dataCompra: Date) {
     const D = wallet.diaFechamento!;
-    const V = wallet.diaVencimento!;
     const day = dataCompra.getUTCDate();
 
     let closingYear = dataCompra.getUTCFullYear();
@@ -74,6 +73,18 @@ export class CartoesService {
       closingMonth += 1;
       if (closingMonth > 12) { closingMonth = 1; closingYear += 1; }
     }
+    return this.montarCiclo(wallet, closingYear, closingMonth);
+  }
+
+  // Monta o ciclo (dataInicio/dataFechamento/dataVencimento/mesReferencia) a partir de um
+  // mês de fechamento já determinado. Compartilhado por resolverCicloFatura (que descobre
+  // o mês a partir de uma data de compra, aplicando a regra dia > fechamento → mês
+  // seguinte) e por resolverFaturaPorVencimento (que já sabe direto em qual mês a fatura
+  // cai, sem re-derivar).
+  private montarCiclo(wallet: WalletDocument, closingYear: number, closingMonth: number) {
+    const D = wallet.diaFechamento!;
+    const V = wallet.diaVencimento!;
+
     const fechamentoDay = Math.min(D, this.daysInMonthUtc(closingYear, closingMonth));
     const dataFechamento = new Date(Date.UTC(closingYear, closingMonth - 1, fechamentoDay, 23, 59, 59, 999));
 
@@ -97,9 +108,7 @@ export class CartoesService {
     return { mesReferencia, dataInicio, dataFechamento, dataVencimento };
   }
 
-  // Cria (lazy) a fatura do ciclo que contém dataCompra, e a PendingAccount que a
-  // representa — uma por ciclo, criada na 1ª compra, valor crescendo a cada nova compra.
-  async resolverFaturaParaCompra(userId: Types.ObjectId, wallet: WalletDocument, dataCompra: Date): Promise<FaturaDocument> {
+  private validarCartaoParaLancamento(wallet: WalletDocument) {
     // Único ponto de entrada comum a compra avulsa, parcelamento e vincular-conta-pendente —
     // bloquear aqui cobre os três sem precisar repetir o check em cada um.
     if (wallet.arquivadaEm) {
@@ -110,7 +119,32 @@ export class CartoesService {
         'Configure o dia de fechamento e o dia de vencimento do cartão antes de lançar compras.',
       );
     }
-    const ciclo = this.resolverCicloFatura(wallet, dataCompra);
+  }
+
+  // Cria (lazy) a fatura do ciclo que contém dataCompra, e a PendingAccount que a
+  // representa — uma por ciclo, criada na 1ª compra, valor crescendo a cada nova compra.
+  async resolverFaturaParaCompra(userId: Types.ObjectId, wallet: WalletDocument, dataCompra: Date): Promise<FaturaDocument> {
+    this.validarCartaoParaLancamento(wallet);
+    return this.obterOuCriarFaturaDoCiclo(userId, wallet, this.resolverCicloFatura(wallet, dataCompra));
+  }
+
+  // Cria (lazy) a fatura cujo vencimento cai no mês/ano de vencimentoAlvo, sem re-derivar
+  // o ciclo a partir de dia-do-mês > fechamento. Usado quando a data de origem já É uma
+  // data de vencimento (ex: parcela de uma conta pendente vinculada retroativamente ao
+  // cartão) — tratá-la como se fosse uma data de compra e rodar pela regra normal
+  // duplicaria o deslocamento: a conta pendente já nasceu com "quando isso vence", então o
+  // mês de vencimento é usado direto.
+  async resolverFaturaPorVencimento(userId: Types.ObjectId, wallet: WalletDocument, vencimentoAlvo: Date): Promise<FaturaDocument> {
+    this.validarCartaoParaLancamento(wallet);
+    const ciclo = this.montarCiclo(wallet, vencimentoAlvo.getUTCFullYear(), vencimentoAlvo.getUTCMonth() + 1);
+    return this.obterOuCriarFaturaDoCiclo(userId, wallet, ciclo);
+  }
+
+  private async obterOuCriarFaturaDoCiclo(
+    userId: Types.ObjectId,
+    wallet: WalletDocument,
+    ciclo: { mesReferencia: string; dataInicio: Date; dataFechamento: Date; dataVencimento: Date },
+  ): Promise<FaturaDocument> {
     const existente = await this.faturaModel
       .findOne({ userId, carteiraId: wallet._id, mesReferencia: ciclo.mesReferencia })
       .exec();
@@ -217,6 +251,19 @@ export class CartoesService {
     fatura.valorTotal = Number((agg[0]?.total ?? 0).toFixed(2));
     const valorDevido = Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2));
 
+    // Mantém fatura.status coerente com valorPago/valorDevido depois que uma compra nova (ou
+    // um estorno) muda o total devido. Sem isto, uma fatura marcada 'paga' (ou 'parcial')
+    // ficava com esse status pra sempre mesmo depois de uma compra nova aumentar o total
+    // devido de novo — e como o branch abaixo só atualiza pending.value, nunca pending.paid,
+    // a PendingAccount ligada continuava paid:true e sumia de Contas a Pagar apesar de haver
+    // saldo devedor real. Só mexe na fatura DEPOIS de já ter carregado rotativo/juros (nunca
+    // toca aberta↔fechada, que é 100% controlado por data via fecharFaturasVencidas).
+    if (fatura.valorPago > 0) {
+      fatura.status = fatura.valorPago + 0.005 >= valorDevido ? 'paga' : 'parcial';
+    } else if (fatura.status === 'paga' || fatura.status === 'parcial') {
+      fatura.status = fatura.dataFechamento < new Date() ? 'fechada' : 'aberta';
+    }
+
     if (fatura.pendingAccountId) {
       const pending = await this.pendingModel.findById(fatura.pendingAccountId).exec();
       if (pending && !pending.paid && valorDevido <= 0) {
@@ -228,6 +275,11 @@ export class CartoesService {
         fatura.pendingAccountId = undefined;
       } else if (pending && valorDevido > 0) {
         pending.value = valorDevido;
+        const paga = fatura.status === 'paga';
+        if (pending.paid !== paga) {
+          pending.paid = paga;
+          pending.paidAt = paga ? new Date() : undefined;
+        }
         await pending.save();
       }
     } else if (valorDevido > 0) {
@@ -245,6 +297,24 @@ export class CartoesService {
         faturaId: fatura._id,
       });
       fatura.pendingAccountId = pending._id as Types.ObjectId;
+    }
+
+    // A fatura ficou totalmente vazia e nunca teve nenhum evento financeiro real (nunca
+    // paga, nunca carregou rotativo/juros de um ciclo anterior) — normalmente porque a
+    // última transação que a preenchia foi excluída ou estornada (ex: excluirParcelamento,
+    // estornar). Sem isto, a aba Faturas acumulava faturas fantasma "Aberta" vazias pra
+    // sempre; com isto, ela simplesmente deixa de existir e é recriada (lazy) se uma
+    // compra nova cair de novo nesse ciclo. valorPago === 0 já garante que nunca houve
+    // pagamento (pagar() sempre exige restante > 0, então não há como zerar de volta um
+    // valorPago já lançado só recomputando o total).
+    if (
+      fatura.valorTotal === 0
+      && fatura.valorPago === 0
+      && fatura.saldoRotativoAnterior === 0
+      && fatura.jurosAplicados === 0
+    ) {
+      await this.faturaModel.deleteOne({ _id: fatura._id }).exec();
+      return null;
     }
 
     await fatura.save();
@@ -275,9 +345,21 @@ export class CartoesService {
   async criarCompraAvulsa(
     userId: Types.ObjectId,
     wallet: WalletDocument,
-    params: { value: number; categoryId?: Types.ObjectId; description?: string; date: Date },
+    params: {
+      value: number;
+      categoryId?: Types.ObjectId;
+      description?: string;
+      date: Date;
+      // true quando params.date já é uma data de vencimento (ex: parcela de uma conta
+      // pendente antiga, ou cobrança recorrente) em vez de uma data de compra — evita
+      // rodar essa data de novo pela regra "dia > fechamento → mês seguinte", que já foi
+      // aplicada (implicitamente) quando esse vencimento foi definido.
+      tratarDataComoVencimento?: boolean;
+    },
   ): Promise<TransactionDocument> {
-    const fatura = await this.resolverFaturaParaCompra(userId, wallet, params.date);
+    const fatura = params.tratarDataComoVencimento
+      ? await this.resolverFaturaPorVencimento(userId, wallet, params.date)
+      : await this.resolverFaturaParaCompra(userId, wallet, params.date);
     const todayStr = new Date().toISOString().slice(0, 10);
     const agendado = params.date.toISOString().slice(0, 10) > todayStr;
 
@@ -411,33 +493,38 @@ export class CartoesService {
     if (!fatura) throw new NotFoundException('Fatura não encontrada');
     if (fatura.status === 'paga') throw new BadRequestException('Esta fatura já está paga.');
 
-    const payerWalletId = dto.carteiraPagadoraId
-      ? this.toObjectId(dto.carteiraPagadoraId, 'carteiraPagadoraId')
-      : wallet.carteiraPagamentoId;
-    if (!payerWalletId) {
-      throw new BadRequestException('Informe a carteira pagadora (nenhuma carteira padrão configurada para este cartão).');
-    }
-
-    const payerWallet = await this.walletModel
-      .findOne({ _id: payerWalletId, userId: userObjectId, tipo: { $ne: 'credito' } })
-      .exec();
-    if (!payerWallet) throw new NotFoundException('Carteira pagadora não encontrada');
-
     const totalDevido = Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2));
     const restante = Number((totalDevido - fatura.valorPago).toFixed(2));
     if (restante <= 0) throw new BadRequestException('Esta fatura não possui saldo devedor.');
     const valorPago = Math.min(dto.valor, restante);
 
-    await this.transactionModel.create({
-      userId: userObjectId,
-      type: TransactionType.TRANSFER,
-      tipoTransacao: 'transferencia',
-      value: valorPago,
-      date: new Date(),
-      description: `Pagamento fatura ${wallet.nome}`,
-      carteiraId: payerWallet._id,
-      faturaId: fatura._id,
-    });
+    // affectsBalance=false: fatura fica marcada como paga (histórico), sem mexer em
+    // nenhuma carteira de verdade — pra faturas de meses já pagos na vida real antes de
+    // começar a rastrear aqui (mesmo caso de uso do checkbox equivalente em AccountModal).
+    if (dto.affectsBalance !== false) {
+      const payerWalletId = dto.carteiraPagadoraId
+        ? this.toObjectId(dto.carteiraPagadoraId, 'carteiraPagadoraId')
+        : wallet.carteiraPagamentoId;
+      if (!payerWalletId) {
+        throw new BadRequestException('Informe a carteira pagadora (nenhuma carteira padrão configurada para este cartão).');
+      }
+
+      const payerWallet = await this.walletModel
+        .findOne({ _id: payerWalletId, userId: userObjectId, tipo: { $ne: 'credito' } })
+        .exec();
+      if (!payerWallet) throw new NotFoundException('Carteira pagadora não encontrada');
+
+      await this.transactionModel.create({
+        userId: userObjectId,
+        type: TransactionType.TRANSFER,
+        tipoTransacao: 'transferencia',
+        value: valorPago,
+        date: new Date(),
+        description: `Pagamento fatura ${wallet.nome}`,
+        carteiraId: payerWallet._id,
+        faturaId: fatura._id,
+      });
+    }
 
     fatura.valorPago = Number((fatura.valorPago + valorPago).toFixed(2));
     fatura.status = fatura.valorPago + 0.005 >= totalDevido ? 'paga' : 'parcial';
@@ -448,6 +535,49 @@ export class CartoesService {
       await this.pendingModel.findByIdAndUpdate(fatura.pendingAccountId, {
         $set: { paid: paga, ...(paga ? { paidAt: new Date() } : {}) },
       }).exec();
+    }
+
+    return fatura;
+  }
+
+  // Desfaz TODO pagamento registrado numa fatura (não um pagamento específico) — o único
+  // jeito de sair do estado bloqueado por excluirParcelamento ("Estorne o pagamento antes de
+  // excluir"), já que "Estornar" (acima) reverte uma COMPRA, não um pagamento de fatura, e
+  // não existia nenhum caminho pra desfazer isso até agora. Some qualquer TRANSFER real
+  // criada em pagar() (restaura o saldo da carteira pagadora, já que ele é calculado por
+  // agregação) e zera valorPago/status/pendingAccount.paid, inclusive quando o pagamento foi
+  // affectsBalance:false (sem transferência, só histórico).
+  //
+  // Não recalcula o efeito cascata em saldoRotativoAnterior de uma fatura futura que já
+  // tenha fechado usando o estado desta (rotativo/crédito já propagado) — igual a outros
+  // pontos do módulo, assume o caso comum (desfazer um pagamento recente, sem faturas
+  // seguintes já fechadas por cima dele).
+  async desfazerPagamento(userId: string, cartaoId: string, faturaId: string) {
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const walletObjectId = this.toObjectId(cartaoId, 'cartaoId');
+    const faturaObjectId = this.toObjectId(faturaId, 'faturaId');
+
+    const wallet = await this.walletModel.findOne({ _id: walletObjectId, userId: userObjectId, tipo: 'credito' }).exec();
+    if (!wallet) throw new NotFoundException('Cartão não encontrado');
+
+    const fatura = await this.faturaModel
+      .findOne({ _id: faturaObjectId, userId: userObjectId, carteiraId: walletObjectId })
+      .exec();
+    if (!fatura) throw new NotFoundException('Fatura não encontrada');
+    if (fatura.valorPago <= 0) throw new BadRequestException('Esta fatura não tem pagamento registrado.');
+
+    await this.transactionModel
+      .deleteMany({ userId: userObjectId, type: TransactionType.TRANSFER, faturaId: fatura._id })
+      .exec();
+
+    fatura.valorPago = 0;
+    fatura.status = fatura.dataFechamento < new Date() ? 'fechada' : 'aberta';
+    await fatura.save();
+
+    if (fatura.pendingAccountId) {
+      await this.pendingModel
+        .findByIdAndUpdate(fatura.pendingAccountId, { $set: { paid: false }, $unset: { paidAt: '' } })
+        .exec();
     }
 
     return fatura;
@@ -515,9 +645,10 @@ export class CartoesService {
     const valorParcela = pending.parcelas?.valorParcela ?? pending.value;
     const descricao = pending.title;
     const categoryObjectId = pending.categoryId as Types.ObjectId | undefined;
-    // Data de quando a compra de fato aconteceu — nunca "hoje". Vincular é registrar algo
-    // que já aconteceu (às vezes meses atrás), não uma compra nova; usar "hoje" jogava a
-    // conta inteira pra fatura do mês corrente, perdendo a data original.
+    // Data de vencimento de cada parcela (a conta pendente nasce com "quando isso vence",
+    // nunca "quando comprei") — nunca "hoje". Vincular é registrar algo que já aconteceu
+    // (às vezes meses atrás), não uma compra nova; usar "hoje" jogava a conta inteira pra
+    // fatura do mês corrente, perdendo a data original.
     const dataCompraBase = pending.parcelas?.dataInicio ?? pending.dueDate;
     const todayStr = new Date().toISOString().slice(0, 10);
     const faturaIdsAfetadas = new Set<string>();
@@ -534,6 +665,7 @@ export class CartoesService {
         categoryId: categoryObjectId,
         description: descricao,
         date: dataCompraBase,
+        tratarDataComoVencimento: true,
       });
       faturaIdsAfetadas.add((tx.faturaId as Types.ObjectId).toString());
     } else {
@@ -550,7 +682,7 @@ export class CartoesService {
       for (let i = 0; i < dto.parcelasRestantes; i++) {
         const numeroParcela = dto.parcelasJaPagas + i + 1;
         const data = this.addMonths(dataCompraBase, dto.parcelasJaPagas + i);
-        const fatura = await this.resolverFaturaParaCompra(userObjectId, wallet, data);
+        const fatura = await this.resolverFaturaPorVencimento(userObjectId, wallet, data);
         const agendado = data.toISOString().slice(0, 10) > todayStr;
 
         await this.transactionModel.create({
@@ -810,6 +942,54 @@ export class CartoesService {
       });
     }
     return result;
+  }
+
+  // Exclui um parcelamento inteiro e todas as suas transações — uso: corrigir um
+  // lançamento feito no cartão errado, ou por engano. Bloqueia se alguma fatura afetada já
+  // teve pagamento registrado, pra não deixar valorPago > valorTotal depois do recálculo;
+  // nesse caso a saída é desfazerPagamento() na fatura antes de excluir.
+  async excluirParcelamento(userId: string, cartaoId: string, parcelamentoId: string) {
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const walletObjectId = this.toObjectId(cartaoId, 'cartaoId');
+    const parcelamentoObjectId = this.toObjectId(parcelamentoId, 'parcelamentoId');
+
+    const wallet = await this.walletModel.findOne({ _id: walletObjectId, userId: userObjectId, tipo: 'credito' }).exec();
+    if (!wallet) throw new NotFoundException('Cartão não encontrado');
+
+    const parcelamento = await this.parcelamentoModel
+      .findOne({ _id: parcelamentoObjectId, userId: userObjectId, carteiraId: walletObjectId })
+      .exec();
+    if (!parcelamento) throw new NotFoundException('Parcelamento não encontrado');
+
+    const transacoes = await this.transactionModel
+      .find({ userId: userObjectId, parcelamentoId: parcelamento._id })
+      .exec();
+    const faturaIdsUnicos = new Map<string, Types.ObjectId>();
+    for (const t of transacoes) {
+      const fid = t.faturaId as Types.ObjectId;
+      faturaIdsUnicos.set(fid.toString(), fid);
+    }
+    const faturaIds = [...faturaIdsUnicos.values()];
+
+    const faturas = await this.faturaModel.find({ _id: { $in: faturaIds } }).exec();
+    if (faturas.some((f) => f.valorPago > 0)) {
+      throw new BadRequestException(
+        'Uma das faturas afetadas por este parcelamento já teve pagamento registrado. Desfaça o pagamento da fatura antes de excluir.',
+      );
+    }
+
+    for (const tx of transacoes) {
+      if (!tx.agendado && tx.categoryId) {
+        await this.decrementLinkedGoal(userObjectId, tx.categoryId as Types.ObjectId, tx.value);
+      }
+    }
+
+    await this.transactionModel.deleteMany({ userId: userObjectId, parcelamentoId: parcelamento._id }).exec();
+    await this.parcelamentoModel.deleteOne({ _id: parcelamento._id }).exec();
+
+    for (const faturaId of faturaIds) {
+      await this.recomputeValorTotal(userObjectId, faturaId);
+    }
   }
 
   // Transição aberta→fechada (por data, não por ação do usuário) + gatilho de

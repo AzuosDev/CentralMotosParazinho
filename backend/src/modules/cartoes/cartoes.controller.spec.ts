@@ -14,6 +14,7 @@ import { Wallet } from '../wallets/schemas/wallet.schema';
 import { Transaction } from '../transactions/schemas/transaction.schema';
 import { PendingAccount } from '../pending/schemas/pending-account.schema';
 import { Fatura } from './schemas/fatura.schema';
+import { Parcelamento } from './schemas/parcelamento.schema';
 import { Category } from '../categories/schemas/category.schema';
 
 const FAKE_USER_ID = new Types.ObjectId().toString();
@@ -26,6 +27,7 @@ describe('CartoesController (e2e)', () => {
   let transactionModel: Model<Transaction>;
   let pendingModel: Model<PendingAccount>;
   let faturaModel: Model<Fatura>;
+  let parcelamentoModel: Model<Parcelamento>;
   let categoryModel: Model<Category>;
 
   beforeAll(async () => {
@@ -59,6 +61,7 @@ describe('CartoesController (e2e)', () => {
     transactionModel = app.get<Model<Transaction>>(getModelToken(Transaction.name));
     pendingModel = app.get<Model<PendingAccount>>(getModelToken(PendingAccount.name));
     faturaModel = app.get<Model<Fatura>>(getModelToken(Fatura.name));
+    parcelamentoModel = app.get<Model<Parcelamento>>(getModelToken(Parcelamento.name));
     categoryModel = app.get<Model<Category>>(getModelToken(Category.name));
 
     await categoryModel.create({ name: 'Compras', slug: 'compras-teste', isDefault: true, isIncome: false });
@@ -274,6 +277,216 @@ describe('CartoesController (e2e)', () => {
       .expect(400);
   });
 
+  it('pagar fatura com affectsBalance:false marca como paga sem criar transferência nem exigir carteira pagadora', async () => {
+    const pagadora = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Não Afetada', saldo: 1000 })
+      .expect(201);
+
+    // Sem carteiraPagamentoId padrão no cartão — se affectsBalance:false não bastasse pra
+    // dispensar a carteira pagadora, isto já falharia com 400.
+    const cartao = await criarCartao({ nome: 'Cartão Retroativo Pago' });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 150, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/pagar`)
+      .send({ valor: 150, affectsBalance: false })
+      .expect(200);
+
+    const faturaPaga = await faturaModel.findById(fatura._id).exec();
+    expect(faturaPaga!.status).toBe('paga');
+    expect(faturaPaga!.valorPago).toBe(150);
+
+    const pending = await pendingModel.findById(fatura.pendingAccountId).exec();
+    expect(pending!.paid).toBe(true);
+
+    // Nenhuma transferência criada, saldo da carteira intacto.
+    const transferencias = await transactionModel.find({ faturaId: new Types.ObjectId(fatura._id), type: 'TRANSFER' }).exec();
+    expect(transferencias).toHaveLength(0);
+    const saldoPagadora = (
+      await request(app.getHttpServer()).get(`/api/wallets/${pagadora.body._id}`).expect(200)
+    ).body.saldo;
+    expect(saldoPagadora).toBe(1000);
+  });
+
+  it('excluir parcelamento remove as transações, recalcula a fatura e é bloqueado se já houve pagamento', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Errado', diaFechamento: 20, diaVencimento: 27 });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/cartoes/parcelamentos')
+      .send({ carteiraId: cartao._id, categoryId: catId, descricao: 'Compra errada', valorTotal: 500, totalParcelas: 5, dataCompra: '2026-09-05' })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaSetembro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    expect(faturaSetembro.valorTotal).toBe(100);
+
+    const parcelamentos = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}/parcelamentos`).expect(200);
+    const parcelamentoId = parcelamentos.body[0]._id as string;
+
+    await request(app.getHttpServer())
+      .delete(`/api/cartoes/${cartao._id}/parcelamentos/${parcelamentoId}`)
+      .expect(200);
+
+    const parcelamentoRemovido = await parcelamentoModel.findById(parcelamentoId).exec();
+    expect(parcelamentoRemovido).toBeNull();
+    const transacoesRestantes = await transactionModel.find({ parcelamentoId: new Types.ObjectId(parcelamentoId) }).exec();
+    expect(transacoesRestantes).toHaveLength(0);
+
+    // As 5 faturas que essa compra parcelada tinha criado (set/out/nov/dez/jan) somem por
+    // completo, não só zeram — sem isso, a aba Faturas ficava com meses "Aberta" vazios pra
+    // sempre depois de excluir a compra que os tinha criado.
+    const detalheDepois = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    for (const mes of ['2026-09', '2026-10', '2026-11', '2026-12', '2027-01']) {
+      expect(detalheDepois.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === mes)).toBeUndefined();
+    }
+
+    // Bloqueia excluir se a fatura já teve pagamento — cria outro parcelamento e paga a fatura.
+    await request(app.getHttpServer())
+      .post('/api/cartoes/parcelamentos')
+      .send({ carteiraId: cartao._id, categoryId: catId, descricao: 'Compra paga', valorTotal: 200, totalParcelas: 2, dataCompra: '2026-09-05' })
+      .expect(201);
+
+    const detalhe2 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura2 = detalhe2.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura2._id}/pagar`)
+      .send({ valor: fatura2.valorTotal, affectsBalance: false })
+      .expect(200);
+
+    const parcelamentos2 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}/parcelamentos`).expect(200);
+    const parcelamentoPagoId = parcelamentos2.body.find((p: { descricao: string }) => p.descricao === 'Compra paga')._id;
+
+    await request(app.getHttpServer())
+      .delete(`/api/cartoes/${cartao._id}/parcelamentos/${parcelamentoPagoId}`)
+      .expect(400);
+
+    // Desfazer o pagamento da fatura é o único jeito de sair desse estado — depois disso a
+    // exclusão passa a funcionar normalmente.
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura2._id}/desfazer-pagamento`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .delete(`/api/cartoes/${cartao._id}/parcelamentos/${parcelamentoPagoId}`)
+      .expect(200);
+
+    const parcelamentoPagoRemovido = await parcelamentoModel.findById(parcelamentoPagoId).exec();
+    expect(parcelamentoPagoRemovido).toBeNull();
+  });
+
+  it('desfazer pagamento remove a transferência criada, restaura o saldo da carteira pagadora e reabre a pendência', async () => {
+    const pagadora = await request(app.getHttpServer())
+      .post('/api/wallets')
+      .send({ nome: 'Conta Pagadora Desfazer', saldo: 1000 })
+      .expect(201);
+
+    const cartao = await criarCartao({ nome: 'Cartão Desfazer Pagamento', carteiraPagamentoId: pagadora.body._id });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 150, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/pagar`)
+      .send({ valor: 150 })
+      .expect(200);
+
+    const saldoAposPagar = (await request(app.getHttpServer()).get(`/api/wallets/${pagadora.body._id}`).expect(200)).body.saldo;
+    expect(saldoAposPagar).toBe(850);
+
+    // Uma fatura sem pagamento nenhum não pode ser "desfeita".
+    const outraFatura = await request(app.getHttpServer())
+      .post('/api/cartoes/parcelamentos')
+      .send({ carteiraId: cartao._id, categoryId: catId, descricao: 'Outra', valorTotal: 20, totalParcelas: 2, dataCompra: '2026-10-05' })
+      .expect(201);
+    const faturaOutubroId = (outraFatura.body.transacoes as Array<{ faturaId: string }>)[0].faturaId;
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${faturaOutubroId}/desfazer-pagamento`)
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/desfazer-pagamento`)
+      .expect(200);
+
+    const faturaDesfeita = await faturaModel.findById(fatura._id).exec();
+    expect(faturaDesfeita!.valorPago).toBe(0);
+    expect(faturaDesfeita!.status).not.toBe('paga');
+
+    const pendingDesfeito = await pendingModel.findById(fatura.pendingAccountId).exec();
+    expect(pendingDesfeito!.paid).toBe(false);
+
+    const transferencias = await transactionModel.find({ faturaId: new Types.ObjectId(fatura._id), type: 'TRANSFER' }).exec();
+    expect(transferencias).toHaveLength(0);
+
+    const saldoRestaurado = (await request(app.getHttpServer()).get(`/api/wallets/${pagadora.body._id}`).expect(200)).body.saldo;
+    expect(saldoRestaurado).toBe(1000);
+  });
+
+  it('compra nova numa fatura já paga tira a conta de "paga" e ela volta a aparecer em Contas a Pagar', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Recarga Pós-Pago' });
+    const catId = await categoriaId();
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 100, categoryId: catId, date: '2026-09-05', carteiraId: cartao._id })
+      .expect(201);
+
+    const detalhe1 = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const fatura = detalhe1.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+
+    await request(app.getHttpServer())
+      .post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/pagar`)
+      .send({ valor: 100, affectsBalance: false })
+      .expect(200);
+
+    const faturaPaga = await faturaModel.findById(fatura._id).exec();
+    expect(faturaPaga!.status).toBe('paga');
+    const pendingPago = await pendingModel.findById(fatura.pendingAccountId).exec();
+    expect(pendingPago!.paid).toBe(true);
+
+    // Compra nova no MESMO ciclo, depois da fatura já ter sido dada como paga — o valor
+    // devido volta a ser positivo (100 pago, 20 novo = 20 em aberto).
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'EXPENSE', value: 20, categoryId: catId, date: '2026-08-23', carteiraId: cartao._id })
+      .expect(201);
+
+    const faturaDepois = await faturaModel.findById(fatura._id).exec();
+    expect(faturaDepois!.valorTotal).toBe(120);
+    expect(faturaDepois!.valorPago).toBe(100);
+    expect(faturaDepois!.status).toBe('parcial');
+
+    const pendingDepois = await pendingModel.findById(fatura.pendingAccountId).exec();
+    expect(pendingDepois!.paid).toBe(false);
+    // pending.value é sempre o total devido da fatura (valorTotal + saldoRotativoAnterior),
+    // não o "restante" líquido de valorPago — mesma convenção de quando a conta é criada.
+    expect(pendingDepois!.value).toBe(120);
+
+    // É exatamente essa PendingAccount que precisa reaparecer em Contas a Pagar filtrado
+    // por não pagas — antes desta correção ela continuava paid:true e sumia da lista.
+    const contas = await request(app.getHttpServer())
+      .get('/api/accounts')
+      .query({ tipo: 'PAGAR', paid: 'false' })
+      .expect(200);
+    expect((contas.body as Array<{ _id: string }>).some((c) => c._id === fatura.pendingAccountId)).toBe(true);
+  });
+
   it('pagamento parcial gera saldoRotativoAnterior e cobra juros no fechamento da fatura seguinte', async () => {
     const pagadora = await request(app.getHttpServer())
       .post('/api/wallets')
@@ -462,13 +675,14 @@ describe('CartoesController (e2e)', () => {
 
     const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
     const fatura = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
-    expect(fatura.valorTotal).toBe(0);
-
-    // Nada mais é devido (valorTotal 0 + saldoRotativoAnterior 0): a PendingAccount some em
-    // vez de mostrar um R$0,01 fictício — o schema nem aceita value <= 0 (min: 0.01).
-    expect(fatura.pendingAccountId).toBeUndefined();
+    // Fatura ficou totalmente vazia (valorTotal 0, nunca paga, sem rotativo/juros) — some por
+    // completo em vez de continuar exposta como uma fatura "Aberta" fantasma sem nenhuma
+    // transação. A PendingAccount some junto, em vez de mostrar um R$0,01 fictício (o schema
+    // nem aceita value <= 0, min: 0.01).
+    expect(fatura).toBeUndefined();
     const pendingDepois = await pendingModel.findById(faturaAntes.pendingAccountId).exec();
     expect(pendingDepois).toBeNull();
+    expect(await faturaModel.findById(faturaAntes._id).exec()).toBeNull();
 
     // Nova compra no mesmo ciclo traz o total de volta ao positivo: a conta a pagar é
     // recriada (não paga), com o valor certo.
@@ -580,6 +794,61 @@ describe('CartoesController (e2e)', () => {
     expect(faturaMarco).toBeDefined();
     expect(faturaMarco.valorTotal).toBe(120);
     expect(faturaHoje).toBeUndefined();
+  });
+
+  it('vincular-conta-pendente parcelada não desloca a parcela pro mês seguinte quando o vencimento cai depois do fechamento', async () => {
+    // dataInicio de uma conta pendente é sempre uma data de VENCIMENTO (quando a parcela 1
+    // vence), nunca uma data de compra — mas se essa data cair depois do dia de fechamento
+    // do cartão, tratá-la como "data de compra" (regra normal de resolverFaturaParaCompra)
+    // empurrava a parcela pra fatura do mês seguinte por engano, um mês a mais do que o
+    // vencimento real já indicava.
+    const cartao = await criarCartao({ nome: 'Cartão Vencimento Após Fechamento', diaFechamento: 3, diaVencimento: 16 });
+    const catId = await categoriaId();
+
+    // Parcela 1 vence 10/05 (dia 10, depois do fechamento dia 3) — 4 parcelas (1-4) já
+    // pagas fora do app, restam 6 (5-10). Parcela 5 vence 10/09.
+    const criada = await request(app.getHttpServer())
+      .post('/api/accounts')
+      .send({
+        title: 'Samsung a56',
+        value: 2331,
+        dueDate: '2026-05-10',
+        categoryId: catId,
+        isParcelada: true,
+        parcelas: { totalParcelas: 10, dataInicio: '2026-05-10' },
+      })
+      .expect(201);
+
+    const primeiraParcelaId = criada.body[0]._id as string;
+
+    await request(app.getHttpServer())
+      .post('/api/cartoes/vincular-conta-pendente')
+      .send({
+        pendingAccountId: primeiraParcelaId,
+        carteiraId: cartao._id,
+        parcelasJaPagas: 4,
+        parcelasRestantes: 6,
+      })
+      .expect(201);
+
+    const detalhe = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}`).expect(200);
+    const faturaSetembro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-09');
+    const faturaOutubro = detalhe.body.faturas.find((f: { mesReferencia: string }) => f.mesReferencia === '2026-10');
+    expect(faturaSetembro).toBeDefined();
+    expect(faturaOutubro).toBeDefined();
+
+    const parcelamentos = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}/parcelamentos`).expect(200);
+    const transacoes = parcelamentos.body[0].transacoes as Array<{ numeroParcela: number; date: string }>;
+    const parcela5 = transacoes.find((t) => t.numeroParcela === 5)!;
+    const parcela6 = transacoes.find((t) => t.numeroParcela === 6)!;
+
+    // Parcela 5 (vence 10/09) cai na fatura de setembro, não outubro.
+    const faturaSetembroTxs = await transactionModel.find({ faturaId: new Types.ObjectId(faturaSetembro._id) }).exec();
+    expect(faturaSetembroTxs.some((t) => t.numeroParcela === 5)).toBe(true);
+    const faturaOutubroTxs = await transactionModel.find({ faturaId: new Types.ObjectId(faturaOutubro._id) }).exec();
+    expect(faturaOutubroTxs.some((t) => t.numeroParcela === 6)).toBe(true);
+    expect(parcela5.date.slice(0, 10)).toBe('2026-09-10');
+    expect(parcela6.date.slice(0, 10)).toBe('2026-10-10');
   });
 
   it('preview-fatura mostra em qual fatura uma compra cairia, sem criar nada', async () => {
