@@ -9,6 +9,7 @@ import { PendingAccount, PendingAccountDocument } from '../pending/schemas/pendi
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
 import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { CreateParcelamentoDto } from './dto/create-parcelamento.dto';
+import { UpdateParcelamentoDto } from './dto/update-parcelamento.dto';
 import { PagarFaturaDto } from './dto/pagar-fatura.dto';
 import { VincularContaPendenteDto } from './dto/vincular-conta-pendente.dto';
 import { VincularRecorrenteDto } from './dto/vincular-recorrente.dto';
@@ -942,6 +943,33 @@ export class CartoesService {
       });
     }
     return result;
+  }
+
+  // Renomeia um parcelamento já criado — uso principal: uma compra criada sem descrição (via
+  // TransactionModal genérico, onde ela é opcional) acabava mostrando o nome da categoria
+  // como se fosse o nome da compra. Não mexe em valor/parcelas/data — mudar isso implicaria
+  // recalcular fatura/limite/goal, que já tem seu próprio fluxo (excluir + recriar). Também
+  // atualiza Transaction.description de cada parcela, pra ficar consistente com a lista de
+  // transações da fatura, não só com a listagem de "Compras parceladas".
+  async atualizarParcelamento(userId: string, cartaoId: string, parcelamentoId: string, dto: UpdateParcelamentoDto) {
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const walletObjectId = this.toObjectId(cartaoId, 'cartaoId');
+    const parcelamentoObjectId = this.toObjectId(parcelamentoId, 'parcelamentoId');
+
+    const parcelamento = await this.parcelamentoModel
+      .findOne({ _id: parcelamentoObjectId, userId: userObjectId, carteiraId: walletObjectId })
+      .exec();
+    if (!parcelamento) throw new NotFoundException('Parcelamento não encontrado');
+
+    if (dto.descricao !== undefined) {
+      parcelamento.descricao = dto.descricao;
+      await this.transactionModel
+        .updateMany({ userId: userObjectId, parcelamentoId: parcelamento._id }, { $set: { description: dto.descricao } })
+        .exec();
+    }
+
+    await parcelamento.save();
+    return parcelamento;
   }
 
   // Exclui um parcelamento inteiro e todas as suas transações — uso: corrigir um

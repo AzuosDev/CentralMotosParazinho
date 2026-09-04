@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CartoesService } from './cartoes.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ICurrentUser } from '../../common/types/current-user.type';
 import { CreateParcelamentoDto } from './dto/create-parcelamento.dto';
+import { UpdateParcelamentoDto } from './dto/update-parcelamento.dto';
 import { PagarFaturaDto } from './dto/pagar-fatura.dto';
 import { VincularContaPendenteDto } from './dto/vincular-conta-pendente.dto';
 import { VincularRecorrenteDto } from './dto/vincular-recorrente.dto';
@@ -55,6 +56,16 @@ export class CartoesController {
   @Get(':id/parcelamentos')
   listarParcelamentos(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
     return this.cartoesService.listarParcelamentos(user._id.toString(), id);
+  }
+
+  @Patch(':id/parcelamentos/:parcelamentoId')
+  atualizarParcelamento(
+    @CurrentUser() user: ICurrentUser,
+    @Param('id') id: string,
+    @Param('parcelamentoId') parcelamentoId: string,
+    @Body() dto: UpdateParcelamentoDto,
+  ) {
+    return this.cartoesService.atualizarParcelamento(user._id.toString(), id, parcelamentoId, dto);
   }
 
   @Delete(':id/parcelamentos/:parcelamentoId')

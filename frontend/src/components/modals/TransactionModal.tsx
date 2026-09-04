@@ -123,11 +123,16 @@ export function TransactionModal({
   open,
   onClose,
   defaultTab = "EXPENSE",
+  defaultWalletId,
   transaction,
 }: {
   open: boolean;
   onClose: () => void;
   defaultTab?: Tab;
+  // Pré-seleciona a forma de pagamento (carteira ou cartão) ao abrir — usado pela CartaoPage
+  // pra abrir já com o próprio cartão marcado, já que "Forma de pagamento" fica dentro de um
+  // <select> combinado (carteiras + cartões) que não é óbvio de achar vindo da tela do cartão.
+  defaultWalletId?: string;
   transaction?: Transaction | null;
 }) {
   const isEditing = Boolean(transaction);
@@ -190,9 +195,12 @@ export function TransactionModal({
       });
     } else {
       setActiveTab(defaultTab);
-      form.reset({ ...defaultValues });
+      form.reset({
+        ...defaultValues,
+        carteiraId: defaultTab === "EXPENSE" ? (defaultWalletId ?? "") : "",
+      });
     }
-  }, [open, defaultTab, transaction, form]);
+  }, [open, defaultTab, defaultWalletId, transaction, form]);
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
@@ -248,7 +256,9 @@ export function TransactionModal({
         const { data } = await api.post("/api/cartoes/parcelamentos", {
           carteiraId: values.carteiraId,
           categoryId: values.categoryId || undefined,
-          descricao: values.description?.trim() || selectedCategory?.name || "Compra parcelada",
+          // Nunca cai pro nome da categoria (ex: "Eletrônicos") como se fosse o nome da
+          // compra — some card list depois lê como se a categoria fosse a descrição.
+          descricao: values.description?.trim() || "Compra parcelada",
           valorTotal: values.amount,
           totalParcelas,
           dataCompra: values.date,

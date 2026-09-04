@@ -651,6 +651,31 @@ describe('CartoesController (e2e)', () => {
     expect(parcelamentos.body[0].parcelasRestantes).toBe(2);
   });
 
+  it('PATCH parcelamento renomeia a descrição e propaga pra description de cada Transaction da compra', async () => {
+    const cartao = await criarCartao({ nome: 'Cartão Renomear', diaFechamento: 28, diaVencimento: 5 });
+    const catId = await categoriaId();
+
+    // Cenário real que motivou isto: descrição criada sem nome próprio, caindo no nome da
+    // categoria (ver TransactionModal.tsx) — precisa dar pra corrigir depois.
+    const res = await request(app.getHttpServer())
+      .post('/api/cartoes/parcelamentos')
+      .send({ carteiraId: cartao._id, categoryId: catId, descricao: 'Eletrônicos', valorTotal: 90, totalParcelas: 3, dataCompra: '2026-09-01' })
+      .expect(201);
+    const parcelamentoId = res.body.parcelamento._id as string;
+
+    await request(app.getHttpServer())
+      .patch(`/api/cartoes/${cartao._id}/parcelamentos/${parcelamentoId}`)
+      .send({ descricao: 'Samsung A56' })
+      .expect(200);
+
+    const parcelamentos = await request(app.getHttpServer()).get(`/api/cartoes/${cartao._id}/parcelamentos`).expect(200);
+    expect(parcelamentos.body[0].descricao).toBe('Samsung A56');
+
+    const transacoes = await transactionModel.find({ parcelamentoId: new Types.ObjectId(parcelamentoId) }).exec();
+    expect(transacoes).toHaveLength(3);
+    expect(transacoes.every((t) => t.description === 'Samsung A56')).toBe(true);
+  });
+
   it('estorno reduz valorTotal da fatura sem gravar valor negativo em Transaction', async () => {
     const cartao = await criarCartao({ nome: 'Cartão Estorno' });
     const catId = await categoriaId();
