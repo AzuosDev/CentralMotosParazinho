@@ -1000,9 +1000,23 @@ export class CartoesService {
     const faturaIds = [...faturaIdsUnicos.values()];
 
     const faturas = await this.faturaModel.find({ _id: { $in: faturaIds } }).exec();
-    if (faturas.some((f) => f.valorPago > 0)) {
+    const faturasComPagamento = faturas.filter((f) => f.valorPago > 0);
+    if (faturasComPagamento.length > 0) {
+      // Mensagem nomeia as faturas e deixa explícito que "Estornar" (reverte a compra, não
+      // mexe em valorPago) não é o mesmo que "Desfazer pagamento" (o único jeito de zerar
+      // valorPago) — sem isso o usuário tenta estornar, o bloqueio persiste e a causa real
+      // fica escondida atrás de uma mensagem genérica.
+      const meses = [...faturasComPagamento]
+        .sort((a, b) => a.mesReferencia.localeCompare(b.mesReferencia))
+        .map((f) => {
+          const [ano, mes] = f.mesReferencia.split('-');
+          return `${mes}/${ano}`;
+        });
+      const listaMeses = meses.length === 1 ? meses[0] : `${meses.slice(0, -1).join(', ')} e ${meses[meses.length - 1]}`;
+      const plural = meses.length > 1;
       throw new BadRequestException(
-        'Uma das faturas afetadas por este parcelamento já teve pagamento registrado. Desfaça o pagamento da fatura antes de excluir.',
+        `A${plural ? 's' : ''} fatura${plural ? 's' : ''} de ${listaMeses} deste parcelamento já ${plural ? 'têm' : 'tem'} pagamento registrado. ` +
+          `Estornar as compras não desfaz o pagamento — abra ${plural ? 'cada fatura' : 'a fatura'} e use "Desfazer pagamento" antes de excluir.`,
       );
     }
 

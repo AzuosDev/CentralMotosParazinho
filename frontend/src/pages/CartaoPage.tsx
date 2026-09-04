@@ -736,7 +736,10 @@ export function CartaoPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDeleteParcelamentoTarget(p)}
+                      onClick={() => {
+                        deleteParcelamentoMutation.reset();
+                        setDeleteParcelamentoTarget(p);
+                      }}
                       className="rounded-lg p-1.5 text-text-muted transition hover:bg-accent-red/10 hover:text-accent-red"
                       title="Excluir compra parcelada"
                     >
@@ -890,10 +893,18 @@ export function CartaoPage() {
               as suas {deleteParcelamentoTarget.totalParcelas} parcelas, recalculando as faturas afetadas. Não é possível
               se alguma dessas faturas já tiver pagamento registrado — nesse caso, desfaça o pagamento da fatura primeiro.
             </p>
+            {deleteParcelamentoMutation.isError && (
+              <p className="rounded-xl bg-accent-red/10 p-3 text-sm text-accent-red">
+                {getApiErrorMessages(deleteParcelamentoMutation.error, "Não foi possível excluir esta compra parcelada.")[0]}
+              </p>
+            )}
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => setDeleteParcelamentoTarget(null)}
+                onClick={() => {
+                  deleteParcelamentoMutation.reset();
+                  setDeleteParcelamentoTarget(null);
+                }}
                 disabled={deleteParcelamentoMutation.isPending}
                 className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
               >
