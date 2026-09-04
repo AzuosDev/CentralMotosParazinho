@@ -84,6 +84,7 @@ export function TransferModal({ open, onClose }: { open: boolean; onClose: () =>
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallets"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       onClose();
     },
   });
