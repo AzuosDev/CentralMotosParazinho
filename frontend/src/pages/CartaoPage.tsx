@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Archive, ArrowLeft, Loader2, RotateCcw, Wallet as WalletIcon } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, Loader2, Pencil, RotateCcw, Trash2, Wallet as WalletIcon } from "lucide-react";
 
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
-import { formatCurrency, formatDisplayDate } from "../lib/finance";
+import { formatCurrency, formatDisplayDate, isPastMonth } from "../lib/finance";
 import { getApiErrorMessages } from "../lib/errors";
 import { BankLogo } from "../components/ui/BankLogo";
 import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { ModalShell } from "../components/modals/ModalShell";
 import { ArchiveCartaoModal } from "../components/modals/ArchiveCartaoModal";
+import { TransactionModal } from "../components/modals/TransactionModal";
+import { NovoParcelamentoModal } from "../components/modals/NovoParcelamentoModal";
+import { VincularRecorrenteModal } from "../components/modals/VincularRecorrenteModal";
+import { VincularCartaoModal } from "../components/modals/VincularCartaoModal";
 import { useToast } from "../components/ui/Toast";
 import type { Cartao, Fatura, FaturaStatus, Parcelamento, Transaction, Wallet } from "../types/api";
 
@@ -45,14 +49,22 @@ function PagarFaturaModal({
   const [carteiraPagadoraId, setCarteiraPagadoraId] = useState(cartao.carteiraPagamentoId ?? "");
   const [modoParcial, setModoParcial] = useState(false);
   const [valor, setValor] = useState(restante);
+  const [formAffectsBalance, setFormAffectsBalance] = useState(true);
 
   useEffect(() => {
     if (open) {
       setCarteiraPagadoraId(cartao.carteiraPagamentoId ?? "");
       setModoParcial(false);
       setValor(restante);
+      setFormAffectsBalance(true);
     }
   }, [open, cartao.carteiraPagamentoId, restante]);
+
+  // Fatura de mês passado (ex: parcela já paga na vida real antes de começar a rastrear
+  // aqui) pode ser marcada como paga sem criar a transferência de verdade — mesmo conceito
+  // do checkbox equivalente em AccountModal pra contas retroativas.
+  const faturaMesPassado = isPastMonth(`${fatura.mesReferencia}-01`);
+  const effectiveAffectsBalance = faturaMesPassado ? formAffectsBalance : true;
 
   const walletsQuery = useQuery<Wallet[]>({
     queryKey: ["wallets"],
@@ -70,8 +82,9 @@ function PagarFaturaModal({
   const payMutation = useMutation({
     mutationFn: async () => {
       await api.post(`/api/cartoes/${cartao._id}/faturas/${fatura._id}/pagar`, {
-        carteiraPagadoraId: carteiraPagadoraId || undefined,
+        carteiraPagadoraId: effectiveAffectsBalance ? (carteiraPagadoraId || undefined) : undefined,
         valor: valorEfetivo,
+        affectsBalance: effectiveAffectsBalance,
       });
     },
     onSuccess: () => {
@@ -106,7 +119,7 @@ function PagarFaturaModal({
           <button
             type="button"
             onClick={() => payMutation.mutate()}
-            disabled={payMutation.isPending || !carteiraPagadoraId || valorEfetivo <= 0}
+            disabled={payMutation.isPending || (effectiveAffectsBalance && !carteiraPagadoraId) || valorEfetivo <= 0}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-70"
           >
             {payMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -121,30 +134,51 @@ function PagarFaturaModal({
           <p className="mt-1 font-sans text-3xl font-extrabold text-accent-lime">{formatCurrency(restante)}</p>
         </div>
 
-        <div>
-          <span className="mb-2 block text-sm text-text-secondary">Carteira pagadora <span className="text-accent-red">*</span></span>
-          {walletsQuery.isLoading ? (
-            <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {(walletsQuery.data ?? []).map((w) => (
-                <button
-                  key={w._id}
-                  type="button"
-                  onClick={() => setCarteiraPagadoraId(w._id)}
-                  className={cn(
-                    "rounded-xl border px-4 py-2 text-sm font-medium transition",
-                    carteiraPagadoraId === w._id
-                      ? "border-accent-lime bg-accent-lime/10 text-white"
-                      : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-white",
-                  )}
-                >
-                  {w.nome}
-                </button>
-              ))}
+        {faturaMesPassado && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 transition hover:border-yellow-500/60">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-accent-lime"
+              checked={!formAffectsBalance}
+              onChange={(e) => setFormAffectsBalance(!e.target.checked)}
+            />
+            <div>
+              <span className="block text-sm font-medium text-yellow-300">
+                Esta fatura é de um mês passado. Deseja que este pagamento não afete seu saldo atual?
+              </span>
+              <span className="mt-0.5 block text-xs text-yellow-300/70">
+                Marque se já foi paga na vida real antes de começar a rastrear aqui — fica marcada como paga, sem lançar transferência na carteira.
+              </span>
             </div>
-          )}
-        </div>
+          </label>
+        )}
+
+        {effectiveAffectsBalance && (
+          <div>
+            <span className="mb-2 block text-sm text-text-secondary">Carteira pagadora <span className="text-accent-red">*</span></span>
+            {walletsQuery.isLoading ? (
+              <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(walletsQuery.data ?? []).map((w) => (
+                  <button
+                    key={w._id}
+                    type="button"
+                    onClick={() => setCarteiraPagadoraId(w._id)}
+                    className={cn(
+                      "rounded-xl border px-4 py-2 text-sm font-medium transition",
+                      carteiraPagadoraId === w._id
+                        ? "border-accent-lime bg-accent-lime/10 text-white"
+                        : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-white",
+                    )}
+                  >
+                    {w.nome}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div>
           <span className="mb-2 block text-sm text-text-secondary">Valor a pagar</span>
@@ -210,6 +244,15 @@ export function CartaoPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [estornoTarget, setEstornoTarget] = useState<Transaction | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [novaCompraOpen, setNovaCompraOpen] = useState(false);
+  const [novoParcelamentoOpen, setNovoParcelamentoOpen] = useState(false);
+  const [novaMenuOpen, setNovaMenuOpen] = useState(false);
+  const [vincularRecorrenteOpen, setVincularRecorrenteOpen] = useState(false);
+  const [vincularCartaoOpen, setVincularCartaoOpen] = useState(false);
+  const [deleteParcelamentoTarget, setDeleteParcelamentoTarget] = useState<Parcelamento | null>(null);
+  const [editParcelamentoTarget, setEditParcelamentoTarget] = useState<Parcelamento | null>(null);
+  const [editDescricao, setEditDescricao] = useState("");
+  const [desfazerPagamentoTarget, setDesfazerPagamentoTarget] = useState<Fatura | null>(null);
 
   const cartaoQuery = useQuery<Cartao>({
     queryKey: ["cartoes", id],
@@ -263,12 +306,79 @@ export function CartaoPage() {
     enabled: !!id && tab === "parcelas",
   });
 
+  const deleteParcelamentoMutation = useMutation({
+    mutationFn: async (parcelamentoId: string) => {
+      await api.delete(`/api/cartoes/${id}/parcelamentos/${parcelamentoId}`);
+    },
+    onSuccess: () => {
+      // Apaga as Transactions da compra de verdade (confirmado no backend), mas isso por si
+      // só não tira as telas que já tinham cacheado essas transações do ar — sem invalidar
+      // os mesmos caches que TransactionModal/EditTransactionModal tocam ao criar/editar uma
+      // transação de cartão, Transações/Dashboard/Insights/Metas continuavam mostrando o
+      // resíduo da compra excluída até um refresh manual.
+      queryClient.invalidateQueries({ queryKey: ["cartoes"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      addToast("Compra parcelada excluída.", "success");
+      setDeleteParcelamentoTarget(null);
+    },
+    onError: (error) => {
+      addToast(getApiErrorMessages(error, "Não foi possível excluir esta compra parcelada.")[0], "error");
+    },
+  });
+
+  const editParcelamentoMutation = useMutation({
+    mutationFn: async ({ parcelamentoId, descricao }: { parcelamentoId: string; descricao: string }) => {
+      await api.patch(`/api/cartoes/${id}/parcelamentos/${parcelamentoId}`, { descricao });
+    },
+    onSuccess: () => {
+      // Renomeia também a description de cada Transaction da compra (feito no backend) —
+      // precisa invalidar os mesmos caches que mostram essas transações em outras telas.
+      queryClient.invalidateQueries({ queryKey: ["cartoes"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      addToast("Compra parcelada renomeada.", "success");
+      setEditParcelamentoTarget(null);
+    },
+    onError: (error) => {
+      addToast(getApiErrorMessages(error, "Não foi possível renomear esta compra parcelada.")[0], "error");
+    },
+  });
+
+  const desfazerPagamentoMutation = useMutation({
+    mutationFn: async (faturaId: string) => {
+      await api.post(`/api/cartoes/${id}/faturas/${faturaId}/desfazer-pagamento`);
+    },
+    onSuccess: () => {
+      // Mesmo conjunto de invalidações de payMutation: desfazer é o inverso de pagar, então
+      // pode restaurar o saldo da carteira pagadora e reabrir a conta pendente da fatura.
+      queryClient.invalidateQueries({ queryKey: ["cartoes"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      addToast("Pagamento desfeito.", "success");
+      setDesfazerPagamentoTarget(null);
+    },
+    onError: (error) => {
+      addToast(getApiErrorMessages(error, "Não foi possível desfazer este pagamento.")[0], "error");
+    },
+  });
+
   const estornoMutation = useMutation({
     mutationFn: async (txId: string) => {
       await api.post(`/api/cartoes/transacoes/${txId}/estorno`);
     },
     onSuccess: () => {
+      // Mesmo motivo do delete de parcelamento acima: o estorno cria/ajusta Transaction e
+      // Goal.currentValue, então precisa invalidar os mesmos caches, não só ["cartoes"].
       queryClient.invalidateQueries({ queryKey: ["cartoes"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
       addToast("Estorno registrado com sucesso.", "success");
       setEstornoTarget(null);
     },
@@ -356,20 +466,70 @@ export function CartaoPage() {
         </div>
       </div>
 
-      <div className="flex w-fit gap-1 rounded-xl bg-bg-muted p-1">
-        {(["faturas", "parcelas"] as const).map((t) => (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex w-fit gap-1 rounded-xl bg-bg-muted p-1">
+          {(["faturas", "parcelas"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={cn(
+                "rounded-lg px-4 py-2 text-sm font-semibold transition",
+                tab === t ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+              )}
+            >
+              {t === "faturas" ? "Faturas" : "Compras parceladas"}
+            </button>
+          ))}
+        </div>
+        <div className="relative">
           <button
-            key={t}
             type="button"
-            onClick={() => setTab(t)}
-            className={cn(
-              "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              tab === t ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
-            )}
+            onClick={() => setNovaMenuOpen((v) => !v)}
+            className="rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110"
           >
-            {t === "faturas" ? "Faturas" : "Compras parceladas"}
+            + Nova Compra
           </button>
-        ))}
+          {novaMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setNovaMenuOpen(false)} />
+              <div className="absolute right-0 z-20 mt-2 w-64 space-y-1 rounded-xl border border-bg-muted bg-bg-card p-2 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => { setNovaMenuOpen(false); setNovaCompraOpen(true); }}
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                >
+                  Compra à vista
+                  <span className="block text-xs font-normal text-text-secondary">Uma cobrança só, vai pra fatura do ciclo certo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNovaMenuOpen(false); setNovoParcelamentoOpen(true); }}
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                >
+                  Nova compra parcelada
+                  <span className="block text-xs font-normal text-text-secondary">Cria as N parcelas de uma vez, com descrição própria</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNovaMenuOpen(false); setVincularRecorrenteOpen(true); }}
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                >
+                  Vincular conta recorrente
+                  <span className="block text-xs font-normal text-text-secondary">Uma assinatura já cadastrada passa a cobrar neste cartão</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNovaMenuOpen(false); setVincularCartaoOpen(true); }}
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                >
+                  Vincular conta parcelada
+                  <span className="block text-xs font-normal text-text-secondary">Converte uma conta avulsa ou parcelada já cadastrada em parcelamento deste cartão</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {tab === "faturas" && (
@@ -426,7 +586,16 @@ export function CartaoPage() {
                         {formatCurrency(Math.abs(Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2))))}
                       </p>
                       {fatura.valorPago > 0 && (
-                        <p className="text-xs text-accent-lime">{formatCurrency(fatura.valorPago)} já pago</p>
+                        <div className="flex items-center justify-end gap-2">
+                          <p className="text-xs text-accent-lime">{formatCurrency(fatura.valorPago)} já pago</p>
+                          <button
+                            type="button"
+                            onClick={() => setDesfazerPagamentoTarget(fatura)}
+                            className="text-xs font-semibold text-text-secondary underline decoration-dotted transition hover:text-accent-red"
+                          >
+                            Desfazer pagamento
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -545,9 +714,27 @@ export function CartaoPage() {
                       Comprado em {formatDisplayDate(p.dataCompra)} · {formatCurrency(p.valorTotal)} em {p.totalParcelas}x
                     </p>
                   </div>
-                  <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-semibold text-blue-400">
-                    {p.parcelasPagas}/{p.totalParcelas} pagas
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-semibold text-blue-400">
+                      {p.parcelasPagas}/{p.totalParcelas} pagas
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => { setEditParcelamentoTarget(p); setEditDescricao(p.descricao); }}
+                      className="rounded-lg p-1.5 text-text-muted transition hover:bg-bg-muted hover:text-white"
+                      title="Editar nome da compra parcelada"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteParcelamentoTarget(p)}
+                      className="rounded-lg p-1.5 text-text-muted transition hover:bg-accent-red/10 hover:text-accent-red"
+                      title="Excluir compra parcelada"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-bg-muted">
                   <div
@@ -602,6 +789,148 @@ export function CartaoPage() {
           </div>
         </div>
       )}
+
+      {desfazerPagamentoTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm space-y-4 rounded-2xl border border-bg-muted bg-bg-card p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-accent-red/10 p-2.5">
+                <RotateCcw className="h-5 w-5 text-accent-red" />
+              </div>
+              <h2 className="text-base font-bold text-white">Desfazer pagamento desta fatura?</h2>
+            </div>
+            <p className="text-sm text-text-secondary">
+              Vai zerar os <span className="font-semibold text-white">{formatCurrency(desfazerPagamentoTarget.valorPago)}</span> pagos
+              e voltar a fatura para não paga. Se o pagamento tinha lançado uma transferência de verdade, ela é removida e o
+              saldo da carteira pagadora volta ao normal.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDesfazerPagamentoTarget(null)}
+                disabled={desfazerPagamentoMutation.isPending}
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => desfazerPagamentoMutation.mutate(desfazerPagamentoTarget._id)}
+                disabled={desfazerPagamentoMutation.isPending}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+              >
+                {desfazerPagamentoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editParcelamentoTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm space-y-4 rounded-2xl border border-bg-muted bg-bg-card p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-bg-muted p-2.5">
+                <Pencil className="h-5 w-5 text-accent-lime" />
+              </div>
+              <h2 className="text-base font-bold text-white">Renomear compra parcelada</h2>
+            </div>
+            <label className="block">
+              <span className="mb-2 block text-sm text-text-secondary">Descrição</span>
+              <input
+                value={editDescricao}
+                onChange={(e) => setEditDescricao(e.target.value)}
+                maxLength={200}
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+              />
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setEditParcelamentoTarget(null)}
+                disabled={editParcelamentoMutation.isPending}
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => editParcelamentoMutation.mutate({ parcelamentoId: editParcelamentoTarget._id, descricao: editDescricao.trim() })}
+                disabled={editParcelamentoMutation.isPending || !editDescricao.trim()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50"
+              >
+                {editParcelamentoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteParcelamentoTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm space-y-4 rounded-2xl border border-bg-muted bg-bg-card p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-accent-red/10 p-2.5">
+                <Trash2 className="h-5 w-5 text-accent-red" />
+              </div>
+              <h2 className="text-base font-bold text-white">Excluir esta compra parcelada?</h2>
+            </div>
+            <p className="text-sm text-text-secondary">
+              Vai remover <span className="font-semibold text-white">{deleteParcelamentoTarget.descricao}</span> e todas
+              as suas {deleteParcelamentoTarget.totalParcelas} parcelas, recalculando as faturas afetadas. Não é possível
+              se alguma dessas faturas já tiver pagamento registrado — nesse caso, desfaça o pagamento da fatura primeiro.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteParcelamentoTarget(null)}
+                disabled={deleteParcelamentoMutation.isPending}
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteParcelamentoMutation.mutate(deleteParcelamentoTarget._id)}
+                disabled={deleteParcelamentoMutation.isPending}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+              >
+                {deleteParcelamentoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Confirmar Exclusão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <TransactionModal
+        open={novaCompraOpen}
+        onClose={() => setNovaCompraOpen(false)}
+        defaultTab="EXPENSE"
+        defaultWalletId={cartao._id}
+      />
+
+      <NovoParcelamentoModal
+        open={novoParcelamentoOpen}
+        onClose={() => setNovoParcelamentoOpen(false)}
+        cartaoId={cartao._id}
+      />
+
+      <VincularRecorrenteModal
+        open={vincularRecorrenteOpen}
+        onClose={() => setVincularRecorrenteOpen(false)}
+        cartaoId={cartao._id}
+        cartaoNome={cartao.nome}
+      />
+
+      <VincularCartaoModal
+        open={vincularCartaoOpen}
+        onClose={() => setVincularCartaoOpen(false)}
+        cartaoId={cartao._id}
+        cartaoNome={cartao.nome}
+      />
 
       <ArchiveCartaoModal
         isOpen={archiveOpen}
