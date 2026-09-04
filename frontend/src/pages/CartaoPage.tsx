@@ -265,18 +265,26 @@ export function CartaoPage() {
   const cartao = cartaoQuery.data;
   const faturasData = cartao?.faturas;
   const faturas = useMemo(() => faturasData ?? [], [faturasData]);
-  // O backend devolve as faturas da mais recente pra mais antiga (útil pra achar a aberta
-  // por padrão, mais abaixo) — mas numa tira horizontal de abas isso lê "ao contrário" da
-  // esquerda pra direita. Só a exibição é invertida; qual fatura abre por padrão continua
-  // baseado na ordem original.
+  // O backend devolve as faturas da mais recente pra mais antiga — mas numa tira horizontal
+  // de abas isso lê "ao contrário" da esquerda pra direita, daí a versão revertida abaixo
+  // pra exibição.
   const faturasCronologicas = useMemo(() => [...faturas].reverse(), [faturas]);
 
   useEffect(() => {
     if (!selectedFaturaId && faturas.length > 0) {
-      const aberta = faturas.find((f) => f.status === "aberta");
-      setSelectedFaturaId((aberta ?? faturas[0])._id);
+      // Prioriza a fatura do mês corrente (calendário, não fechamento). Parcelamentos
+      // multi-mês deixam várias faturas futuras com status "aberta" ao mesmo tempo, então
+      // `faturas.find(status === "aberta")` sozinho pegava a mais distante no futuro (a
+      // primeira da lista, que vem da mais recente/futura pra mais antiga) em vez da atual.
+      const now = new Date();
+      const mesAtual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const doMesAtual = faturas.find((f) => f.mesReferencia === mesAtual);
+      // Sem fatura ainda no mês atual (nenhuma compra no ciclo): cai pra aberta mais próxima
+      // de hoje — faturasCronologicas já está da mais antiga pra mais recente.
+      const abertaMaisProxima = faturasCronologicas.find((f) => f.status === "aberta");
+      setSelectedFaturaId((doMesAtual ?? abertaMaisProxima ?? faturas[0])._id);
     }
-  }, [faturas, selectedFaturaId]);
+  }, [faturas, faturasCronologicas, selectedFaturaId]);
 
   const faturaQuery = useQuery<Fatura>({
     queryKey: ["cartoes", id, "faturas", selectedFaturaId],
