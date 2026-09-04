@@ -476,7 +476,7 @@ export function ContasPage() {
                   Parcelas
                 </button>
               )}
-              {activeTab === "PAGAR" && !item.paid && !item.isRecorrente && !item.isVirtual && (
+              {activeTab === "PAGAR" && !item.paid && !item.isRecorrente && !item.isVirtual && !item.recorrenciaTemplateId && (
                 <button
                   type="button"
                   onClick={() => setVincularCartaoItem(item)}
