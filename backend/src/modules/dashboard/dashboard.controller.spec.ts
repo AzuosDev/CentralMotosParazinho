@@ -150,6 +150,45 @@ describe('DashboardController (e2e)', () => {
     expect(junho?.expenses).toBe(50);
   });
 
+  it('pagamento de fatura (TRANSFER com faturaId) conta como Saída/gráfico no mês em que foi pago, não a compra em si', async () => {
+    const userObjectId = new Types.ObjectId(FAKE_USER_ID);
+    const faturaObjectId = new Types.ObjectId();
+
+    // Compra no cartão em julho: não deve contar (é dívida, não saída ainda).
+    await transactionModel.create({
+      userId: userObjectId,
+      type: TransactionType.EXPENSE,
+      value: 300,
+      date: new Date('2026-07-05'),
+      carteiraId: new Types.ObjectId(),
+      faturaId: faturaObjectId,
+    });
+    // Pagamento dessa fatura em agosto (mesmo formato de CartoesService#pagar): TRANSFER com
+    // faturaId setado, sem carteiraDestinoId. Esse é o dinheiro saindo de verdade.
+    await transactionModel.create({
+      userId: userObjectId,
+      type: TransactionType.TRANSFER,
+      value: 300,
+      date: new Date('2026-08-10'),
+      carteiraId: new Types.ObjectId(),
+      faturaId: faturaObjectId,
+    });
+
+    const resJulho = await request(app.getHttpServer())
+      .get('/api/dashboard')
+      .query({ month: 7, year: 2026 })
+      .expect(200);
+    expect(resJulho.body.totalExpense).toBe(0);
+
+    const resAgosto = await request(app.getHttpServer())
+      .get('/api/dashboard')
+      .query({ month: 8, year: 2026 })
+      .expect(200);
+    expect(resAgosto.body.totalExpense).toBe(300);
+    const agosto = (resAgosto.body.monthlyEvolution as Array<{ month: number; expenses: number }>).find((m) => m.month === 8);
+    expect(agosto?.expenses).toBe(300);
+  });
+
   it('Saldo do Dashboard bate com a soma de "Carteiras" (saldo inicial + tudo desde sempre, não só o período selecionado)', async () => {
     const walletRes = await request(app.getHttpServer())
       .post('/api/wallets')

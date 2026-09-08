@@ -23,6 +23,11 @@ export class DashboardService {
   // Aplicado só nos totais que representam "quanto dinheiro eu tenho/movimentei"
   // (Saldo/Entradas/Saídas/gráfico de evolução); expensesByCategory e recentTransactions
   // continuam incluindo compras no cartão, que é "no que eu gastei" (outra pergunta).
+  //
+  // Excluir a compra aqui só cobre metade da regra: quem usa isto (totalExpenses e
+  // monthlyAggregation, abaixo) também precisa somar de volta o TRANSFER do pagamento da
+  // fatura — senão o gasto no cartão nunca aparece em Saídas/gráfico, nem na compra (excluída
+  // aqui de propósito) nem no pagamento (type errado pro $match de EXPENSE).
   private excludeCardPurchasesMatch() {
     return { faturaId: { $exists: false } };
   }
@@ -79,7 +84,20 @@ export class DashboardService {
                 { $group: { _id: null, total: { $sum: '$value' } } },
               ],
               totalExpenses: [
-                { $match: { type: TransactionType.EXPENSE, date: { $gte: startDate, $lte: endDate }, ...this.excludeCardPurchasesMatch() } },
+                {
+                  $match: {
+                    date: { $gte: startDate, $lte: endDate },
+                    $or: [
+                      { type: TransactionType.EXPENSE, ...this.excludeCardPurchasesMatch() },
+                      // Pagamento de fatura (TRANSFER com faturaId, criada em
+                      // CartoesService#pagar): é o momento em que a compra no cartão vira
+                      // dinheiro saindo de verdade — sem isso a compra fica excluída (dívida,
+                      // não gasto ainda) e o pagamento nunca é contado em lugar nenhum, porque
+                      // seu `type` é TRANSFER, não EXPENSE.
+                      { type: TransactionType.TRANSFER, faturaId: { $exists: true } },
+                    ],
+                  },
+                },
                 // Estorno de compra no cartão (isEstorno) é subtraído em vez de somado — senão
                 // uma compra devolvida continuaria contando como gasto no total do mês.
                 { $group: { _id: null, total: { $sum: SIGNED_VALUE_EXPR } } },
@@ -108,10 +126,22 @@ export class DashboardService {
                 { $sort: { total: -1 } },
               ],
               monthlyAggregation: [
-                { $match: this.excludeCardPurchasesMatch() },
+                {
+                  $match: {
+                    $or: [
+                      { type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] }, ...this.excludeCardPurchasesMatch() },
+                      // Mesmo pagamento de fatura considerado em totalExpenses acima — reclassificado
+                      // como EXPENSE no $group abaixo, já que é isso que representa (dinheiro saindo).
+                      { type: TransactionType.TRANSFER, faturaId: { $exists: true } },
+                    ],
+                  },
+                },
                 {
                   $group: {
-                    _id: { month: { $month: '$date' }, type: '$type' },
+                    _id: {
+                      month: { $month: '$date' },
+                      type: { $cond: [{ $eq: ['$type', TransactionType.TRANSFER] }, TransactionType.EXPENSE, '$type'] },
+                    },
                     total: { $sum: SIGNED_VALUE_EXPR },
                   },
                 },
