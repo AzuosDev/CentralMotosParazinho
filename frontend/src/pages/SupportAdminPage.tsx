@@ -5,12 +5,14 @@ import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { formatDisplayDate } from "../lib/finance";
 import { useToast } from "../components/ui/Toast";
+import { SupportThreadDrawer } from "../components/support/SupportThreadDrawer";
 
 type SupportMessageTipo = "bug" | "sugestao";
 type SupportMessageStatus = "aberto" | "lido";
 
 type SupportMessage = {
   _id: string;
+  titulo: string;
   tipo: SupportMessageTipo;
   mensagem: string;
   status: SupportMessageStatus;
@@ -101,6 +103,7 @@ function SupportMessagesTab() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"todas" | SupportMessageStatus>("aberto");
+  const [openTicketId, setOpenTicketId] = useState<string | null>(null);
 
   const messagesQuery = useQuery<SupportMessage[]>({
     queryKey: ["support-messages"],
@@ -108,6 +111,8 @@ function SupportMessagesTab() {
       const { data } = await api.get<SupportMessage[]>("/api/support/messages");
       return Array.isArray(data) ? data : [];
     },
+    staleTime: 0,
+    refetchInterval: 20000,
   });
 
   const statusMutation = useMutation({
@@ -121,6 +126,7 @@ function SupportMessagesTab() {
   const messages = messagesQuery.data ?? [];
   const visible = filter === "todas" ? messages : messages.filter((m) => m.status === filter);
   const abertasCount = messages.filter((m) => m.status === "aberto").length;
+  const openTicket = messages.find((m) => m._id === openTicketId) ?? null;
 
   return (
     <div className="space-y-4">
@@ -155,47 +161,81 @@ function SupportMessagesTab() {
           Nenhuma mensagem por aqui.
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {visible.map((m) => {
             const cfg = tipoConfig[m.tipo];
             const Icon = cfg.icon;
             const isLido = m.status === "lido";
             return (
-              <div key={m._id} className="rounded-2xl border border-bg-muted bg-bg-card p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("flex items-center gap-1.5 text-sm font-semibold", cfg.color)}>
-                      <Icon className="h-4 w-4" /> {cfg.label}
-                    </span>
-                    <span className="text-xs text-text-muted">{formatDisplayDate(m.createdAt)}</span>
+              <button
+                key={m._id}
+                type="button"
+                onClick={() => setOpenTicketId(m._id)}
+                className="flex w-full items-center gap-3 rounded-2xl border border-bg-muted bg-bg-card p-4 text-left transition hover:border-accent-lime/40"
+              >
+                <Icon className={cn("h-4 w-4 shrink-0", cfg.color)} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">{m.titulo}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+                    <span className={cn("font-semibold", cfg.color)}>{cfg.label}</span>
+                    <span className="text-text-muted">{formatDisplayDate(m.createdAt)}</span>
+                    <span className="text-text-muted">· {m.userEmail}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => statusMutation.mutate({ id: m._id, status: isLido ? "aberto" : "lido" })}
-                    disabled={statusMutation.isPending}
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-semibold transition",
-                      isLido
-                        ? "bg-bg-muted text-text-secondary hover:bg-bg-overlay"
-                        : "bg-accent-lime/15 text-accent-lime hover:bg-accent-lime/25",
-                    )}
-                  >
-                    {isLido ? "Reabrir" : "Marcar como lida"}
-                  </button>
                 </div>
-
-                <p className="mt-3 whitespace-pre-wrap text-sm text-white">{m.mensagem}</p>
-
-                <a
-                  href={`mailto:${m.userEmail}?subject=${encodeURIComponent("Re: sua mensagem no MeuGasto")}`}
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent-lime hover:opacity-80"
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1 text-xs font-semibold",
+                    isLido ? "bg-bg-muted text-text-secondary" : "bg-accent-lime/15 text-accent-lime",
+                  )}
                 >
-                  <Mail className="h-3.5 w-3.5" /> {m.userEmail}
-                </a>
-              </div>
+                  {isLido ? "Lida" : "Aberta"}
+                </span>
+              </button>
             );
           })}
         </div>
+      )}
+
+      {openTicket && (
+        <SupportThreadDrawer
+          open
+          onClose={() => setOpenTicketId(null)}
+          messageId={openTicket._id}
+          viewerRole="admin"
+          invalidateListKey={["support-messages"]}
+          titulo={openTicket.titulo}
+          tipoLabel={tipoConfig[openTicket.tipo].label}
+          tipoIcon={tipoConfig[openTicket.tipo].icon}
+          tipoColor={tipoConfig[openTicket.tipo].color}
+          createdAt={openTicket.createdAt}
+          mensagem={openTicket.mensagem}
+          userEmail={openTicket.userEmail}
+          headerActions={
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  statusMutation.mutate({ id: openTicket._id, status: openTicket.status === "lido" ? "aberto" : "lido" })
+                }
+                disabled={statusMutation.isPending}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-semibold transition",
+                  openTicket.status === "lido"
+                    ? "bg-bg-muted text-text-secondary hover:bg-bg-overlay"
+                    : "bg-accent-lime/15 text-accent-lime hover:bg-accent-lime/25",
+                )}
+              >
+                {openTicket.status === "lido" ? "Reabrir" : "Marcar como lida"}
+              </button>
+              <a
+                href={`mailto:${openTicket.userEmail}?subject=${encodeURIComponent("Re: sua mensagem no MeuGasto")}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-lime hover:opacity-80"
+              >
+                <Mail className="h-3.5 w-3.5" /> Responder por email
+              </a>
+            </div>
+          }
+        />
       )}
     </div>
   );
