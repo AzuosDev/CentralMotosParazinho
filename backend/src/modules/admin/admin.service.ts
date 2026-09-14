@@ -85,4 +85,19 @@ export class AdminService {
     const { status, hasAccess } = resolveStatus(updated);
     return { ...updated, status, hasAccess };
   }
+
+  // Concede um período de teste manual (independente do trial de 15 dias do cadastro) —
+  // útil pra dar acesso temporário sem marcar o usuário como grátis pra sempre.
+  async setTrial(userId: string, days: number) {
+    const trialEndsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    const updated = await this.userModel
+      .findByIdAndUpdate(userId, { $set: { subscriptionStatus: 'trial', trialEndsAt } }, { new: true })
+      .select(ADMIN_USER_FIELDS)
+      .lean()
+      .exec();
+    if (!updated) throw new NotFoundException('Usuário não encontrado');
+
+    const { status, hasAccess } = resolveStatus(updated);
+    return { ...updated, status, hasAccess };
+  }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bug, Gift, Lightbulb, Loader2, Mail, Search, Users } from "lucide-react";
+import { Bug, CalendarClock, Gift, Lightbulb, Loader2, Mail, Search, Users } from "lucide-react";
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { formatDisplayDate } from "../lib/finance";
@@ -242,6 +242,17 @@ function AdminUsersTab() {
     onError: () => addToast("Não foi possível atualizar o usuário. Tente novamente.", "error"),
   });
 
+  const trialMutation = useMutation({
+    mutationFn: async ({ id, days }: { id: string; days: number }) => {
+      await api.patch(`/api/admin/users/${id}/trial`, { days });
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      addToast(`Período de teste de ${vars.days} dias definido.`, "success");
+    },
+    onError: () => addToast("Não foi possível definir o período de teste. Tente novamente.", "error"),
+  });
+
   const users = usersQuery.data ?? [];
 
   const visible = useMemo(() => {
@@ -304,50 +315,97 @@ function AdminUsersTab() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {visible.map((u) => {
-            const cfg = statusConfig[u.status];
-            const plano = planLabel(u);
-            const expiry = expiryLine(u);
-            return (
-              <div key={u._id} className="rounded-2xl border border-bg-muted bg-bg-card p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-white">{u.name || u.email}</p>
-                    {u.name && <p className="text-xs text-text-muted">{u.email}</p>}
-                  </div>
-                  <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", cfg.className)}>
-                    {cfg.label}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-secondary">
-                  <span>Cadastro em {formatDisplayDate(u.createdAt)}</span>
-                  {plano && <span>{plano}</span>}
-                  {expiry && <span>{expiry}</span>}
-                  {!u.emailVerified && <span className="text-accent-yellow">Email não verificado</span>}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    freeAccessMutation.mutate({ id: u._id, isLegacyFree: !u.isLegacyFree })
-                  }
-                  disabled={freeAccessMutation.isPending}
-                  className={cn(
-                    "mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition",
-                    u.isLegacyFree
-                      ? "bg-bg-muted text-text-secondary hover:bg-bg-overlay"
-                      : "bg-accent-lime/15 text-accent-lime hover:bg-accent-lime/25",
-                  )}
-                >
-                  <Gift className="h-3.5 w-3.5" />
-                  {u.isLegacyFree ? "Revogar acesso gratuito" : "Liberar acesso gratuito"}
-                </button>
-              </div>
-            );
-          })}
+          {visible.map((u) => (
+            <AdminUserCard
+              key={u._id}
+              user={u}
+              onToggleFreeAccess={() => freeAccessMutation.mutate({ id: u._id, isLegacyFree: !u.isLegacyFree })}
+              freeAccessPending={freeAccessMutation.isPending}
+              onSetTrial={(days) => trialMutation.mutate({ id: u._id, days })}
+              trialPending={trialMutation.isPending}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function AdminUserCard({
+  user: u,
+  onToggleFreeAccess,
+  freeAccessPending,
+  onSetTrial,
+  trialPending,
+}: {
+  user: AdminUser;
+  onToggleFreeAccess: () => void;
+  freeAccessPending: boolean;
+  onSetTrial: (days: number) => void;
+  trialPending: boolean;
+}) {
+  const [days, setDays] = useState(15);
+  const cfg = statusConfig[u.status];
+  const plano = planLabel(u);
+  const expiry = expiryLine(u);
+
+  return (
+    <div className="rounded-2xl border border-bg-muted bg-bg-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-white">{u.name || u.email}</p>
+          {u.name && <p className="text-xs text-text-muted">{u.email}</p>}
+        </div>
+        <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", cfg.className)}>
+          {cfg.label}
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-secondary">
+        <span>Cadastro em {formatDisplayDate(u.createdAt)}</span>
+        {plano && <span>{plano}</span>}
+        {expiry && <span>{expiry}</span>}
+        {!u.emailVerified && <span className="text-accent-yellow">Email não verificado</span>}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onToggleFreeAccess}
+          disabled={freeAccessPending}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition",
+            u.isLegacyFree
+              ? "bg-bg-muted text-text-secondary hover:bg-bg-overlay"
+              : "bg-accent-lime/15 text-accent-lime hover:bg-accent-lime/25",
+          )}
+        >
+          <Gift className="h-3.5 w-3.5" />
+          {u.isLegacyFree ? "Revogar acesso gratuito" : "Liberar acesso gratuito"}
+        </button>
+
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-bg-muted pl-3 pr-1 py-1">
+          <CalendarClock className="h-3.5 w-3.5 text-text-secondary" />
+          <input
+            type="number"
+            min={1}
+            max={365}
+            value={days}
+            onChange={(e) => setDays(Math.max(1, Math.min(365, Number(e.target.value) || 1)))}
+            className="w-12 bg-transparent text-xs font-semibold text-white focus:outline-none"
+            aria-label="Dias de teste"
+          />
+          <span className="text-xs text-text-secondary">dias</span>
+          <button
+            type="button"
+            onClick={() => onSetTrial(days)}
+            disabled={trialPending}
+            className="rounded-full bg-bg-overlay px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-accent-lime hover:text-black"
+          >
+            Definir teste
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
