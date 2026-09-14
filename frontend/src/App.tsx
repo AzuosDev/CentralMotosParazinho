@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth, computeHasAccess, extractSubscription } from "./contexts/AuthContext";
 import { getAccessToken, hasRefreshToken, refreshAccessToken } from "./lib/auth";
 import { api } from "./lib/api";
+import { ADMIN_EMAIL } from "./lib/brand";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react"
 import type { User } from "./types/api";
@@ -57,6 +58,13 @@ function SubscriptionGate() {
   const { subscription } = useAuth();
 
   if (!subscription) return null;
+
+  // A conta admin precisa acessar o Painel Admin mesmo sem assinatura — é de lá que ela
+  // libera acesso gratuito (o dela ou o de outros usuários). Sem este bypass, ninguém
+  // consegue clicar em "Liberar acesso gratuito" a partir dessa própria conta.
+  if (subscription.email === ADMIN_EMAIL) {
+    return <Outlet />;
+  }
 
   if (!computeHasAccess(subscription)) {
     return <Navigate to="/checkout" replace state={{ from: location.pathname }} />;
