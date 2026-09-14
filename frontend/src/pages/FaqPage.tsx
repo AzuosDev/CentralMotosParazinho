@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
-import { Bug, ChevronDown, HelpCircle, Lightbulb, Loader2, Send } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bug, ChevronDown, HelpCircle, Lightbulb, Loader2, MessageCircle, Plus, Send } from "lucide-react";
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { getApiErrorMessages } from "../lib/errors";
 import { useToast } from "../components/ui/Toast";
+import { formatDisplayDate } from "../lib/finance";
+import { ModalShell } from "../components/modals/ModalShell";
+import { SupportThreadDrawer } from "../components/support/SupportThreadDrawer";
 
 type FaqItem = { q: string; a: string };
 type FaqTopic = { key: string; label: string; items: FaqItem[] };
@@ -210,22 +213,53 @@ export function FaqPage() {
       </div>
 
       <SupportForm />
+      <MySupportMessages />
     </section>
   );
 }
 
 function SupportForm() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="rounded-2xl bg-bg-card p-5">
+      <h2 className="font-sans text-lg font-bold text-white">Não achou sua dúvida?</h2>
+      <p className="mt-1 text-sm text-text-secondary">
+        Relate um erro ou mande uma sugestão — a mensagem vai direto pro suporte.
+      </p>
+
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-4 flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110"
+      >
+        <Plus className="h-4 w-4" />
+        Nova conversa
+      </button>
+
+      <NewConversationModal open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+
+function NewConversationModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
+  const [titulo, setTitulo] = useState("");
   const [tipo, setTipo] = useState<"bug" | "sugestao">("bug");
   const [mensagem, setMensagem] = useState("");
 
   const mutation = useMutation({
     mutationFn: async () => {
-      await api.post("/api/support/messages", { tipo, mensagem: mensagem.trim() });
+      await api.post("/api/support/messages", { titulo: titulo.trim(), tipo, mensagem: mensagem.trim() });
     },
     onSuccess: () => {
       addToast("Mensagem enviada! Obrigado pelo retorno.");
+      setTitulo("");
+      setTipo("bug");
       setMensagem("");
+      queryClient.invalidateQueries({ queryKey: ["support-messages-mine"] });
+      onClose();
     },
     onError: (error) => {
       getApiErrorMessages(error).forEach((message) => addToast(message, "error"));
@@ -237,14 +271,51 @@ function SupportForm() {
     { value: "sugestao" as const, label: "Sugestão", icon: Lightbulb },
   ];
 
-  return (
-    <div className="rounded-2xl bg-bg-card p-5">
-      <h2 className="font-sans text-lg font-bold text-white">Não achou sua dúvida?</h2>
-      <p className="mt-1 text-sm text-text-secondary">
-        Relate um erro ou mande uma sugestão — a mensagem vai direto pro suporte.
-      </p>
+  const canSubmit = titulo.trim().length >= 3 && mensagem.trim().length >= 5;
 
-      <div className="mt-4 flex w-fit gap-1 rounded-xl bg-bg-muted p-1">
+  return (
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      title="Nova conversa"
+      icon={<MessageCircle className="h-6 w-6 text-accent-lime" />}
+      footer={
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={mutation.isPending}
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => mutation.mutate()}
+            disabled={!canSubmit || mutation.isPending}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Enviar
+          </button>
+        </div>
+      }
+    >
+      <label htmlFor="support-titulo" className="block text-xs font-semibold text-text-secondary">
+        Título da conversa
+      </label>
+      <input
+        id="support-titulo"
+        type="text"
+        value={titulo}
+        onChange={(e) => setTitulo(e.target.value)}
+        placeholder="Resuma em poucas palavras, ex: Erro ao pagar fatura"
+        maxLength={150}
+        className="mt-1.5 w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+      />
+
+      <p className="mt-4 text-xs font-semibold text-text-secondary">Assunto</p>
+      <div className="mt-1.5 flex w-fit gap-1 rounded-xl bg-bg-muted p-1">
         {tipoOptions.map(({ value, label, icon: Icon }) => (
           <button
             key={value}
@@ -260,6 +331,9 @@ function SupportForm() {
         ))}
       </div>
 
+      <label htmlFor="support-mensagem" className="mt-4 block text-xs font-semibold text-text-secondary">
+        Mensagem
+      </label>
       <textarea
         id="support-mensagem"
         value={mensagem}
@@ -267,18 +341,110 @@ function SupportForm() {
         placeholder={tipo === "bug" ? "O que aconteceu? Em qual tela?" : "O que você gostaria de ver no app?"}
         rows={4}
         maxLength={2000}
-        className="mt-4 w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+        className="mt-1.5 w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
       />
+    </ModalShell>
+  );
+}
 
-      <button
-        type="button"
-        onClick={() => mutation.mutate()}
-        disabled={mensagem.trim().length < 5 || mutation.isPending}
-        className="mt-3 flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        Enviar
-      </button>
+type MyMessageTipo = "bug" | "sugestao";
+type MyMessageStatus = "aberto" | "lido";
+
+type MySupportMessage = {
+  _id: string;
+  titulo: string;
+  tipo: MyMessageTipo;
+  mensagem: string;
+  status: MyMessageStatus;
+  createdAt: string;
+  replyCount: number;
+  hasUnread: boolean;
+};
+
+const myTipoConfig: Record<MyMessageTipo, { label: string; icon: typeof Bug; color: string }> = {
+  bug: { label: "Erro", icon: Bug, color: "text-accent-red" },
+  sugestao: { label: "Sugestão", icon: Lightbulb, color: "text-accent-yellow" },
+};
+
+function MySupportMessages() {
+  const [openTicketId, setOpenTicketId] = useState<string | null>(null);
+
+  const messagesQuery = useQuery<MySupportMessage[]>({
+    queryKey: ["support-messages-mine"],
+    queryFn: async () => {
+      const { data } = await api.get<MySupportMessage[]>("/api/support/messages/mine");
+      return Array.isArray(data) ? data : [];
+    },
+    staleTime: 0,
+    refetchInterval: 20000,
+  });
+
+  const messages = messagesQuery.data ?? [];
+  const openTicket = messages.find((m) => m._id === openTicketId) ?? null;
+  if (messages.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl bg-bg-card p-5">
+      <h2 className="flex items-center gap-1.5 font-sans text-lg font-bold text-white">
+        <MessageCircle className="h-4 w-4 text-accent-lime" /> Suas mensagens
+      </h2>
+      <p className="mt-1 text-sm text-text-secondary">Acompanhe as respostas do suporte por aqui.</p>
+
+      <div className="mt-4 flex flex-col gap-2">
+        {messages.map((m) => {
+          const cfg = myTipoConfig[m.tipo];
+          const Icon = cfg.icon;
+          return (
+            <button
+              key={m._id}
+              type="button"
+              onClick={() => setOpenTicketId(m._id)}
+              className="flex w-full items-center gap-3 rounded-xl border border-bg-muted p-3.5 text-left transition hover:border-accent-lime/40"
+            >
+              <span className="relative shrink-0">
+                <Icon className={cn("h-4 w-4", cfg.color)} />
+                {m.hasUnread && (
+                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-accent-lime" />
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{m.titulo}</p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+                  <span className={cn("font-semibold", cfg.color)}>{cfg.label}</span>
+                  <span className="text-text-muted">{formatDisplayDate(m.createdAt)}</span>
+                  {m.hasUnread ? (
+                    <span className="rounded-full bg-accent-lime px-2 py-0.5 font-bold text-black">
+                      Nova resposta
+                    </span>
+                  ) : (
+                    m.status === "lido" && (
+                      <span className="rounded-full bg-accent-lime/15 px-2 py-0.5 font-semibold text-accent-lime">
+                        Respondida
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {openTicket && (
+        <SupportThreadDrawer
+          open
+          onClose={() => setOpenTicketId(null)}
+          messageId={openTicket._id}
+          viewerRole="user"
+          invalidateListKey={["support-messages-mine"]}
+          titulo={openTicket.titulo}
+          tipoLabel={myTipoConfig[openTicket.tipo].label}
+          tipoIcon={myTipoConfig[openTicket.tipo].icon}
+          tipoColor={myTipoConfig[openTicket.tipo].color}
+          createdAt={openTicket.createdAt}
+          mensagem={openTicket.mensagem}
+        />
+      )}
     </div>
   );
 }
