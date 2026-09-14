@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellDot, Check, CheckCheck, Clock, X } from "lucide-react";
+import { Bell, BellDot, Check, CheckCheck, Clock, MessageCircle, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
@@ -21,6 +21,14 @@ type Notification = {
   read: boolean;
   generatedDate: string;
   createdAt: string;
+};
+
+type SupportBellItem = {
+  id: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  targetPath: string;
 };
 
 const typeConfig: Record<NotificationType, { color: string; dot: string }> = {
@@ -64,7 +72,16 @@ export function NotificationBell({
     staleTime: 2 * 60 * 1000,
   });
 
-  const unreadCount = notifications.length;
+  // Chamados de suporte abertos (visão admin) ou com resposta nova (visão do usuário).
+  // Não é a mesma coleção dos lembretes de conta — só é mesclado aqui na exibição.
+  const { data: supportItems = [] } = useQuery<SupportBellItem[]>({
+    queryKey: ["support-bell"],
+    queryFn: () => api.get<SupportBellItem[]>("/api/support/notifications").then((r) => r.data),
+    refetchInterval: 5 * 1000,
+    staleTime: 0,
+  });
+
+  const unreadCount = notifications.length + supportItems.length;
 
   const markOneMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/api/notifications/${id}/read`),
@@ -74,6 +91,15 @@ export function NotificationBell({
   const markAllMutation = useMutation({
     mutationFn: () => api.patch("/api/notifications/read-all"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const dismissSupportMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/api/support/messages/${id}/dismiss`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["support-bell"] });
+      queryClient.invalidateQueries({ queryKey: ["support-messages"] });
+      queryClient.invalidateQueries({ queryKey: ["support-messages-mine"] });
+    },
   });
 
   useEffect(() => {
@@ -96,6 +122,12 @@ export function NotificationBell({
     if (!n.read) markOneMutation.mutate(n._id);
     setOpen(false);
     navigate("/contas");
+  };
+
+  const handleSupportItemClick = (item: SupportBellItem) => {
+    dismissSupportMutation.mutate(item.id);
+    setOpen(false);
+    navigate(item.targetPath);
   };
 
   const BellIcon = unreadCount > 0 ? BellDot : Bell;
@@ -179,13 +211,40 @@ export function NotificationBell({
           </div>
 
           <div className="max-h-80 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {notifications.length === 0 && supportItems.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
                 <Bell className="h-8 w-8 text-text-muted" />
                 <p className="text-sm text-text-muted">Nenhuma notificação pendente</p>
               </div>
             ) : (
-              notifications.map((n) => {
+              <>
+              {supportItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleSupportItemClick(item)}
+                  className="flex w-full items-start gap-3 border-b border-border-default px-4 py-3 text-left transition last:border-0 hover:bg-bg-overlay"
+                >
+                  <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-lime" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-accent-lime">{item.title}</p>
+                    <p className="truncate text-sm text-text-primary">{item.message}</p>
+                    <p className="mt-0.5 text-xs text-text-muted">{formatDisplayDate(item.createdAt)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dismissSupportMutation.mutate(item.id);
+                    }}
+                    title="Marcar como lida"
+                    className="mt-1 shrink-0 rounded-lg p-1 text-text-muted transition hover:bg-bg-muted hover:text-text-primary"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </button>
+                </button>
+              ))}
+              {notifications.map((n) => {
                 const cfg = typeConfig[n.type] ?? { color: "text-text-secondary", dot: "bg-text-muted" };
                 return (
                   <button
@@ -215,7 +274,8 @@ export function NotificationBell({
                     </button>
                   </button>
                 );
-              })
+              })}
+              </>
             )}
           </div>
 
