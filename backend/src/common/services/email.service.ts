@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
 import { EmailAttachment, passwordResetEmail, verificationEmail } from '../emails/auth-emails';
-import { supportMessageEmail } from '../emails/support-emails';
+import { supportMessageEmail, supportReplyToAdminEmail, supportReplyToUserEmail } from '../emails/support-emails';
 import { BRAND } from '../emails/email-brand';
 
 @Injectable()
@@ -92,9 +92,21 @@ export class EmailService {
     return this.sendMail(to, email.subject, email.text, email.html, email.attachments);
   }
 
-  async sendSupportMessageEmail(params: { tipo: 'bug' | 'sugestao'; mensagem: string; fromEmail: string }) {
+  async sendSupportMessageEmail(params: { titulo: string; tipo: 'bug' | 'sugestao'; mensagem: string; fromEmail: string }) {
     const baseUrl = this.getBaseUrl();
     const email = supportMessageEmail({ ...params, baseUrl });
+    return this.sendMail(BRAND.supportEmail, email.subject, email.text, email.html, email.attachments);
+  }
+
+  async sendSupportReplyToUserEmail(params: { mensagem: string; toEmail: string }) {
+    const baseUrl = this.getBaseUrl();
+    const email = supportReplyToUserEmail({ mensagem: params.mensagem, baseUrl });
+    return this.sendMail(params.toEmail, email.subject, email.text, email.html, email.attachments);
+  }
+
+  async sendSupportReplyToAdminEmail(params: { mensagem: string; fromEmail: string }) {
+    const baseUrl = this.getBaseUrl();
+    const email = supportReplyToAdminEmail({ ...params, baseUrl });
     return this.sendMail(BRAND.supportEmail, email.subject, email.text, email.html, email.attachments);
   }
 }
