@@ -2,7 +2,7 @@ import { Rocket } from "lucide-react";
 import { ModalShell } from "./ModalShell";
 
 // Altere esta constante a cada novo deploy para exibir o modal novamente
-const WHATS_NEW_VERSION = "2025-07-v2";
+const WHATS_NEW_VERSION = "2026-09-v1";
 const STORAGE_KEY = "whats-new-seen";
 
 export function hasSeenWhatsNew() {
@@ -15,24 +15,48 @@ export function markWhatsNewAsSeen() {
 
 const sections = [
   {
-    emoji: "🔐",
-    title: "Login com Biometria",
+    emoji: "💳",
+    title: "Faturas mais confiáveis",
     items: [
-      "Entre com Face ID, digital ou PIN, sem precisar digitar a senha",
-      "O prompt biométrico abre automaticamente ao carregar a tela de login",
-      "Gerencie suas chaves biométricas em Minha Conta (adicionar e remover)",
-      "Troque a senha confirmando via biometria, sem precisar informar a senha atual",
-      "Sugestão para ativar biometria após o primeiro login com email e senha",
+      "A fatura do mês atual agora abre selecionada por padrão ao entrar no cartão",
+      "Faturas vazias 'fantasmas' somem sozinhas depois de excluir ou estornar uma compra",
+      "Uma fatura que volta a ter saldo devedor deixa de ficar marcada como paga por engano",
     ],
   },
   {
-    emoji: "📄",
-    title: "Importação de Extratos (OFX)",
+    emoji: "🔗",
+    title: "Vincular contas ao cartão",
     items: [
-      "Importe o extrato do seu banco (.ofx) direto na página da carteira",
-      "Categorização automática de PIX, TED e transferências por palavras-chave",
-      "Histórico de importações com botão 'Desfazer' para reverter um lote inteiro",
-      "Deduplicação automática: transações já importadas são ignoradas",
+      "Contas recorrentes (assinaturas como Netflix) podem ser vinculadas a um cartão — a cobrança entra sozinha na fatura",
+      "Conta já vinculada mostra o selo 'Vinculada a [cartão]' em vez de ações manuais que não deviam mais aparecer",
+      "Vincular uma conta antiga ao cartão preserva a data original da compra",
+    ],
+  },
+  {
+    emoji: "➕",
+    title: "Lançar compra no cartão, mais fácil",
+    items: [
+      "O botão '+ Nova Compra' virou um menu: à vista, parcelada, vincular recorrente ou vincular conta parcelada",
+      "Compras parceladas podem ser renomeadas depois de criadas",
+      "Nome do cartão agora é texto livre, e o ícone não muda mais sozinho ao editar",
+    ],
+  },
+  {
+    emoji: "↩️",
+    title: "Corrigir com segurança",
+    items: [
+      "Novo botão 'Desfazer pagamento' numa fatura já paga por engano",
+      "Não é mais possível estornar a mesma compra duas vezes",
+      "Mensagem de erro ao excluir uma compra parcelada agora diz qual fatura está bloqueando",
+    ],
+  },
+  {
+    emoji: "📊",
+    title: "Saldo e Dashboard sempre batendo",
+    items: [
+      "O Saldo do Dashboard sempre bate com a soma da tela 'Carteiras'",
+      "Pagar a fatura de um cartão agora aparece em Saídas e no gráfico de Evolução Mensal",
+      "Arquivar um cartão (em vez de excluir) mantém o histórico e some das listas",
     ],
   },
 ];
