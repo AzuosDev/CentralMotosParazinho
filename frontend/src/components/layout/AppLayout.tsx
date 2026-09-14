@@ -7,6 +7,7 @@ import {
   Clock,
   Coins,
   CreditCard,
+  HelpCircle,
   Home,
   Landmark,
   LayoutDashboard,
@@ -85,6 +86,7 @@ const pageTitles: Record<string, string> = {
   "/goals": "Metas Financeiras",
   "/budget": "Orçamento",
   "/configuracoes": "Configurações",
+  "/faq": "Perguntas Frequentes",
 };
 
 const fallbackEmail = "usuario@meugasto.app";
@@ -283,7 +285,27 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className={cn("px-4 pb-1", collapsed && "px-3")}>
+      <div className={cn("flex flex-col gap-1 px-4 pb-1", collapsed && "px-3")}>
+        <Link
+          to="/faq"
+          onClick={onNavigate}
+          title={collapsed ? "FAQ" : undefined}
+          className={cn(
+            "group relative flex items-center rounded-xl py-3 text-sm font-medium transition",
+            collapsed ? "justify-center px-3" : "gap-3 px-4",
+            currentPath === "/faq"
+              ? "bg-bg-muted text-text-primary"
+              : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+          )}
+        >
+          <HelpCircle className={cn("h-5 w-5", currentPath === "/faq" && "text-accent-lime")} />
+          {!collapsed && <span>FAQ</span>}
+          {collapsed && (
+            <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
+              FAQ
+            </span>
+          )}
+        </Link>
         <NotificationBell collapsed={collapsed} />
       </div>
 

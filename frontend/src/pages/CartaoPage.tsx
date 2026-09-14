@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Archive, ArrowLeft, Loader2, Pencil, RotateCcw, Trash2, Wallet as WalletIcon } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, HelpCircle, Loader2, Pencil, RotateCcw, Trash2, Wallet as WalletIcon } from "lucide-react";
 
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
@@ -434,14 +434,23 @@ export function CartaoPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="rounded-xl p-2 transition hover:bg-bg-muted">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <p className="text-sm text-text-secondary">Cartão</p>
-          <h1 className="font-sans text-2xl font-bold">{cartao.nome}</h1>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="rounded-xl p-2 transition hover:bg-bg-muted">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <p className="text-sm text-text-secondary">Cartão</p>
+            <h1 className="font-sans text-2xl font-bold">{cartao.nome}</h1>
+          </div>
         </div>
+        <Link
+          to="/faq?topic=cartoes"
+          className="rounded-xl p-2 text-text-secondary transition hover:bg-bg-muted hover:text-white"
+          title="Dúvidas sobre o cartão"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </Link>
       </div>
 
       <div className="rounded-2xl bg-bg-card p-6">

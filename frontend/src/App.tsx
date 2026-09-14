@@ -29,6 +29,7 @@ const CartoesPage = lazy(() => import("./pages/CartoesPage").then((m) => ({ defa
 const CartaoPage = lazy(() => import("./pages/CartaoPage").then((m) => ({ default: m.CartaoPage })));
 const FaturaRedirectPage = lazy(() => import("./pages/FaturaRedirectPage").then((m) => ({ default: m.FaturaRedirectPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const FaqPage = lazy(() => import("./pages/FaqPage").then((m) => ({ default: m.FaqPage })));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage").then((m) => ({ default: m.CheckoutPage })));
 
 function PageLoader() {
@@ -175,6 +176,7 @@ export default function App() {
                     <Route path="/cartoes/:id" element={<CartaoPage />} />
                     <Route path="/cartoes/fatura/:faturaId" element={<FaturaRedirectPage />} />
                     <Route path="/configuracoes" element={<SettingsPage />} />
+                    <Route path="/faq" element={<FaqPage />} />
                   </Route>
                 </Route>
               </Route>

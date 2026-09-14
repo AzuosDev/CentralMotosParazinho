@@ -19,6 +19,7 @@ import { WebAuthnModule } from './modules/webauthn/webauthn.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CartoesModule } from './modules/cartoes/cartoes.module';
+import { SupportModule } from './modules/support/support.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { CartoesModule } from './modules/cartoes/cartoes.module';
     NotificationsModule,
     BillingModule,
     CartoesModule,
+    SupportModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
