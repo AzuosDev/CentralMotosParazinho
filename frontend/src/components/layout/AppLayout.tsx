@@ -11,6 +11,7 @@ import {
   Home,
   Landmark,
   LayoutDashboard,
+  LifeBuoy,
   List,
   LogOut,
   Menu,
@@ -39,6 +40,7 @@ import { UserProfileModal } from "../modals/UserProfileModal";
 import { WebAuthnSuggestionModal } from "../modals/WebAuthnSuggestionModal";
 import { useWebAuthnSuggestion } from "../../hooks/useWebAuthnSuggestion";
 import { hasSeenWhatsNew } from "../modals/WhatsNewModal";
+import { ADMIN_EMAIL } from "../../lib/brand";
 const TransactionModal = lazy(() =>
   import("../modals/TransactionModal").then((m) => ({ default: m.TransactionModal }))
 );
@@ -87,6 +89,7 @@ const pageTitles: Record<string, string> = {
   "/budget": "Orçamento",
   "/configuracoes": "Configurações",
   "/faq": "Perguntas Frequentes",
+  "/admin/suporte": "Painel Admin",
 };
 
 const fallbackEmail = "usuario@meugasto.app";
@@ -286,6 +289,28 @@ function SidebarContent({
       </nav>
 
       <div className={cn("flex flex-col gap-1 px-4 pb-1", collapsed && "px-3")}>
+        {email === ADMIN_EMAIL && (
+          <Link
+            to="/admin/suporte"
+            onClick={onNavigate}
+            title={collapsed ? "Painel Admin" : undefined}
+            className={cn(
+              "group relative flex items-center rounded-xl py-3 text-sm font-medium transition",
+              collapsed ? "justify-center px-3" : "gap-3 px-4",
+              currentPath === "/admin/suporte"
+                ? "bg-bg-muted text-text-primary"
+                : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+            )}
+          >
+            <LifeBuoy className={cn("h-5 w-5", currentPath === "/admin/suporte" && "text-accent-lime")} />
+            {!collapsed && <span>Painel Admin</span>}
+            {collapsed && (
+              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
+                Painel Admin
+              </span>
+            )}
+          </Link>
+        )}
         <Link
           to="/faq"
           onClick={onNavigate}
