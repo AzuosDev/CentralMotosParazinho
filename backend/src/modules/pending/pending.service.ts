@@ -4,6 +4,8 @@ import { Model, Types } from 'mongoose';
 import { PendingAccount, PendingAccountDocument } from './schemas/pending-account.schema';
 import { Transaction, TransactionDocument, TransactionType } from '../transactions/schemas/transaction.schema';
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
+import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
+import { CartoesService } from '../cartoes/cartoes.service';
 import { CreatePendingDto } from './dto/create-pending.dto';
 import { UpdatePendingDto } from './dto/update-pending.dto';
 
@@ -15,6 +17,8 @@ export class PendingService {
     @InjectModel(PendingAccount.name) private pendingModel: Model<PendingAccountDocument>,
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
+    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    private cartoesService: CartoesService,
   ) {}
 
   private static readonly CATEGORY_KEYWORDS: Record<string, string[]> = {
@@ -169,6 +173,29 @@ export class PendingService {
     }
 
     try {
+      // Se a forma de pagamento escolhida é um cartão de crédito, a liquidação genérica
+      // (Transaction solta com carteiraId) não serve: não teria faturaId, não apareceria
+      // na fatura, não respeitaria o ciclo de fechamento. Roteia pelo mesmo caminho de
+      // qualquer outra compra no cartão — inclusive pra uma ocorrência recorrente
+      // materializada aqui (payRecurringInstance chama este método antes de salvar).
+      const wallet = !isReceber && pending.carteiraId
+        ? await this.walletModel.findOne({ _id: pending.carteiraId, userId, tipo: 'credito' }).exec()
+        : null;
+
+      if (wallet) {
+        const tx = await this.cartoesService.criarCompraAvulsa(userId, wallet, {
+          value: pending.value,
+          categoryId: category?._id as Types.ObjectId | undefined,
+          description: pending.title,
+          date: pending.dueDate,
+        });
+        // Sinaliza "isto é negócio de cartão" pro frontend (mesmo campo que a
+        // PendingAccount da própria fatura usa) — a transação de liquidação em si não
+        // carrega pendingAccountId, igual a qualquer outra compra no cartão.
+        pending.faturaId = tx.faturaId as Types.ObjectId;
+        return;
+      }
+
       await this.transactionModel.create({
         userId,
         type: isReceber ? TransactionType.INCOME : TransactionType.EXPENSE,
@@ -521,6 +548,15 @@ export class PendingService {
       throw new BadRequestException('Esta conta/parcela não está marcada como paga');
     }
 
+    // Fatura de cartão: liquidação genérica (createSettlementTransaction) criaria uma
+    // segunda EXPENSE fora da fatura, duplicando o que as compras já lançaram nela, e não
+    // sabe escolher carteira pagadora nem tratar pagamento parcial/rotativo.
+    if ((willSettle || willUnsettle) && pending.faturaId) {
+      throw new BadRequestException(
+        'Esta conta é a fatura de um cartão. Pague ou reverta o pagamento pela tela de Cartões.',
+      );
+    }
+
     // Cria a transação de liquidação ANTES de persistir paid=true: se isso falhar, a
     // conta nunca fica marcada como paga/recebida sem o lançamento correspondente.
     // Respeitamos affectsBalance: se false, nenhuma transação é gerada.
@@ -622,6 +658,17 @@ export class PendingService {
   async remove(userId: string, id: string) {
     const uid = new Types.ObjectId(userId);
     const oid = new Types.ObjectId(id);
+
+    // Fatura de cartão não pode ser apagada pelo fluxo genérico de contas pendentes — ela é
+    // recriada/gerenciada por CartoesService e tem transações de compra vinculadas por
+    // faturaId, não por pendingAccountId, então o deleteMany abaixo não as alcançaria mesmo.
+    const existing = await this.pendingModel.findOne({ _id: oid, userId: uid }).exec();
+    if (existing?.faturaId) {
+      throw new BadRequestException(
+        'Esta conta é a fatura de um cartão e não pode ser excluída pela tela de Contas.',
+      );
+    }
+
     const result = await this.pendingModel.findOneAndDelete({ _id: oid, userId: uid }).exec() as unknown as PendingAccountDocument | null;
     if (!result) throw new NotFoundException('Pending account not found');
     await this.transactionModel.deleteMany({ userId: uid, pendingAccountId: oid }).exec();

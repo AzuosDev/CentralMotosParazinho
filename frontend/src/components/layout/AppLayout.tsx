@@ -6,9 +6,12 @@ import {
   ChevronLeft,
   Clock,
   Coins,
+  CreditCard,
+  HelpCircle,
   Home,
   Landmark,
   LayoutDashboard,
+  LifeBuoy,
   List,
   LogOut,
   Menu,
@@ -37,6 +40,7 @@ import { UserProfileModal } from "../modals/UserProfileModal";
 import { WebAuthnSuggestionModal } from "../modals/WebAuthnSuggestionModal";
 import { useWebAuthnSuggestion } from "../../hooks/useWebAuthnSuggestion";
 import { hasSeenWhatsNew } from "../modals/WhatsNewModal";
+import { ADMIN_EMAIL } from "../../lib/brand";
 const TransactionModal = lazy(() =>
   import("../modals/TransactionModal").then((m) => ({ default: m.TransactionModal }))
 );
@@ -62,6 +66,7 @@ const navigation: NavItem[] = [
   },
   { to: "/transactions", label: "Transações", icon: List },
   { to: "/carteiras", label: "Carteiras", icon: Landmark },
+  { to: "/cartoes", label: "Cartões", icon: CreditCard },
   { to: "/contas", label: "Contas", icon: Clock },
   { to: "/goals", label: "Metas Financeiras", icon: Target },
 ] as const;
@@ -78,10 +83,13 @@ const pageTitles: Record<string, string> = {
   "/expenses": "Gastos",
   "/transactions": "Transações",
   "/carteiras": "Carteiras",
+  "/cartoes": "Cartões",
   "/contas": "Contas",
   "/goals": "Metas Financeiras",
   "/budget": "Orçamento",
   "/configuracoes": "Configurações",
+  "/faq": "Perguntas Frequentes",
+  "/admin/suporte": "Painel Admin",
 };
 
 const fallbackEmail = "usuario@meugasto.app";
@@ -250,7 +258,9 @@ function SidebarContent({
         {navigation.map(({ to, match, label, icon: Icon }) => {
           const active = match
             ? currentUrl === match
-            : currentPath === to || (to === "/carteiras" && currentPath.startsWith("/carteiras"));
+            : currentPath === to ||
+              (to === "/carteiras" && currentPath.startsWith("/carteiras")) ||
+              (to === "/cartoes" && currentPath.startsWith("/cartoes"));
 
           return (
             <Link
@@ -278,7 +288,49 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className={cn("px-4 pb-1", collapsed && "px-3")}>
+      <div className={cn("flex flex-col gap-1 px-4 pb-1", collapsed && "px-3")}>
+        {email === ADMIN_EMAIL && (
+          <Link
+            to="/admin/suporte"
+            onClick={onNavigate}
+            title={collapsed ? "Painel Admin" : undefined}
+            className={cn(
+              "group relative flex items-center rounded-xl py-3 text-sm font-medium transition",
+              collapsed ? "justify-center px-3" : "gap-3 px-4",
+              currentPath === "/admin/suporte"
+                ? "bg-bg-muted text-text-primary"
+                : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+            )}
+          >
+            <LifeBuoy className={cn("h-5 w-5", currentPath === "/admin/suporte" && "text-accent-lime")} />
+            {!collapsed && <span>Painel Admin</span>}
+            {collapsed && (
+              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
+                Painel Admin
+              </span>
+            )}
+          </Link>
+        )}
+        <Link
+          to="/faq"
+          onClick={onNavigate}
+          title={collapsed ? "FAQ" : undefined}
+          className={cn(
+            "group relative flex items-center rounded-xl py-3 text-sm font-medium transition",
+            collapsed ? "justify-center px-3" : "gap-3 px-4",
+            currentPath === "/faq"
+              ? "bg-bg-muted text-text-primary"
+              : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+          )}
+        >
+          <HelpCircle className={cn("h-5 w-5", currentPath === "/faq" && "text-accent-lime")} />
+          {!collapsed && <span>FAQ</span>}
+          {collapsed && (
+            <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
+              FAQ
+            </span>
+          )}
+        </Link>
         <NotificationBell collapsed={collapsed} />
       </div>
 
@@ -632,6 +684,13 @@ export function AppLayout() {
               >
                 <Landmark className="h-5 w-5 text-text-secondary" />
                 <span className="font-semibold">Nova Carteira</span>
+              </button>
+              <button
+                onClick={() => { setAddModalOpen(false); navigate("/cartoes?action=create"); }}
+                className="flex items-center gap-3 rounded-xl bg-bg-muted p-4 text-left hover:bg-bg-overlay"
+              >
+                <CreditCard className="h-5 w-5 text-text-secondary" />
+                <span className="font-semibold">Novo Cartão</span>
               </button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth, computeHasAccess, extractSubscription } from "./contexts/AuthContext";
 import { getAccessToken, hasRefreshToken, refreshAccessToken } from "./lib/auth";
 import { api } from "./lib/api";
+import { ADMIN_EMAIL } from "./lib/brand";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react"
 import type { User } from "./types/api";
@@ -25,7 +26,12 @@ const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage").then((m
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })));
 const WalletPage = lazy(() => import("./pages/WalletPage").then((m) => ({ default: m.WalletPage })));
 const WalletsPage = lazy(() => import("./pages/WalletsPage").then((m) => ({ default: m.WalletsPage })));
+const CartoesPage = lazy(() => import("./pages/CartoesPage").then((m) => ({ default: m.CartoesPage })));
+const CartaoPage = lazy(() => import("./pages/CartaoPage").then((m) => ({ default: m.CartaoPage })));
+const FaturaRedirectPage = lazy(() => import("./pages/FaturaRedirectPage").then((m) => ({ default: m.FaturaRedirectPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const FaqPage = lazy(() => import("./pages/FaqPage").then((m) => ({ default: m.FaqPage })));
+const SupportAdminPage = lazy(() => import("./pages/SupportAdminPage").then((m) => ({ default: m.SupportAdminPage })));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage").then((m) => ({ default: m.CheckoutPage })));
 
 function PageLoader() {
@@ -52,6 +58,13 @@ function SubscriptionGate() {
   const { subscription } = useAuth();
 
   if (!subscription) return null;
+
+  // A conta admin precisa acessar o Painel Admin mesmo sem assinatura — é de lá que ela
+  // libera acesso gratuito (o dela ou o de outros usuários). Sem este bypass, ninguém
+  // consegue clicar em "Liberar acesso gratuito" a partir dessa própria conta.
+  if (subscription.email === ADMIN_EMAIL) {
+    return <Outlet />;
+  }
 
   if (!computeHasAccess(subscription)) {
     return <Navigate to="/checkout" replace state={{ from: location.pathname }} />;
@@ -168,7 +181,12 @@ export default function App() {
                     <Route path="/pending" element={<Navigate to="/contas" replace />} />
                     <Route path="/carteiras" element={<WalletsPage />} />
                     <Route path="/carteiras/:id" element={<WalletPage />} />
+                    <Route path="/cartoes" element={<CartoesPage />} />
+                    <Route path="/cartoes/:id" element={<CartaoPage />} />
+                    <Route path="/cartoes/fatura/:faturaId" element={<FaturaRedirectPage />} />
                     <Route path="/configuracoes" element={<SettingsPage />} />
+                    <Route path="/faq" element={<FaqPage />} />
+                    <Route path="/admin/suporte" element={<SupportAdminPage />} />
                   </Route>
                 </Route>
               </Route>

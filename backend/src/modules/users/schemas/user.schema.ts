@@ -60,6 +60,11 @@ export class User {
 
   @Prop({ type: String, default: null })
   billingCycle?: string | null;
+
+  // Populados pelo Mongoose via @Schema({ timestamps: true }) — declarados aqui só para
+  // o TypeScript reconhecer os campos (não geram Prop/coluna extra no schema).
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

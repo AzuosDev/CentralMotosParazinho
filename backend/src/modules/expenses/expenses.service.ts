@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Transaction, TransactionDocument, TransactionType } from '../transactions/schemas/transaction.schema';
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
+import { SIGNED_VALUE_EXPR } from '../transactions/transaction-aggregation.util';
 import { ExpensePeriod } from './dto/get-expenses.dto';
 
 type ExpenseRow = {
@@ -66,7 +67,7 @@ export class ExpensesService {
               date: { $gte: currentStart, $lte: currentEnd },
             },
           },
-          { $group: { _id: '$categoryId', amount: { $sum: '$value' } } },
+          { $group: { _id: '$categoryId', amount: { $sum: SIGNED_VALUE_EXPR } } },
           {
             $lookup: {
               from: 'categories',
@@ -97,7 +98,7 @@ export class ExpensesService {
               date: { $gte: previousStart, $lte: previousEnd },
             },
           },
-          { $group: { _id: '$categoryId', amount: { $sum: '$value' } } },
+          { $group: { _id: '$categoryId', amount: { $sum: SIGNED_VALUE_EXPR } } },
           {
             $project: {
               categoryId: '$_id',

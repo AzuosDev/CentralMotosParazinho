@@ -132,6 +132,13 @@ export class PendingAccount {
 
   @Prop({ maxlength: 500 })
   description?: string;
+
+  // Presente quando esta conta pendente É a fatura de um cartão (uma por ciclo, criada
+  // lazily por CartoesService). Bloqueia o fluxo genérico de liquidação/remoção desta
+  // classe — pagamento de fatura tem regras próprias (carteira pagadora, parcial, rotativo)
+  // que não cabem no PATCH genérico de contas pendentes.
+  @Prop({ type: Types.ObjectId, ref: 'Fatura' })
+  faturaId?: Types.ObjectId;
 }
 
 export const PendingAccountSchema = SchemaFactory.createForClass(PendingAccount);

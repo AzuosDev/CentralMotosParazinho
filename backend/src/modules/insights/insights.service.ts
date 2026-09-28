@@ -6,6 +6,8 @@ import { PendingAccount, PendingAccountDocument } from '../pending/schemas/pendi
 import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
 import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
+import { Fatura, FaturaDocument } from '../cartoes/schemas/fatura.schema';
+import { SIGNED_VALUE_EXPR, signedValue } from '../transactions/transaction-aggregation.util';
 import { GetCashflowDto } from './dto/get-cashflow.dto';
 
 type CashflowGranularity = 'day' | 'week' | 'month';
@@ -276,6 +278,7 @@ export class InsightsService {
     @InjectModel(Goal.name) private goalModel: Model<GoalDocument>,
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    @InjectModel(Fatura.name) private faturaModel: Model<FaturaDocument>,
   ) {}
 
   async getAnnualAggregates(userId: string, year: number): Promise<AnnualAggregates> {
@@ -299,11 +302,11 @@ export class InsightsService {
         $facet: {
           currentTotals: [
             { $match: { date: { $gte: yearStart, $lte: yearEnd } } },
-            { $group: { _id: '$type', total: { $sum: '$value' } } },
+            { $group: { _id: '$type', total: { $sum: SIGNED_VALUE_EXPR } } },
           ],
           previousTotals: [
             { $match: { date: { $gte: prevStart, $lte: prevEnd } } },
-            { $group: { _id: '$type', total: { $sum: '$value' } } },
+            { $group: { _id: '$type', total: { $sum: SIGNED_VALUE_EXPR } } },
           ],
           currentMonthsWithData: [
             { $match: { date: { $gte: yearStart, $lte: yearEnd } } },
@@ -317,7 +320,7 @@ export class InsightsService {
           ],
           currentByCategory: [
             { $match: { type: TransactionType.EXPENSE, date: { $gte: yearStart, $lte: yearEnd } } },
-            { $group: { _id: '$categoryId', total: { $sum: '$value' } } },
+            { $group: { _id: '$categoryId', total: { $sum: SIGNED_VALUE_EXPR } } },
             { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'category' } },
             { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
             {
@@ -332,7 +335,7 @@ export class InsightsService {
           ],
           previousByCategory: [
             { $match: { type: TransactionType.EXPENSE, date: { $gte: prevStart, $lte: prevEnd } } },
-            { $group: { _id: '$categoryId', total: { $sum: '$value' } } },
+            { $group: { _id: '$categoryId', total: { $sum: SIGNED_VALUE_EXPR } } },
           ],
         },
       },
@@ -422,7 +425,7 @@ export class InsightsService {
             date: { $gte: monthStart, $lte: monthEnd },
           },
         },
-        { $group: { _id: '$categoryId', total: { $sum: '$value' } } },
+        { $group: { _id: '$categoryId', total: { $sum: SIGNED_VALUE_EXPR } } },
         { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'category' } },
         { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
         { $project: { categoryId: '$_id', name: { $ifNull: ['$category.name', 'Sem categoria'] }, total: 1 } },
@@ -441,11 +444,11 @@ export class InsightsService {
           $facet: {
             actualThisMonth: [
               { $match: { date: { $gte: monthStart, $lte: now } } },
-              { $group: { _id: '$type', total: { $sum: '$value' } } },
+              { $group: { _id: '$type', total: { $sum: SIGNED_VALUE_EXPR } } },
             ],
             previousMonthTotals: [
               { $match: { date: { $gte: prevMonthStart, $lte: prevMonthEnd } } },
-              { $group: { _id: '$type', total: { $sum: '$value' } } },
+              { $group: { _id: '$type', total: { $sum: SIGNED_VALUE_EXPR } } },
             ],
             previousMonthCount: [
               { $match: { date: { $gte: prevMonthStart, $lte: prevMonthEnd } } },
@@ -617,20 +620,56 @@ export class InsightsService {
   // tanto pros buckets quanto pras datas reais — evita divergência entre o range gerado e o
   // agrupamento (o volume de transações de um único usuário é pequeno o bastante pra isso
   // não pesar, mesmo período a período).
+  //
+  // Transação de cartão (faturaId setado) NÃO usa a própria data aqui: fluxo de caixa é sobre
+  // quando o dinheiro sai de verdade da conta, e isso só acontece no vencimento da fatura —
+  // a compra em si só cria uma dívida (mesma razão por trás de WalletsService excluir compra
+  // no crédito do saldo). Por isso a busca é feita em duas partes: transações sem faturaId
+  // pela própria `date` (comportamento de sempre), e transações com faturaId pela
+  // `dataVencimento` da fatura a que pertencem. O pagamento da fatura (Transaction TRANSFER,
+  // criado por cartoes.service.ts#pagar) já não entra no filtro de type abaixo — só uma das
+  // duas pernas (a compra, na data do vencimento) conta como saída, nunca as duas.
   async getCashflow(userId: string, dto: GetCashflowDto): Promise<CashflowResult> {
     const { from, to, granularity } = this.resolvePeriodRange(dto);
     const userObjectId = new Types.ObjectId(userId);
 
-    const rows = await this.transactionModel
-      .find({
-        userId: userObjectId,
-        agendado: { $ne: true },
-        type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] },
-        date: { $gte: from, $lte: to },
-      })
-      .select('type value date')
-      .lean()
-      .exec();
+    const [regularRows, faturasNoPeriodo] = await Promise.all([
+      this.transactionModel
+        .find({
+          userId: userObjectId,
+          agendado: { $ne: true },
+          type: { $in: [TransactionType.INCOME, TransactionType.EXPENSE] },
+          faturaId: { $exists: false },
+          date: { $gte: from, $lte: to },
+        })
+        .select('type value date isEstorno')
+        .lean()
+        .exec(),
+      this.faturaModel
+        .find({ userId: userObjectId, dataVencimento: { $gte: from, $lte: to } })
+        .select('dataVencimento')
+        .lean()
+        .exec(),
+    ]);
+
+    const faturaVencimentoById = new Map(
+      (faturasNoPeriodo as unknown as { _id: Types.ObjectId; dataVencimento: Date }[]).map((f) => [
+        f._id.toString(),
+        f.dataVencimento,
+      ]),
+    );
+
+    const cardRows = faturaVencimentoById.size
+      ? await this.transactionModel
+          .find({
+            userId: userObjectId,
+            type: TransactionType.EXPENSE,
+            faturaId: { $in: [...faturaVencimentoById.keys()].map((id) => new Types.ObjectId(id)) },
+          })
+          .select('value faturaId isEstorno')
+          .lean()
+          .exec()
+      : [];
 
     const buckets = buildBucketRange(from, to, granularity);
     const bucketMap = new Map<number, { income: number; expense: number }>();
@@ -638,12 +677,21 @@ export class InsightsService {
       bucketMap.set(bucket.getTime(), { income: 0, expense: 0 });
     }
 
-    for (const row of rows as unknown as { type: TransactionType; value: number; date: Date }[]) {
+    for (const row of regularRows as unknown as { type: TransactionType; value: number; date: Date; isEstorno?: boolean }[]) {
       const key = truncateToBucket(new Date(row.date), granularity).getTime();
       const entry = bucketMap.get(key);
       if (!entry) continue;
       if (row.type === TransactionType.INCOME) entry.income += row.value;
-      else entry.expense += row.value;
+      else entry.expense += signedValue(row);
+    }
+
+    for (const row of cardRows as unknown as { value: number; faturaId: Types.ObjectId; isEstorno?: boolean }[]) {
+      const vencimento = faturaVencimentoById.get(row.faturaId.toString());
+      if (!vencimento) continue;
+      const key = truncateToBucket(new Date(vencimento), granularity).getTime();
+      const entry = bucketMap.get(key);
+      if (!entry) continue;
+      entry.expense += signedValue(row);
     }
 
     const points: CashflowPoint[] = buckets.map((bucket) => {
@@ -687,11 +735,13 @@ export class InsightsService {
           ? ((await this.transactionModel
               // Só EXPENSE conta como contribuição — mesmo filtro usado por incrementLinkedGoal/
               // decrementLinkedGoal em transactions.service.ts (só gasto na categoria vinculada
-              // move o currentValue da meta).
+              // move o currentValue da meta). Um estorno de compra no cartão decrementa o
+              // currentValue na hora (decrementLinkedGoal) — precisa decrementar aqui também,
+              // senão o histórico reconstruído diverge do currentValue real da meta.
               .find({ userId: userObjectId, categoryId, type: TransactionType.EXPENSE, date: contributionsDateFilter })
-              .select('value date')
+              .select('value date isEstorno')
               .lean()
-              .exec()) as unknown as { value: number; date: Date }[])
+              .exec()) as unknown as { value: number; date: Date; isEstorno?: boolean }[])
           : [];
 
         const monthlyMap = new Map<string, number>();
@@ -702,7 +752,7 @@ export class InsightsService {
         for (const contribution of contributions) {
           const key = monthKey(new Date(contribution.date));
           if (monthlyMap.has(key)) {
-            monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + contribution.value);
+            monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + signedValue(contribution));
           }
         }
 
@@ -710,7 +760,7 @@ export class InsightsService {
 
         const paceContributions = contributions.filter((c) => new Date(c.date) >= paceStart);
         const monthsWithData = new Set(paceContributions.map((c) => monthKey(new Date(c.date)))).size;
-        const totalRecent = paceContributions.reduce((sum, c) => sum + c.value, 0);
+        const totalRecent = paceContributions.reduce((sum, c) => sum + signedValue(c), 0);
         const avgMonthlyContribution = monthsWithData > 0 ? totalRecent / monthsWithData : 0;
 
         let pace: GoalPace;
@@ -755,14 +805,14 @@ export class InsightsService {
   ): Promise<CategoryBreakdownItem[]> {
     const rows = await this.transactionModel
       .find({ userId: userObjectId, agendado: { $ne: true }, type, date: { $gte: from, $lte: to } })
-      .select('categoryId value')
+      .select('categoryId value isEstorno')
       .lean()
       .exec();
 
     const totalsByKey = new Map<string, number>();
-    for (const row of rows as unknown as { categoryId?: Types.ObjectId; value: number }[]) {
+    for (const row of rows as unknown as { categoryId?: Types.ObjectId; value: number; isEstorno?: boolean }[]) {
       const key = row.categoryId ? row.categoryId.toString() : 'none';
-      totalsByKey.set(key, (totalsByKey.get(key) ?? 0) + row.value);
+      totalsByKey.set(key, (totalsByKey.get(key) ?? 0) + signedValue(row));
     }
 
     const categoryIds = [...totalsByKey.keys()].filter((key) => key !== 'none').map((key) => new Types.ObjectId(key));
@@ -1060,7 +1110,9 @@ export class InsightsService {
   // créditos de transferência em carteiraDestinoId), aplicada progressivamente no tempo.
   async getWalletsEvolution(userId: string, dto?: GetCashflowDto): Promise<WalletEvolution[]> {
     const userObjectId = new Types.ObjectId(userId);
-    const wallets = await this.walletModel.find({ userId: userObjectId }).sort({ createdAt: 1 }).exec();
+    // Cartão de crédito não tem "saldo" no sentido de dinheiro disponível (ver
+    // wallets.service.ts#findAll) — incluí-lo aqui contaminaria a evolução de patrimônio.
+    const wallets = await this.walletModel.find({ userId: userObjectId, tipo: { $ne: 'credito' } }).sort({ createdAt: 1 }).exec();
 
     const { anchor } = this.resolveReportAnchor(dto);
     const monthsBack = 12;

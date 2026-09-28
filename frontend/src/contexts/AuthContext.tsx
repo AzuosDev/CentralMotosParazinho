@@ -3,7 +3,7 @@ import type { User } from "../types/api";
 
 export type SubscriptionData = Pick<
   User,
-  'isLegacyFree' | 'subscriptionStatus' | 'trialEndsAt' | 'subscriptionExpiresAt' | 'plan' | 'billingCycle'
+  'email' | 'isLegacyFree' | 'subscriptionStatus' | 'trialEndsAt' | 'subscriptionExpiresAt' | 'plan' | 'billingCycle'
 >;
 
 export function computeHasAccess(sub: SubscriptionData | null): boolean {
@@ -22,6 +22,7 @@ export function computeHasAccess(sub: SubscriptionData | null): boolean {
 
 export function extractSubscription(user: User): SubscriptionData {
   return {
+    email: user.email,
     isLegacyFree: user.isLegacyFree ?? false,
     subscriptionStatus: user.subscriptionStatus ?? null,
     trialEndsAt: user.trialEndsAt ?? null,

@@ -84,6 +84,7 @@ export function WalletPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setEditing(false);
     },
   });
@@ -121,6 +122,7 @@ export function WalletPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       navigate("/carteiras");
     },
     onError: (error) => {

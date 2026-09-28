@@ -12,6 +12,7 @@ import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
 import { PendingAccount, PendingAccountDocument } from '../pending/schemas/pending-account.schema';
 import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
+import { Fatura, FaturaDocument } from '../cartoes/schemas/fatura.schema';
 
 const FAKE_USER_ID = new Types.ObjectId().toString();
 
@@ -223,6 +224,7 @@ describe('InsightsController - cashflow (e2e)', () => {
   let app: INestApplication;
   let mongod: MongoMemoryServer;
   let transactionModel: Model<TransactionDocument>;
+  let faturaModel: Model<FaturaDocument>;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -247,6 +249,7 @@ describe('InsightsController - cashflow (e2e)', () => {
     await app.init();
 
     transactionModel = app.get<Model<TransactionDocument>>(getModelToken(Transaction.name));
+    faturaModel = app.get<Model<FaturaDocument>>(getModelToken(Fatura.name));
   }, 60000);
 
   afterAll(async () => {
@@ -256,6 +259,7 @@ describe('InsightsController - cashflow (e2e)', () => {
 
   afterEach(async () => {
     await transactionModel.deleteMany({});
+    await faturaModel.deleteMany({});
   });
 
   it('period=year agrega por mês e preenche meses sem transação com zero', async () => {
@@ -302,6 +306,85 @@ describe('InsightsController - cashflow (e2e)', () => {
       .get('/api/insights/cashflow')
       .query({ period: 'custom' })
       .expect(400);
+  });
+
+  it('compra no crédito aparece no mês do VENCIMENTO da fatura, não no mês da compra', async () => {
+    // Fatura fecha em janeiro mas só vence em março — de propósito bem separado do mês da
+    // compra, pra não passar "sem querer" mudando só de mês adjacente.
+    const fatura = await faturaModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      carteiraId: new Types.ObjectId(),
+      mesReferencia: '2026-01',
+      dataInicio: new Date('2025-12-11'),
+      dataFechamento: new Date('2026-01-10'),
+      dataVencimento: new Date('2026-03-05'),
+      valorTotal: 500,
+      status: 'fechada',
+    });
+
+    await transactionModel.create(
+      txn({
+        type: TransactionType.EXPENSE,
+        value: 500,
+        date: new Date('2026-01-05'), // data da compra: janeiro
+        faturaId: fatura._id,
+        carteiraId: fatura.carteiraId,
+      }),
+    );
+
+    const res = await request(app.getHttpServer())
+      .get('/api/insights/cashflow')
+      .query({ period: 'year', year: 2026 })
+      .expect(200);
+
+    expect(res.body.points[0]).toMatchObject({ expense: 0 }); // janeiro (mês da compra): nada
+    expect(res.body.points[2]).toMatchObject({ expense: 500 }); // março (mês do vencimento): a compra inteira
+    expect(res.body.totals.expense).toBe(500);
+  });
+
+  it('fluxo de caixa não soma a compra no crédito duas vezes quando a fatura é paga', async () => {
+    const fatura = await faturaModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      carteiraId: new Types.ObjectId(),
+      mesReferencia: '2026-01',
+      dataInicio: new Date('2025-12-11'),
+      dataFechamento: new Date('2026-01-10'),
+      dataVencimento: new Date('2026-03-05'),
+      valorTotal: 500,
+      valorPago: 500,
+      status: 'paga',
+    });
+
+    await transactionModel.insertMany([
+      // A compra em si — conta no fluxo de caixa, no mês do vencimento (março).
+      txn({
+        type: TransactionType.EXPENSE,
+        value: 500,
+        date: new Date('2026-01-05'),
+        faturaId: fatura._id,
+        carteiraId: fatura.carteiraId,
+      }),
+      // O pagamento da fatura — mesmo faturaId, mesmo valor, mas é TRANSFER
+      // (cartoes.service.ts#pagar): não pode contar de novo como uma segunda saída.
+      {
+        userId: new Types.ObjectId(FAKE_USER_ID),
+        type: TransactionType.TRANSFER,
+        tipoTransacao: 'transferencia',
+        value: 500,
+        date: new Date('2026-03-05'),
+        carteiraId: new Types.ObjectId(),
+        faturaId: fatura._id,
+      },
+    ]);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/insights/cashflow')
+      .query({ period: 'year', year: 2026 })
+      .expect(200);
+
+    // Se a compra E o pagamento contassem, março teria 1000 e o total do ano também.
+    expect(res.body.points[2]).toMatchObject({ expense: 500 });
+    expect(res.body.totals.expense).toBe(500);
   });
 });
 
@@ -832,5 +915,24 @@ describe('InsightsController - wallets-evolution (e2e)', () => {
     // 500 (saldo inicial) + 200 (entrada) - 100 (saída) = 600 — sem a entrada de março.
     expect(walletResult.currentBalance).toBe(600);
     expect(walletResult.points[11].balance).toBe(600);
+  });
+
+  it('exclui cartões de crédito da evolução de patrimônio, igual à listagem de carteiras', async () => {
+    const conta = await walletModel.create({ userId: new Types.ObjectId(FAKE_USER_ID), nome: 'Conta', saldo: 500 });
+    const cartao = await walletModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      nome: 'Cartão',
+      tipo: 'credito',
+      saldo: 0,
+      limite: 1000,
+      diaFechamento: 5,
+      diaVencimento: 12,
+    });
+
+    const res = await request(app.getHttpServer()).get('/api/insights/wallets-evolution').expect(200);
+
+    const ids = (res.body as Array<{ id: string }>).map((w) => w.id);
+    expect(ids).toContain(conta._id.toString());
+    expect(ids).not.toContain(cartao._id.toString());
   });
 });

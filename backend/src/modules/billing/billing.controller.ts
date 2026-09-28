@@ -15,6 +15,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AdminGuard } from '../../common/guards/admin.guard';
 import { ICurrentUser } from '../../common/types/current-user.type';
 
 interface RequestWithUser extends Request {
@@ -45,7 +46,8 @@ export class BillingController {
     return this.billingService.createPortalSession(req.user._id.toString());
   }
 
-  @UseGuards(JwtAuthGuard)
+  // Sem guard, isso mutava subscriptionStatus/isLegacyFree de todo mundo sem autenticação.
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Post('migrate-legacy')
   async migrateLegacy(@Body() body: { excludeEmails?: string[] }) {
     return this.billingService.migrateLegacyUsers(body.excludeEmails ?? []);

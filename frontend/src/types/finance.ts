@@ -30,6 +30,11 @@ export type Transaction = {
   carteiraDestinoId?: string;
   agendado?: boolean;
   carteira?: VirtualWallet;
+  // Presentes só em transações de cartão de crédito.
+  faturaId?: string;
+  numeroParcela?: number;
+  totalParcelas?: number;
+  isEstorno?: boolean;
 };
 
 export type CategoryExpense = Category & {

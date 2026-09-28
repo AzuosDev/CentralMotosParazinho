@@ -715,4 +715,45 @@ describe('PendingController (e2e)', () => {
     expect(tx).not.toBeNull();
     expect(tx!.categoryId?.toString()).toBe(cat._id.toString());
   });
+
+  it('PATCH paid=true numa conta que é fatura de cartão é rejeitado', async () => {
+    const pendingModel = app.get<Model<PendingAccount>>(getModelToken(PendingAccount.name));
+
+    const fatura = await pendingModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      title: 'Fatura Nubank',
+      value: 300,
+      dueDate: new Date('2026-11-10'),
+      paid: false,
+      isParcelada: false,
+      isRecorrente: false,
+      tipo: 'PAGAR',
+      faturaId: new Types.ObjectId(),
+    });
+
+    await request(app.getHttpServer())
+      .patch(`/api/accounts/${fatura._id.toString()}`)
+      .send({ paid: true })
+      .expect(400);
+  });
+
+  it('DELETE numa conta que é fatura de cartão é rejeitado', async () => {
+    const pendingModel = app.get<Model<PendingAccount>>(getModelToken(PendingAccount.name));
+
+    const fatura = await pendingModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      title: 'Fatura Itaú',
+      value: 300,
+      dueDate: new Date('2026-11-10'),
+      paid: false,
+      isParcelada: false,
+      isRecorrente: false,
+      tipo: 'PAGAR',
+      faturaId: new Types.ObjectId(),
+    });
+
+    await request(app.getHttpServer())
+      .delete(`/api/accounts/${fatura._id.toString()}`)
+      .expect(400);
+  });
 });

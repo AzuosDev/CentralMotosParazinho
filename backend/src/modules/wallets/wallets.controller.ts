@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { WalletsService } from './wallets.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -22,8 +22,8 @@ export class WalletsController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@CurrentUser() user: ICurrentUser) {
-    return this.walletsService.findAll(user._id.toString());
+  findAll(@CurrentUser() user: ICurrentUser, @Query('incluirCartoes') incluirCartoes?: string) {
+    return this.walletsService.findAll(user._id.toString(), incluirCartoes === 'true');
   }
 
   @UseGuards(JwtAuthGuard)
@@ -48,5 +48,17 @@ export class WalletsController {
   @Delete(':id')
   remove(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
     return this.walletsService.remove(user._id.toString(), id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/arquivar')
+  arquivar(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
+    return this.walletsService.arquivar(user._id.toString(), id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/desarquivar')
+  desarquivar(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
+    return this.walletsService.desarquivar(user._id.toString(), id);
   }
 }

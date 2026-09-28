@@ -45,7 +45,13 @@ export class BillingService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private configService: ConfigService,
   ) {
-    this.stripe = new Stripe(this.configService.get<string>('STRIPE_SECRET_KEY') ?? '');
+    // O SDK do Stripe lança na construção se a key for falsy (string vazia inclusa) — sem
+    // isso, qualquer ambiente de dev sem STRIPE_SECRET_KEY configurada (comum: ninguém
+    // mexendo em billing localmente) derruba o boot inteiro da aplicação, não só as rotas
+    // de billing. Em produção mantém o fail-fast original (string vazia, Stripe lança).
+    const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    const fallbackKey = process.env.NODE_ENV === 'production' ? '' : 'sk_test_local_dev_placeholder';
+    this.stripe = new Stripe(stripeKey || fallbackKey);
   }
 
   private get asaasUrl() {

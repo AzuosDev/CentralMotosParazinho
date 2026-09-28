@@ -1,0 +1,8 @@
+import { IsInt, Max, Min } from 'class-validator';
+
+export class SetTrialDto {
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  days!: number;
+}

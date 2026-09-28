@@ -192,4 +192,18 @@ describe('TransactionsController (e2e)', () => {
       expect(t.categoryId == null).toBe(true);
     });
   });
+
+  it('POST rejeita lançamento numa carteira arquivada', async () => {
+    const carteira = await walletModel.create({
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      nome: 'Carteira Arquivada',
+      saldo: 0,
+      arquivadaEm: new Date(),
+    });
+
+    await request(app.getHttpServer())
+      .post('/api/transactions')
+      .send({ type: 'INCOME', value: 50, date: '2026-03-10', carteiraId: carteira._id.toString() })
+      .expect(400);
+  });
 });

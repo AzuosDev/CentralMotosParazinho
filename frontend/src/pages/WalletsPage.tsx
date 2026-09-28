@@ -64,6 +64,7 @@ export function WalletsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setShowForm(false);
       setIsCustomBank(false);
       setNome("");
@@ -76,6 +77,7 @@ export function WalletsPage() {
     mutationFn: (id: string) => api.delete(`/api/wallets/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       addToast("Carteira excluída com sucesso.", "success");
       setWalletToDelete(null);
     },
