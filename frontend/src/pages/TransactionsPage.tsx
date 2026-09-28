@@ -373,7 +373,7 @@ export function TransactionsPage() {
         // some (lg:hidden em AppLayout), então a barra volta a ficar perto do rodapé.
         // Conteúdo interno em coluna no mobile (texto em cima, controles embaixo) para
         // não estourar a largura da tela; volta a ser uma linha só a partir de sm:.
-        <div className="fixed bottom-24 left-1/2 z-30 flex w-[min(92vw,32rem)] -translate-x-1/2 flex-col gap-3 rounded-2xl border border-bg-muted light:bg-bg-card/95 p-4 shadow-2xl shadow-black/40 backdrop-blur sm:flex-row sm:items-center sm:gap-3 lg:bottom-6">
+        <div className="fixed bottom-24 left-1/2 z-30 flex w-[min(92vw,32rem)] -translate-x-1/2 flex-col gap-3 rounded-2xl border border-bg-muted bg-bg-card/95 p-4 shadow-2xl shadow-black/40 backdrop-blur sm:flex-row sm:items-center sm:gap-3 lg:bottom-6">
           <p className="shrink-0 text-sm font-semibold text-text-primary">
             {selectedTxIds.length} transaç{selectedTxIds.length === 1 ? "ão" : "ões"} selecionada{selectedTxIds.length === 1 ? "" : "s"}
           </p>

@@ -249,7 +249,7 @@ export function WalletsPage() {
               <div
                 key={wallet._id}
                 title="Transações antigas ainda não associadas a uma carteira. Use a tela de transações para migrá-las."
-                className="flex cursor-default flex-col gap-3 rounded-2xl border border-dashed border-bg-muted light:bg-bg-card/60 p-5"
+                className="flex cursor-default flex-col gap-3 rounded-2xl border border-dashed border-bg-muted bg-bg-card/60 p-5"
               >
                 <BankLogo nome={wallet.nome} icone={wallet.icone} className="h-10 w-10 opacity-70" />
                 <div>

@@ -22,7 +22,7 @@ html.dark {
 
   --text-primary: 255 255 255; /* #ffffff */
   --text-secondary: 156 163 175; /* #9ca3af */
-  --text-muted: 75 85 99; /* #4b5563 */
+  --text-muted: 128 134 143; /* #80868f  5,0:1 sobre card, 4,6:1 sobre bg-muted */
 
   --border-default: 42 42 42; /* #2a2a2a */
   --border-strong: 58 58 58; /* #3a3a3a */

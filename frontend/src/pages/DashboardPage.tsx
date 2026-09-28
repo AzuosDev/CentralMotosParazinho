@@ -345,7 +345,7 @@ function EmptyWallet() {
       <path
         d="M86 74c0-8 6-14 14-14h40v36h-40c-8 0-14-6-14-14v-8Z"
         fill="rgb(var(--bg-card))"
-        stroke="rgb(var(--text-muted))"
+        stroke="#4B5563"
         strokeWidth="4"
       />
       <circle cx="104" cy="78" r="5" fill="rgb(var(--accent-lime-line))" />

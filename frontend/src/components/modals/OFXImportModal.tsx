@@ -314,7 +314,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
                 key={idx}
                 className={cn(
                   "flex items-start gap-3 px-3 py-2.5 transition",
-                  row.alreadyImported ? "opacity-40" : "light:hover:bg-bg-muted/40",
+                  row.alreadyImported ? "opacity-40" : "hover:bg-bg-muted/40",
                 )}
               >
                 <input

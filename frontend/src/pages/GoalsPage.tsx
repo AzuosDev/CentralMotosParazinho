@@ -408,7 +408,7 @@ function GoalValueModal({
         </div>
       }
     >
-      <div className="mb-4 rounded-2xl border border-bg-muted light:bg-bg-muted/70 p-4">
+      <div className="mb-4 rounded-2xl border border-bg-muted bg-bg-muted/70 p-4">
         <p className="text-sm text-text-secondary">Meta</p>
         <h3 className="mt-1 text-lg font-semibold text-text-primary">{goal.name}</h3>
         <p className="mt-2 text-sm text-text-secondary">
