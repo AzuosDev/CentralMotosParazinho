@@ -223,7 +223,7 @@ export function WalletPage() {
                 const auto = detectBankIcon(e.target.value);
                 if (auto) setIcone(auto);
               }}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
             />
           </label>
           <label className="block">
@@ -232,7 +232,7 @@ export function WalletPage() {
               value={icone}
               onChange={(e) => setIcone(e.target.value)}
               placeholder="🏦"
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
             />
           </label>
           <label className="block">
@@ -243,7 +243,7 @@ export function WalletPage() {
             <CurrencyInput
               value={saldoInicial}
               onChange={setSaldoInicial}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
             />
           </label>
           <div className="flex gap-3">
@@ -291,7 +291,7 @@ export function WalletPage() {
             type="button"
             onClick={() => txQuery.fetchNextPage()}
             disabled={txQuery.isFetchingNextPage}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-white hover:bg-bg-muted disabled:opacity-60"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-text-primary hover:bg-bg-muted disabled:opacity-60"
           >
             {txQuery.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" />}
             Carregar mais
@@ -309,7 +309,7 @@ export function WalletPage() {
             {batchesQuery.data!.map((batch) => (
               <div key={batch._id} className="flex items-center justify-between gap-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">
+                  <p className="truncate text-sm font-semibold text-text-primary">
                     {batch.fileName ?? "extrato.ofx"}
                   </p>
                   <p className="text-xs text-text-secondary">
@@ -359,15 +359,15 @@ export function WalletPage() {
               <div className="rounded-xl bg-accent-red/10 p-2.5">
                 <RotateCcw className="h-5 w-5 text-accent-red" />
               </div>
-              <h2 className="text-base font-bold text-white">Desfazer importação?</h2>
+              <h2 className="text-base font-bold text-text-primary">Desfazer importação?</h2>
             </div>
             <p className="text-sm text-text-secondary">
               Isso vai remover{" "}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-text-primary">
                 {undoBatchTarget.transactionCount} transaç{undoBatchTarget.transactionCount === 1 ? "ão" : "ões"}
               </span>{" "}
               importadas de{" "}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-text-primary">
                 {undoBatchTarget.fileName ?? "extrato.ofx"}
               </span>{" "}
               e reverter os saldos correspondentes. Esta ação não pode ser desfeita.
@@ -377,7 +377,7 @@ export function WalletPage() {
                 type="button"
                 onClick={() => setUndoBatchTarget(null)}
                 disabled={undoBatchMutation.isPending}
-                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white hover:bg-bg-overlay transition disabled:opacity-50"
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-text-primary hover:bg-bg-overlay transition disabled:opacity-50"
               >
                 Cancelar
               </button>

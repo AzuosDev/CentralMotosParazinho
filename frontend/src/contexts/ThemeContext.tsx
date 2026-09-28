@@ -28,7 +28,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (themeColor) {
-      themeColor.content = theme === "light" ? "#f6f8f4" : "#0a0a0a";
+      themeColor.content = theme === "light" ? "#f3f3f0" : "#0a0a0a";
     }
   }, [theme]);
 

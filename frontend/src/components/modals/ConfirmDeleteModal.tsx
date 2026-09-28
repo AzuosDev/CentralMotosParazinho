@@ -15,7 +15,7 @@ interface ConfirmDeleteModalProps {
 }
 
 const btnCancel =
-  'flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70';
+  'flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70';
 const btnDestructiveFilled =
   'flex-1 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110';
 const btnDestructiveOutline =
@@ -84,7 +84,7 @@ export function ConfirmDeleteModal({
     >
       <p className="text-sm text-text-secondary">
         Deseja apagar a conta{' '}
-        <span className="font-semibold text-white">"{accountName}"</span>? Esta ação não pode ser desfeita.
+        <span className="font-semibold text-text-primary">"{accountName}"</span>? Esta ação não pode ser desfeita.
       </p>
     </ModalShell>
   );

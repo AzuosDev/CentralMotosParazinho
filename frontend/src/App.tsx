@@ -140,7 +140,7 @@ function AppBoot({ children }: { children: React.ReactNode }) {
         <p className="text-sm text-text-muted">Sem conexão com o servidor.</p>
         <button
           onClick={tryRefresh}
-          className="rounded-lg bg-accent-lime px-4 py-2 text-sm font-medium text-bg-base"
+          className="rounded-lg bg-accent-lime px-4 py-2 text-sm font-medium text-bg-base light:text-black"
         >
           Tentar novamente
         </button>

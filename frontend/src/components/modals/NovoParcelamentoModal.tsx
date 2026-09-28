@@ -103,7 +103,7 @@ export function NovoParcelamentoModal({
             type="button"
             onClick={onClose}
             disabled={mutation.isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -127,7 +127,7 @@ export function NovoParcelamentoModal({
             onChange={(e) => setDescricao(e.target.value)}
             placeholder="Ex: Notebook, Geladeira…"
             maxLength={200}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
           />
         </label>
 
@@ -144,7 +144,7 @@ export function NovoParcelamentoModal({
             <CurrencyInput
               value={valorTotal}
               onChange={setValorTotal}
-              className="w-full bg-transparent text-white outline-none"
+              className="w-full bg-transparent text-text-primary outline-none"
             />
           </div>
         </label>
@@ -157,7 +157,7 @@ export function NovoParcelamentoModal({
             max={48}
             value={totalParcelas}
             onChange={(e) => setTotalParcelas(e.target.value)}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
           />
         </label>
 
@@ -167,7 +167,7 @@ export function NovoParcelamentoModal({
             type="date"
             value={dataCompra}
             onChange={(e) => setDataCompra(e.target.value)}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
           />
           <span className="mt-1 block text-xs text-text-secondary">
             A data real da compra — é a partir dela que o app calcula em qual fatura cada parcela cai.
@@ -178,9 +178,9 @@ export function NovoParcelamentoModal({
           <div className="space-y-3 rounded-xl border border-accent-red/40 bg-accent-red/10 p-4">
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 shrink-0 text-accent-red" />
-              <div className="text-sm text-red-200">
+              <div className="text-sm text-status-danger-soft">
                 <p className="font-semibold">{limitBlock.message}</p>
-                <p className="mt-1 text-red-200/80">
+                <p className="mt-1 text-status-danger-soft/80">
                   Limite disponível: {formatCurrency(limitBlock.limiteDisponivel)} de {formatCurrency(limitBlock.limite)}.
                   Esta é uma compra que de fato aconteceu — você pode confirmar mesmo assim.
                 </p>

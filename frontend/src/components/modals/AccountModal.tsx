@@ -344,7 +344,7 @@ export function AccountModal({
           <button
             type="button"
             disabled={isSaving}
-            className="px-3 py-2 text-sm font-semibold text-text-secondary transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="px-3 py-2 text-sm font-semibold text-text-secondary transition hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
             onClick={onClose}
           >
             Cancelar
@@ -374,7 +374,7 @@ export function AccountModal({
             type="button"
             className={cn(
               "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition",
-              formTipo === t ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+              formTipo === t ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
             )}
             onClick={() => setFormTipo(t)}
           >
@@ -393,7 +393,7 @@ export function AccountModal({
               (formIsRecorrente && type === "Recorrente") ||
               (!formIsParcelada && !formIsRecorrente && type === "Não parcelada")
                 ? "bg-accent-lime text-black"
-                : "text-white hover:bg-bg-overlay"
+                : "text-text-primary hover:bg-bg-overlay"
             }`}
             onClick={() => {
               setFormIsParcelada(type === "Parcelada");
@@ -411,7 +411,7 @@ export function AccountModal({
           <input
             type="text"
             placeholder="Ex.: Conta de luz"
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
             value={formTitle}
             onChange={(e) => setFormTitle(e.target.value)}
           />
@@ -441,7 +441,7 @@ export function AccountModal({
                 placeholder="Ex.: 2"
                 value={formParcelas.totalParcelas ?? ""}
                 onChange={(e) => setFormParcelas((prev) => ({ ...prev, totalParcelas: e.target.value }))}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
               />
               {formParcelas.totalParcelas && formValue > 0 && (
                 <p className="mt-1 text-xs text-text-secondary">
@@ -459,7 +459,7 @@ export function AccountModal({
                     setFormParcelas((prev) => ({ ...prev, dataInicio: e.target.value }));
                     if (!isPastMonth(e.target.value)) setFormAffectsBalance(true);
                   }}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
                 />
               </label>
               {isPastMonth(formParcelas.dataInicio ?? "") && (
@@ -471,10 +471,10 @@ export function AccountModal({
                     onChange={(e) => setFormAffectsBalance(!e.target.checked)}
                   />
                   <div>
-                    <span className="block text-sm font-medium text-yellow-300">
+                    <span className="block text-sm font-medium text-status-warning-soft">
                       Esta data é retroativa. Deseja que esta conta não afete seu saldo atual?
                     </span>
-                    <span className="mt-0.5 block text-xs text-yellow-300/70">
+                    <span className="mt-0.5 block text-xs text-status-warning-soft/70">
                       Marque para registrar sem lançar movimentação na carteira ao quitar.
                     </span>
                   </div>
@@ -502,7 +502,7 @@ export function AccountModal({
                 onChange={(e) =>
                   setFormRecorrencia((prev) => ({ ...prev, periodoRecorrencia: e.target.value }))
                 }
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
               >
                 <option value="Diário">Diário</option>
                 <option value="Semanal">Semanal</option>
@@ -516,7 +516,7 @@ export function AccountModal({
                 <span className="mb-1 block text-sm text-text-secondary">Data da primeira ocorrência</span>
                 <input
                   type="date"
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
                   value={formRecorrencia.dataProxima ?? ""}
                   onChange={(e) =>
                     setFormRecorrencia((prev) => ({ ...prev, dataProxima: e.target.value }))
@@ -532,7 +532,7 @@ export function AccountModal({
                   max="31"
                   step="1"
                   placeholder="Ex.: 10"
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
                   value={formRecorrenciaDay}
                   onChange={(e) => setFormRecorrenciaDay(e.target.value)}
                 />
@@ -554,7 +554,7 @@ export function AccountModal({
                       "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition",
                       formRecorrenciaTermino === opt
                         ? "bg-accent-lime text-black"
-                        : "text-white hover:bg-bg-overlay",
+                        : "text-text-primary hover:bg-bg-overlay",
                     )}
                   >
                     {opt === "infinita" ? "Sem data de término" : "Encerrar após"}
@@ -569,7 +569,7 @@ export function AccountModal({
                   <span className="mb-1 block text-sm text-text-secondary">Data de término</span>
                   <input
                     type="date"
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
                     value={formRecorrencia.dataTermino ?? ""}
                     onChange={(e) =>
                       setFormRecorrencia((prev) => ({ ...prev, dataTermino: e.target.value }))
@@ -584,7 +584,7 @@ export function AccountModal({
                     min="1"
                     step="1"
                     placeholder="Ex.: 12"
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
                     value={formRecorrenciaNMeses}
                     onChange={(e) => setFormRecorrenciaNMeses(e.target.value)}
                   />
@@ -596,7 +596,7 @@ export function AccountModal({
 
         <div>
           <span className="mb-1 block text-sm text-text-secondary">Categoria</span>
-          <div className="max-h-[180px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-track]:bg-transparent">
+          <div className="max-h-[180px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-scrollbar [&::-webkit-scrollbar-track]:bg-transparent">
             <div className="grid grid-cols-3 gap-1.5">
               {categoriesQuery.isLoading
                 ? Array.from({ length: 6 }).map((_, i) => (
@@ -612,8 +612,8 @@ export function AccountModal({
                         className={cn(
                           "flex h-16 w-full flex-col items-center justify-center gap-1 rounded-lg border bg-bg-muted px-1.5 py-1.5 text-center text-[11px] font-semibold transition",
                           active
-                            ? "border-accent-lime text-white"
-                            : "border-transparent text-text-secondary hover:border-bg-overlay hover:text-white",
+                            ? "border-accent-lime text-text-primary"
+                            : "border-transparent text-text-secondary hover:border-bg-overlay hover:text-text-primary",
                         )}
                       >
                         <span
@@ -632,8 +632,8 @@ export function AccountModal({
                 className={cn(
                   "flex h-16 w-full flex-col items-center justify-center gap-1 rounded-lg border bg-bg-muted px-1.5 py-1.5 text-center text-[11px] font-semibold transition",
                   formCategoria === "Outro"
-                    ? "border-accent-lime text-white"
-                    : "border-transparent text-text-secondary hover:border-bg-overlay hover:text-white",
+                    ? "border-accent-lime text-text-primary"
+                    : "border-transparent text-text-secondary hover:border-bg-overlay hover:text-text-primary",
                 )}
               >
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg" style={{ backgroundColor: "#6B728022" }}>
@@ -647,7 +647,7 @@ export function AccountModal({
             <input
               type="text"
               placeholder="Digite a categoria personalizada"
-              className="mt-2 w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+              className="mt-2 w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
               value={categoriaCustom}
               onChange={(e) => setCategoriaCustom(e.target.value)}
             />
@@ -662,7 +662,7 @@ export function AccountModal({
               setFormForma(e.target.value);
               if (e.target.value !== "Outro") setFormaCustom("");
             }}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
           >
             <option value="">Selecione</option>
             {PAYMENT_FORMATS.map((format) => (
@@ -675,7 +675,7 @@ export function AccountModal({
             <input
               type="text"
               placeholder="Digite a forma de pagamento personalizada"
-              className="mt-2 w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+              className="mt-2 w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
               value={formaCustom}
               onChange={(e) => setFormaCustom(e.target.value)}
             />
@@ -689,7 +689,7 @@ export function AccountModal({
           <select
             value={formCarteiraId}
             onChange={(e) => setFormCarteiraId(e.target.value)}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
           >
             <option value="">Nenhuma</option>
             {(walletsQuery.data ?? []).map((w) => (
@@ -704,7 +704,7 @@ export function AccountModal({
               <span className="mb-1 block text-sm text-text-secondary">Data de vencimento</span>
               <input
                 type="date"
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition focus:border-accent-lime"
                 value={formDueDate}
                 onChange={(e) => {
                   setFormDueDate(e.target.value);
@@ -721,10 +721,10 @@ export function AccountModal({
                   onChange={(e) => setFormAffectsBalance(!e.target.checked)}
                 />
                 <div>
-                  <span className="block text-sm font-medium text-yellow-300">
+                  <span className="block text-sm font-medium text-status-warning-soft">
                     Esta data é retroativa. Deseja que esta conta não afete seu saldo atual?
                   </span>
-                  <span className="mt-0.5 block text-xs text-yellow-300/70">
+                  <span className="mt-0.5 block text-xs text-status-warning-soft/70">
                     Marque para registrar sem lançar movimentação na carteira ao quitar.
                   </span>
                 </div>
@@ -737,7 +737,7 @@ export function AccountModal({
           <span className="mb-1 block text-sm text-text-secondary">Descrição (opcional)</span>
           <textarea
             rows={3}
-            className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+            className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-3 py-2 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
             placeholder="Observação opcional"
             value={formDescription}
             onChange={(e) => setFormDescription(e.target.value)}

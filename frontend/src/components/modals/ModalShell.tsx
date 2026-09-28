@@ -31,12 +31,12 @@ export function ModalShell({
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 shrink-0">
           <div className="flex items-center gap-3">
             {icon}
-            <h2 className="font-sans text-lg font-bold text-white">{title}</h2>
+            <h2 className="font-sans text-lg font-bold text-text-primary">{title}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid h-9 w-9 place-items-center rounded-xl text-text-secondary hover:bg-bg-overlay hover:text-white"
+            className="grid h-9 w-9 place-items-center rounded-xl text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
             aria-label="Fechar modal"
           >
             <X className="h-5 w-5" />

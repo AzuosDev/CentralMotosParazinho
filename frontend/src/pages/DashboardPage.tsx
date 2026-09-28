@@ -344,18 +344,26 @@ function EmptyWallet() {
       />
       <path
         d="M86 74c0-8 6-14 14-14h40v36h-40c-8 0-14-6-14-14v-8Z"
-        fill="#141414"
-        stroke="#4B5563"
+        fill="rgb(var(--bg-card))"
+        stroke="rgb(var(--text-muted))"
         strokeWidth="4"
       />
-      <circle cx="104" cy="78" r="5" fill="#A3E635" />
+      <circle cx="104" cy="78" r="5" fill="rgb(var(--accent-lime-line))" />
       <path
         d="M42 28 88 16c8-2 15 3 17 10l2 8H42v-6Z"
-        fill="#A3E635"
+        fill="rgb(var(--accent-lime-line))"
         opacity="0.3"
       />
     </svg>
   );
+}
+
+// O traço do gráfico usa a variante "line" do acento; como texto, usa a "ink"
+// (no tema escuro as duas são idênticas; no claro a "ink" é mais escura).
+function toInkColor(color?: string) {
+  return color
+    ?.replace("--accent-lime-line", "--accent-lime-ink")
+    .replace("--accent-orange)", "--accent-orange-ink)");
 }
 
 function CustomTooltip({
@@ -372,10 +380,10 @@ function CustomTooltip({
   }
 
   return (
-    <div className="rounded-xl border border-bg-muted bg-bg-card p-3 text-sm text-white shadow-xl">
+    <div className="rounded-xl border border-bg-muted bg-bg-card p-3 text-sm text-text-primary shadow-xl">
       <p className="mb-2 font-semibold">{label}</p>
       {payload.map((item) => (
-        <p key={item.name} style={{ color: item.color }}>
+        <p key={item.name} style={{ color: toInkColor(item.color) }}>
           {item.name}: {formatCurrency(item.value ?? 0)}
         </p>
       ))}
@@ -444,7 +452,7 @@ export function DashboardPage() {
           <select
             value={month}
             onChange={(event) => setMonth(Number(event.target.value))}
-            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-white outline-none transition focus:border-accent-lime"
+            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime"
           >
             {monthOptions.map((label, index) => (
               <option key={label} value={index + 1}>
@@ -455,7 +463,7 @@ export function DashboardPage() {
           <select
             value={year}
             onChange={(event) => setYear(Number(event.target.value))}
-            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-white outline-none transition focus:border-accent-lime"
+            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime"
           >
             {years.map((option) => (
               <option key={option} value={option}>
@@ -480,7 +488,7 @@ export function DashboardPage() {
           </strong>
           <button
             onClick={toggle}
-            className="rounded-lg p-1 text-text-secondary transition hover:text-white"
+            className="rounded-lg p-1 text-text-secondary transition hover:text-text-primary"
             aria-label={show ? "Ocultar valores" : "Mostrar valores"}
           >
             {show ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
@@ -542,19 +550,19 @@ export function DashboardPage() {
             <AreaChart data={dashboard.monthlyEvolution}>
               <defs>
                 <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#A3E635" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="#A3E635" stopOpacity={0} />
+                  <stop offset="5%" stopColor="rgb(var(--accent-lime-line))" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="rgb(var(--accent-lime-line))" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F97316" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
+                  <stop offset="5%" stopColor="rgb(var(--accent-orange))" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="rgb(var(--accent-orange))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="month" stroke="#9CA3AF" tickLine={false} axisLine={false} />
-              <YAxis stroke="#9CA3AF" tickLine={false} axisLine={false} tickFormatter={formatCompact} />
+              <XAxis dataKey="month" stroke="rgb(var(--chart-axis))" tickLine={false} axisLine={false} />
+              <YAxis stroke="rgb(var(--chart-axis))" tickLine={false} axisLine={false} tickFormatter={formatCompact} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" name="Entradas" dataKey="income" stroke="#A3E635" fill="url(#incomeGradient)" strokeWidth={2} />
-              <Area type="monotone" name="Saídas" dataKey="expense" stroke="#F97316" fill="url(#expenseGradient)" strokeWidth={2} />
+              <Area type="monotone" name="Entradas" dataKey="income" stroke="rgb(var(--accent-lime-line))" fill="url(#incomeGradient)" strokeWidth={2} />
+              <Area type="monotone" name="Saídas" dataKey="expense" stroke="rgb(var(--accent-orange))" fill="url(#expenseGradient)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

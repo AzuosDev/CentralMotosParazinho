@@ -398,12 +398,12 @@ export function ContasPage() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-white">{item.title}</h2>
+              <h2 className="text-base font-semibold text-text-primary">{item.title}</h2>
               {installmentLabel && (
                 <span className="rounded-full bg-accent-lime/10 px-2.5 py-1 text-[11px] font-semibold text-accent-lime">{installmentLabel}</span>
               )}
               {(item.isRecorrente || item.isVirtual || item.recorrenciaTemplateId) && (
-                <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-400">Recorrente</span>
+                <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-status-info">Recorrente</span>
               )}
               {item.faturaId && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-accent-lime/10 px-2.5 py-1 text-[11px] font-semibold text-accent-lime">
@@ -413,7 +413,7 @@ export function ContasPage() {
               )}
               {linkedCardNome && (
                 <span
-                  className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-400"
+                  className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-status-info"
                   title="Cobrada automaticamente neste cartão quando o vencimento chegar"
                 >
                   <CreditCard className="h-3 w-3" />
@@ -426,7 +426,7 @@ export function ContasPage() {
             <p className="mt-2 text-xs text-text-muted">Vence em {formatDisplayDate(item.dueDate)}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm font-semibold text-white">{formatCurrency(item.value)}</p>
+            <p className="text-sm font-semibold text-text-primary">{formatCurrency(item.value)}</p>
           </div>
         </div>
 
@@ -461,7 +461,7 @@ export function ContasPage() {
                   type="button"
                   onClick={() => setUnmarkTarget(item)}
                   disabled={unmarkPaid.isPending}
-                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm font-semibold text-text-secondary hover:text-white transition"
+                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm font-semibold text-text-secondary hover:text-text-primary transition"
                 >
                   <RotateCcw className="h-4 w-4" />
                   Desmarcar
@@ -471,7 +471,7 @@ export function ContasPage() {
                 <button
                   type="button"
                   onClick={() => abrirParcelStatus(item)}
-                  className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+                  className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-text-primary"
                 >
                   Parcelas
                 </button>
@@ -480,7 +480,7 @@ export function ContasPage() {
                 <button
                   type="button"
                   onClick={() => setVincularCartaoItem(item)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm text-text-primary"
                   title="Converter esta conta em parcelamento de um cartão"
                 >
                   <CreditCard className="h-4 w-4" />
@@ -491,7 +491,7 @@ export function ContasPage() {
                 <button
                   type="button"
                   onClick={() => setVincularRecorrenteItem(item)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+                  className="inline-flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-sm text-text-primary"
                   title="Cobrar esta assinatura automaticamente num cartão, todo mês"
                 >
                   <CreditCard className="h-4 w-4" />
@@ -501,7 +501,7 @@ export function ContasPage() {
               <button
                 type="button"
                 onClick={() => abrirModalEdicao(item)}
-                className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-white"
+                className="rounded-xl bg-bg-muted px-3 py-2 text-sm text-text-primary"
               >
                 Editar
               </button>
@@ -539,7 +539,7 @@ export function ContasPage() {
           <select
             value={selectedMonth}
             onChange={(event) => setSelectedMonth(Number(event.target.value))}
-            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-white outline-none transition focus:border-accent-lime"
+            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime"
           >
             {monthOptions.map((label, index) => (
               <option key={label} value={index + 1}>
@@ -550,7 +550,7 @@ export function ContasPage() {
           <select
             value={selectedYear}
             onChange={(event) => setSelectedYear(Number(event.target.value))}
-            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-white outline-none transition focus:border-accent-lime"
+            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime"
           >
             {years.map((option) => (
               <option key={option} value={option}>
@@ -569,7 +569,7 @@ export function ContasPage() {
             onClick={() => setActiveTab(tab)}
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              activeTab === tab ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+              activeTab === tab ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             {tab === "PAGAR" ? "Contas a Pagar" : "Contas a Receber"}
@@ -642,7 +642,7 @@ export function ContasPage() {
           {pendentes.length > 0 && (
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">Pendentes</h2>
+                <h2 className="text-lg font-semibold text-text-primary">Pendentes</h2>
                 <span className="text-sm text-text-secondary">{pendentes.length} item(ns)</span>
               </div>
               <div className="space-y-3">{pendentes.map((item) => renderAccountCard(item))}</div>
@@ -652,7 +652,7 @@ export function ContasPage() {
           {pagas.length > 0 && (
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-semibold text-text-primary">
                   {activeTab === "RECEBER" ? "Recebidas" : "Pagas"}
                 </h2>
                 <span className="text-sm text-text-secondary">{pagas.length} item(ns)</span>
@@ -692,7 +692,7 @@ export function ContasPage() {
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-2xl border border-bg-muted bg-bg-card p-6 space-y-5">
               <div>
-                <h2 className="text-lg font-bold text-white">Status das parcelas</h2>
+                <h2 className="text-lg font-bold text-text-primary">Status das parcelas</h2>
                 <p className="mt-1 text-sm text-text-secondary">{liveItem.title}</p>
               </div>
               {groupQuery.isLoading && (
@@ -738,12 +738,12 @@ export function ContasPage() {
                 {liveItem.numeroParcela && (
                   <div className="flex justify-between">
                     <span className="text-text-secondary">Parcela atual</span>
-                    <span className="text-white font-medium">{liveItem.numeroParcela}/{totalParcelas}</span>
+                    <span className="text-text-primary font-medium">{liveItem.numeroParcela}/{totalParcelas}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Valor da parcela</span>
-                  <span className="text-white font-medium">{formatCurrency(liveItem.value)}</span>
+                  <span className="text-text-primary font-medium">{formatCurrency(liveItem.value)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Total pago</span>
@@ -755,7 +755,7 @@ export function ContasPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Vencimento</span>
-                  <span className="text-white font-medium">{formatDisplayDate(liveItem.dueDate)}</span>
+                  <span className="text-text-primary font-medium">{formatDisplayDate(liveItem.dueDate)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Status</span>
@@ -769,7 +769,7 @@ export function ContasPage() {
                 <button
                   type="button"
                   onClick={() => setParcelStatusOpen(false)}
-                  className="rounded-xl border border-bg-muted px-4 py-2 text-sm text-white hover:bg-bg-muted transition"
+                  className="rounded-xl border border-bg-muted px-4 py-2 text-sm text-text-primary hover:bg-bg-muted transition"
                 >
                   Fechar
                 </button>
@@ -849,11 +849,11 @@ export function ContasPage() {
               <div className="rounded-xl bg-accent-yellow/10 p-2.5">
                 <RotateCcw className="h-5 w-5 text-accent-yellow" />
               </div>
-              <h2 className="text-base font-bold text-white">Desmarcar como {activeTab === "RECEBER" ? "recebida" : "paga"}?</h2>
+              <h2 className="text-base font-bold text-text-primary">Desmarcar como {activeTab === "RECEBER" ? "recebida" : "paga"}?</h2>
             </div>
             <p className="text-sm text-text-secondary">
               A transação de {activeTab === "RECEBER" ? "recebimento" : "pagamento"} gerada para{" "}
-              <span className="font-semibold text-white">"{unmarkTarget.title}"</span> será removida.
+              <span className="font-semibold text-text-primary">"{unmarkTarget.title}"</span> será removida.
               Esta ação não pode ser desfeita.
             </p>
             <div className="flex gap-3">
@@ -861,7 +861,7 @@ export function ContasPage() {
                 type="button"
                 onClick={() => setUnmarkTarget(null)}
                 disabled={unmarkPaid.isPending}
-                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white hover:bg-bg-overlay transition disabled:opacity-50"
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-text-primary hover:bg-bg-overlay transition disabled:opacity-50"
               >
                 Cancelar
               </button>

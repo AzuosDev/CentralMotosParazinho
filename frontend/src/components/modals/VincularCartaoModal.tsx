@@ -136,7 +136,7 @@ export function VincularCartaoModal({
             type="button"
             onClick={onClose}
             disabled={mutation.isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -155,11 +155,11 @@ export function VincularCartaoModal({
       <div className="space-y-4">
         <p className="text-sm text-text-secondary">
           {effectivePendingTitle ? (
-            <>Isso converte <span className="font-semibold text-white">"{effectivePendingTitle}"</span> num parcelamento</>
+            <>Isso converte <span className="font-semibold text-text-primary">"{effectivePendingTitle}"</span> num parcelamento</>
           ) : (
             "Isso converte a conta escolhida num parcelamento"
           )}{" "}
-          {pickingPending ? <>em <span className="font-semibold text-white">{cartaoNome}</span></> : "do cartão escolhido"} e
+          {pickingPending ? <>em <span className="font-semibold text-text-primary">{cartaoNome}</span></> : "do cartão escolhido"} e
           remove a conta pendente avulsa. Nada é adivinhado automaticamente — confirme quantas parcelas já foram pagas.
         </p>
 
@@ -169,14 +169,14 @@ export function VincularCartaoModal({
             {pendingsQuery.isLoading ? (
               <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
             ) : (pendingsQuery.data ?? []).length === 0 ? (
-              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-yellow-400">
+              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
                 Você não tem nenhuma conta avulsa ou parcelada disponível pra vincular.
               </p>
             ) : (
               <select
                 value={pendingId}
                 onChange={(e) => setPendingId(e.target.value)}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
               >
                 <option value="">Selecione…</option>
                 {(pendingsQuery.data ?? []).map((p) => (
@@ -191,14 +191,14 @@ export function VincularCartaoModal({
             {cartoesQuery.isLoading ? (
               <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
             ) : (cartoesQuery.data ?? []).length === 0 ? (
-              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-yellow-400">
+              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
                 Você ainda não tem nenhum cartão cadastrado.
               </p>
             ) : (
               <select
                 value={carteiraId}
                 onChange={(e) => setCarteiraId(e.target.value)}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
               >
                 <option value="">Selecione…</option>
                 {(cartoesQuery.data ?? []).map((c) => (
@@ -217,7 +217,7 @@ export function VincularCartaoModal({
               min={0}
               value={parcelasJaPagas}
               onChange={(e) => setParcelasJaPagas(e.target.value)}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
             />
           </label>
           <label className="block">
@@ -227,7 +227,7 @@ export function VincularCartaoModal({
               min={1}
               value={parcelasRestantes}
               onChange={(e) => setParcelasRestantes(e.target.value)}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
             />
           </label>
         </div>

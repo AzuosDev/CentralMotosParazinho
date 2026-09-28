@@ -86,7 +86,7 @@ export function WhatsNewModal({ open, onClose }: { open: boolean; onClose: () =>
       <div className="flex flex-col gap-5 pb-1">
         {sections.map((section) => (
           <div key={section.title}>
-            <p className="mb-2 text-sm font-bold text-white">
+            <p className="mb-2 text-sm font-bold text-text-primary">
               {section.emoji} {section.title}
             </p>
             <ul className="flex flex-col gap-1.5">

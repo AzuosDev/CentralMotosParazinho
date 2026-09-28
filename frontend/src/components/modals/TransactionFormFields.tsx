@@ -131,8 +131,8 @@ export function CategoryField({
                       className={cn(
                         "flex min-h-20 w-full flex-col items-center justify-center gap-2 rounded-xl border bg-bg-muted p-3 text-center text-xs font-semibold transition",
                         active
-                          ? "border-accent-lime text-white"
-                          : "border-transparent text-text-secondary hover:border-bg-overlay hover:text-white",
+                          ? "border-accent-lime text-text-primary"
+                          : "border-transparent text-text-secondary hover:border-bg-overlay hover:text-text-primary",
                       )}
                     >
                       <span
@@ -231,9 +231,9 @@ export function PaymentMethodField({
 
   if (wallets.length === 0) {
     return (
-      <div className="rounded-xl bg-yellow-500/10 p-3 text-sm text-yellow-400">
+      <div className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
         ⚠️ Nenhuma carteira encontrada.{" "}
-        <Link to="/carteiras" className="font-bold underline underline-offset-2 hover:text-yellow-300">
+        <Link to="/carteiras" className="font-bold underline underline-offset-2 hover:text-status-warning-soft">
           Criar carteira agora →
         </Link>
       </div>
@@ -247,7 +247,7 @@ export function PaymentMethodField({
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime disabled:opacity-60"
+        className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime disabled:opacity-60"
       >
         <option value="">Selecione…</option>
         <optgroup label="Carteiras">
@@ -282,7 +282,7 @@ export function FaturaPreviewHint({ cartaoId, data }: { cartaoId?: string; data?
   return (
     <div className="flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-xs text-text-secondary">
       <CreditCard className="h-3.5 w-3.5 shrink-0 text-accent-lime" />
-      Essa compra vai cair na fatura de <span className="font-semibold text-white">{label}</span>.
+      Essa compra vai cair na fatura de <span className="font-semibold text-text-primary">{label}</span>.
     </div>
   );
 }
@@ -304,9 +304,9 @@ export function WalletField({
 
   if (wallets.length === 0) {
     return (
-      <div className="rounded-xl bg-yellow-500/10 p-3 text-sm text-yellow-400">
+      <div className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
         ⚠️ Nenhuma carteira encontrada.{" "}
-        <Link to="/carteiras" className="font-bold underline underline-offset-2 hover:text-yellow-300">
+        <Link to="/carteiras" className="font-bold underline underline-offset-2 hover:text-status-warning-soft">
           Criar carteira agora →
         </Link>
       </div>
@@ -319,7 +319,7 @@ export function WalletField({
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+        className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
       >
         <option value="">Selecione uma carteira…</option>
         {wallets.map((w) => (
@@ -354,7 +354,7 @@ export function DateAndDescriptionFields({
         <input
           type="date"
           disabled={disabledDate}
-          className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime disabled:opacity-60"
+          className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime disabled:opacity-60"
           {...register("date")}
         />
         {errors.date && (
@@ -370,7 +370,7 @@ export function DateAndDescriptionFields({
         <textarea
           rows={4}
           maxLength={500}
-          className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+          className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
           placeholder={descriptionPlaceholder}
           {...register("description")}
         />

@@ -46,7 +46,7 @@ function CategorySelect({
     <select
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value || null)}
-      className="w-full rounded-lg bg-bg-muted px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-accent-lime"
+      className="w-full rounded-lg bg-bg-muted px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-lime"
     >
       <option value="">Sem categoria</option>
       {cats.map((c) => (
@@ -177,7 +177,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-xl px-4 py-2 text-sm text-text-secondary hover:text-white transition"
+              className="rounded-xl px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition"
             >
               Cancelar
             </button>
@@ -204,7 +204,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
               <button
                 type="button"
                 onClick={() => setPhase("upload")}
-                className="rounded-xl px-4 py-2 text-sm text-text-secondary hover:text-white transition"
+                className="rounded-xl px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition"
               >
                 Voltar
               </button>
@@ -233,7 +233,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
             <select
               value={selectedWalletId}
               onChange={(e) => setSelectedWalletId(e.target.value)}
-              className="w-full rounded-xl bg-bg-muted px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-accent-lime"
+              className="w-full rounded-xl bg-bg-muted px-4 py-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-lime"
             >
               <option value="">Selecione uma carteira</option>
               {wallets.filter((w) => w.tipo !== "VIRTUAL").map((w) => (
@@ -254,12 +254,12 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
               <Upload className={cn("h-8 w-8", file ? "text-accent-lime" : "text-text-secondary")} />
               {file ? (
                 <>
-                  <p className="font-semibold text-white">{file.name}</p>
+                  <p className="font-semibold text-text-primary">{file.name}</p>
                   <p className="text-xs text-text-secondary">{(file.size / 1024).toFixed(1)} KB, clique para trocar</p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-white">Clique para selecionar ou arraste o arquivo</p>
+                  <p className="text-sm text-text-primary">Clique para selecionar ou arraste o arquivo</p>
                   <p className="text-xs text-text-secondary">Formatos aceitos: .ofx, .qfx · Máx. 5 MB</p>
                 </>
               )}
@@ -278,7 +278,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
           </div>
 
           {previewError && (
-            <div className="flex items-start gap-2 rounded-xl bg-red-500/10 p-3 text-sm text-red-400">
+            <div className="flex items-start gap-2 rounded-xl bg-red-500/10 p-3 text-sm text-status-danger">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
               {previewError}
             </div>
@@ -297,7 +297,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
             <span className="text-text-secondary">
               {rows.length} transaç{rows.length !== 1 ? "ões" : "ão"} encontrada{rows.length !== 1 ? "s" : ""}
             </span>
-            <label className="flex items-center gap-2 cursor-pointer text-text-secondary hover:text-white transition">
+            <label className="flex items-center gap-2 cursor-pointer text-text-secondary hover:text-text-primary transition">
               <input
                 type="checkbox"
                 checked={rows.filter((r) => !r.alreadyImported).every((r) => r.selected)}
@@ -314,7 +314,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
                 key={idx}
                 className={cn(
                   "flex items-start gap-3 px-3 py-2.5 transition",
-                  row.alreadyImported ? "opacity-40" : "hover:bg-bg-muted/40",
+                  row.alreadyImported ? "opacity-40" : "light:hover:bg-bg-muted/40",
                 )}
               >
                 <input
@@ -327,7 +327,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-text-secondary shrink-0">{row.date}</span>
-                    <span className="truncate text-sm text-white">{row.description}</span>
+                    <span className="truncate text-sm text-text-primary">{row.description}</span>
                     {row.alreadyImported && (
                       <span className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 text-xs text-text-secondary">
                         Já importado
@@ -355,7 +355,7 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
           </div>
 
           {previewError && (
-            <div className="flex items-start gap-2 rounded-xl bg-red-500/10 p-3 text-sm text-red-400">
+            <div className="flex items-start gap-2 rounded-xl bg-red-500/10 p-3 text-sm text-status-danger">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
               {previewError}
             </div>
@@ -368,11 +368,11 @@ export function OFXImportModal({ open, onClose }: { open: boolean; onClose: () =
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <CheckCircle className="h-14 w-14 text-accent-lime" />
           <div>
-            <p className="text-lg font-bold text-white">Importação concluída!</p>
+            <p className="text-lg font-bold text-text-primary">Importação concluída!</p>
             <p className="mt-1 text-sm text-text-secondary">
-              <strong className="text-white">{result.imported}</strong> transaç{result.imported !== 1 ? "ões importadas" : "ão importada"}
+              <strong className="text-text-primary">{result.imported}</strong> transaç{result.imported !== 1 ? "ões importadas" : "ão importada"}
               {result.skipped > 0 && (
-                <> · <strong className="text-white">{result.skipped}</strong> ignorada{result.skipped !== 1 ? "s" : ""} (duplicadas)</>
+                <> · <strong className="text-text-primary">{result.skipped}</strong> ignorada{result.skipped !== 1 ? "s" : ""} (duplicadas)</>
               )}
             </p>
           </div>

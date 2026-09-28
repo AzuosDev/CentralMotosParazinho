@@ -1,4 +1,27 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+
+// Tokens definidos em src/styles.css como canais RGB — ver o comentário lá.
+const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
+// Acentos por papel: bg-* usa o preenchimento; text-* usa a versão "ink"
+// (legível sobre superfície neutra); border/ring/outline/stroke usam "line".
+const accentFill = {
+  lime: token("accent-lime"),
+  orange: token("accent-orange"),
+  red: token("accent-red"),
+  yellow: token("accent-yellow"),
+};
+const accentInk = {
+  lime: token("accent-lime-ink"),
+  orange: token("accent-orange-ink"),
+  red: token("accent-red-ink"),
+  yellow: token("accent-yellow-ink"),
+};
+const accentLine = {
+  ...accentInk,
+  lime: token("accent-lime-line"),
+};
 
 export default {
   darkMode: "class",
@@ -7,30 +30,34 @@ export default {
     extend: {
       colors: {
         bg: {
-          base: "var(--bg-base)",
-          card: "var(--bg-card)",
-          muted: "var(--bg-muted)",
-          overlay: "var(--bg-overlay)",
+          base: token("bg-base"),
+          card: token("bg-card"),
+          muted: token("bg-muted"),
+          overlay: token("bg-overlay"),
         },
-        accent: {
-          lime: "#A3E635",
-          orange: "#F97316",
-          red: "#EF4444",
-          yellow: "#EAB308",
-        },
+        accent: accentFill,
         semantic: {
-          income: "var(--color-income)",
-          expense: "var(--color-expense)",
-          pending: "var(--color-pending)",
+          income: token("color-income"),
+          expense: token("color-expense"),
+          pending: token("color-pending"),
+        },
+        status: {
+          info: token("status-info"),
+          "info-soft": token("status-info-soft"),
+          warning: token("status-warning"),
+          "warning-soft": token("status-warning-soft"),
+          "warning-softer": token("status-warning-softer"),
+          danger: token("status-danger"),
+          "danger-soft": token("status-danger-soft"),
         },
         text: {
-          primary: "var(--text-primary)",
-          secondary: "var(--text-secondary)",
-          muted: "var(--text-muted)",
+          primary: token("text-primary"),
+          secondary: token("text-secondary"),
+          muted: token("text-muted"),
         },
         border: {
-          default: "var(--border-default)",
-          strong: "var(--border-strong)",
+          default: token("border-default"),
+          strong: token("border-strong"),
         },
         category: {
           shopping: "#EF4444",
@@ -42,6 +69,13 @@ export default {
           other: "#6B7280",
         },
       },
+      textColor: { accent: accentInk },
+      placeholderColor: { accent: accentInk },
+      borderColor: { accent: accentLine },
+      ringColor: { accent: accentLine },
+      outlineColor: { accent: accentLine },
+      backgroundColor: { scrollbar: token("scrollbar-modal") },
+      stroke: { accent: accentLine },
       borderRadius: { card: "16px", pill: "9999px", icon: "12px" },
       fontFamily: {
         sans: ["Syne", "sans-serif"],
@@ -49,5 +83,8 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // light:* — estilos que só existem no tema claro, sem tocar no escuro.
+    plugin(({ addVariant }) => addVariant("light", "html.light &")),
+  ],
 } satisfies Config;

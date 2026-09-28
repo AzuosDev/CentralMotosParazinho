@@ -1,37 +1,119 @@
-/* ── Tema escuro (padrão) ── */
-:root {
-  color-scheme: dark;
-  --bg-base: #0a0a0a;
-  --bg-card: #141414;
-  --bg-muted: #1c1c1c;
-  --bg-overlay: #232323;
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-muted: #4b5563;
-  --border-default: #2a2a2a;
-  --border-strong: #3a3a3a;
-  --color-income: #22c55e;
-  --color-expense: #ef4444;
-  --color-pending: #eab308;
-  --accent-lime: #a3e635;
-}
+/*
+ * Tokens de cor em canais RGB ("r g b") para que o Tailwind consiga aplicar
+ * modificadores de opacidade (text-accent-lime/70, bg-accent-red/10...).
+ * Em CSS/inline style, use sempre rgb(var(--token)).
+ *
+ * Acentos têm três papéis, porque um único valor não serve bem aos dois temas:
+ *   --accent-*       preenchimento (bg-*), sempre com texto escuro/branco por cima
+ *   --accent-*-ink   texto e ícones sobre superfícies neutras (text-*)
+ *   --accent-*-line  bordas, anéis e traços de gráfico (border-*, ring-*, stroke)
+ * No tema escuro os três papéis têm o mesmo valor original.
+ */
 
-/* ── Tema escuro ── */
+/* ── Tema escuro (padrão) ── */
+:root,
 html.dark {
   color-scheme: dark;
-  --bg-base: #0a0a0a;
-  --bg-card: #141414;
-  --bg-muted: #1c1c1c;
-  --bg-overlay: #232323;
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-muted: #4b5563;
-  --border-default: #2a2a2a;
-  --border-strong: #3a3a3a;
-  --color-income: #22c55e;
-  --color-expense: #ef4444;
-  --color-pending: #eab308;
-  --accent-lime: #a3e635;
+
+  --bg-base: 10 10 10; /* #0a0a0a */
+  --bg-card: 20 20 20; /* #141414 */
+  --bg-muted: 28 28 28; /* #1c1c1c */
+  --bg-overlay: 35 35 35; /* #232323 */
+
+  --text-primary: 255 255 255; /* #ffffff */
+  --text-secondary: 156 163 175; /* #9ca3af */
+  --text-muted: 75 85 99; /* #4b5563 */
+
+  --border-default: 42 42 42; /* #2a2a2a */
+  --border-strong: 58 58 58; /* #3a3a3a */
+
+  --color-income: 34 197 94; /* #22c55e */
+  --color-expense: 239 68 68; /* #ef4444 */
+  --color-pending: 234 179 8; /* #eab308 */
+
+  --accent-lime: 163 230 53; /* #a3e635 */
+  --accent-lime-ink: 163 230 53;
+  --accent-lime-line: 163 230 53;
+  --accent-orange: 249 115 22; /* #f97316 */
+  --accent-orange-ink: 249 115 22;
+  --accent-red: 239 68 68; /* #ef4444 */
+  --accent-red-ink: 239 68 68;
+  --accent-yellow: 234 179 8; /* #eab308 */
+  --accent-yellow-ink: 234 179 8;
+
+  /* avisos inline — mesmos tons da paleta Tailwind usados antes */
+  --status-info: 96 165 250; /* blue-400 */
+  --status-info-soft: 147 197 253; /* blue-300 */
+  --status-warning: 250 204 21; /* yellow-400 */
+  --status-warning-soft: 253 224 71; /* yellow-300 */
+  --status-warning-softer: 254 240 138; /* yellow-200 */
+  --status-danger: 248 113 113; /* red-400 */
+  --status-danger-soft: 254 202 202; /* red-200 */
+
+  /* gráficos */
+  --chart-axis: 156 163 175; /* #9ca3af */
+  --chart-track: 148 163 184;
+  --tooltip-bg: #1f2937;
+  --tooltip-border: rgba(148, 163, 184, 0.2);
+  --tooltip-text: #fff;
+  --tooltip-item: #e5e7eb;
+
+  --scrollbar-modal: 63 63 70; /* zinc-700 */
+}
+
+/*
+ * ── Tema claro ──
+ * Espelho do escuro: os mesmos cinzas neutros (sem o matiz verde de antes) e
+ * a mesma lógica de profundidade, invertida — a página é o plano mais fundo,
+ * os cards sobem em branco, inputs e chips afundam um degrau abaixo do card.
+ * O lima continua sendo a marca, mas escurece quando vira texto: #a3e635
+ * sobre branco tem 1,4:1, ilegível. Contrastes medidos sobre o card (#fff).
+ */
+html.light {
+  color-scheme: light;
+
+  --bg-base: 243 243 240; /* #f3f3f0 */
+  --bg-card: 255 255 255; /* #ffffff */
+  --bg-muted: 236 236 232; /* #ecece8 inputs, chips inativos, trilhos */
+  --bg-overlay: 226 226 221; /* #e2e2dd hover, seções secundárias */
+
+  --text-primary: 17 17 17; /* 18,9:1 */
+  --text-secondary: 82 86 94; /* 7,4:1 */
+  --text-muted: 107 112 121; /* 4,9:1 */
+
+  --border-default: 226 226 221;
+  --border-strong: 204 204 197;
+
+  --color-income: 21 128 61; /* green-700  5,0:1 */
+  --color-expense: 220 38 38; /* red-600   4,8:1 */
+  --color-pending: 161 98 7; /* yellow-700 4,9:1 */
+
+  --accent-lime: 132 204 22; /* lime-500 — texto preto por cima: 10,8:1 */
+  --accent-lime-ink: 77 124 15; /* lime-700  5,1:1 */
+  --accent-lime-line: 101 163 13; /* lime-600  3,0:1 (não-texto) */
+  --accent-orange: 249 115 22;
+  --accent-orange-ink: 194 65 12; /* orange-700 5,2:1 */
+  --accent-red: 220 38 38; /* red-600 — texto branco por cima: 4,8:1 */
+  --accent-red-ink: 220 38 38;
+  --accent-yellow: 234 179 8;
+  --accent-yellow-ink: 161 98 7; /* yellow-700 4,9:1 */
+
+  --status-info: 29 78 216; /* blue-700 */
+  --status-info-soft: 30 64 175; /* blue-800 */
+  --status-warning: 133 77 14; /* yellow-800 — legível sobre faixa amarela */
+  --status-warning-soft: 113 63 18; /* yellow-900 */
+  --status-warning-softer: 113 63 18;
+  --status-danger: 185 28 28; /* red-700 */
+  --status-danger-soft: 153 27 27; /* red-800 */
+
+  --chart-axis: 107 112 121;
+  --chart-track: 100 116 139;
+  --tooltip-bg: #ffffff;
+  --tooltip-border: rgb(226 226 221);
+  --tooltip-text: #111111;
+  --tooltip-item: #52565e;
+
+  --scrollbar-modal: 204 204 197;
 }
 
 @tailwind base;
@@ -39,42 +121,6 @@ html.dark {
 @tailwind utilities;
 
 @layer base {
-  html.light {
-    color-scheme: light;
-
-    /* backgrounds */
-    --bg-base: #e8ede4; /* fundo da página */
-    --bg-card: #f8faf6; /* cartões e painéis */
-    --bg-muted: #d4dccb; /* inputs, chips inativos */
-    --bg-overlay: #c8d4be; /* hover, seções secundárias */
-
-    /* textos */
-    --text-primary: #0f1a0c; /* AAA 18.1:1 */
-    --text-secondary: #1e3318; /* AAA 13.2:1 */
-    --text-muted: #3a5233; /* AAA  8.6:1 */
-
-    /* bordas */
-    --border-default: #c0ccb5; /* separadores sutis */
-    --border-strong: #a8b89e; /* foco, cards ativos */
-
-    /* semânticas financeiras */
-    --color-income: #3a7d2c; /* ganhos, AAA 7.2:1 */
-    --color-expense: #b94545; /* gastos, AA 5.8:1 */
-    --color-pending: #c97a2a; /* pendente, AA 4.6:1 */
-
-    /* accent (inalterado) */
-    --accent-lime: #A3E635; /* CTA principal */
-  }
-
-  html.light .bg-bg-card.text-white,
-  html.light .bg-bg-muted.text-white,
-  html.light .bg-bg-overlay.text-white,
-  html.light .bg-bg-card .text-white,
-  html.light .bg-bg-muted .text-white,
-  html.light .bg-bg-overlay .text-white {
-    color: var(--text-primary) !important;
-  }
-
   html,
   body,
   #root {
@@ -83,8 +129,8 @@ html.dark {
 
   body {
     margin: 0;
-    background: theme("colors.bg.base");
-    color: theme("colors.text.primary");
+    background: rgb(var(--bg-base));
+    color: rgb(var(--text-primary));
     font-family: theme("fontFamily.body");
     -webkit-font-smoothing: antialiased;
   }
@@ -97,5 +143,20 @@ html.dark {
   h6 {
     font-family: theme("fontFamily.sans");
     letter-spacing: 0;
+  }
+
+  /* superfícies do navegador no tema claro — o escuro segue o padrão nativo */
+  html.light body {
+    accent-color: rgb(var(--accent-lime-line));
+    caret-color: rgb(var(--accent-lime-ink));
+  }
+
+  html.light ::selection {
+    background: rgb(var(--accent-lime) / 0.45);
+    color: rgb(var(--text-primary));
+  }
+
+  html.light * {
+    scrollbar-color: rgb(var(--border-strong)) transparent;
   }
 }

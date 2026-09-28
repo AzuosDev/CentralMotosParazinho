@@ -33,7 +33,7 @@ function todayInputValue() {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-white outline-none focus:border-accent-lime";
+  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime";
 const labelCls = "block text-sm text-text-secondary mb-1";
 
 export function TransferModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -94,14 +94,14 @@ export function TransferModal({ open, onClose }: { open: boolean; onClose: () =>
       open={open}
       onClose={onClose}
       title="Transferência entre Carteiras"
-      icon={<ArrowLeftRight className="h-6 w-6 text-blue-400" />}
+      icon={<ArrowLeftRight className="h-6 w-6 text-status-info" />}
       footer={
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={mutation.isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -121,7 +121,7 @@ export function TransferModal({ open, onClose }: { open: boolean; onClose: () =>
         <div className="rounded-xl bg-bg-muted p-5 text-center text-sm text-text-secondary">
           <ArrowLeftRight className="mx-auto mb-3 h-8 w-8 text-text-muted" />
           <p>
-            Você precisa de pelo menos <strong className="text-white">2 carteiras</strong> para realizar uma
+            Você precisa de pelo menos <strong className="text-text-primary">2 carteiras</strong> para realizar uma
             transferência.
           </p>
           <Link
