@@ -651,7 +651,7 @@ export function AppLayout() {
               <h2 className="font-sans text-lg font-bold">Nova movimentação</h2>
               <button
                 onClick={() => setAddModalOpen(false)}
-                className="rounded-lg px-2 py-1 text-text-secondary hover:bg-bg-overlay hover:text-white"
+                className="rounded-lg px-2 py-1 text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
               >
                 Fechar
               </button>

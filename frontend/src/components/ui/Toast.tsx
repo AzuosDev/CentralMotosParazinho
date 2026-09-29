@@ -45,9 +45,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={toast.id}
             className={[
               "rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur",
-              toast.variant === "success" && "border-accent-lime/40 bg-bg-card text-white",
-              toast.variant === "error" && "border-accent-red/40 bg-bg-card text-white",
-              toast.variant === "warning" && "border-accent-yellow/40 bg-bg-card text-white",
+              toast.variant === "success" && "border-accent-lime/40 bg-bg-card text-text-primary",
+              toast.variant === "error" && "border-accent-red/40 bg-bg-card text-text-primary",
+              toast.variant === "warning" && "border-accent-yellow/40 bg-bg-card text-text-primary",
             ]
               .filter(Boolean)
               .join(" ")}

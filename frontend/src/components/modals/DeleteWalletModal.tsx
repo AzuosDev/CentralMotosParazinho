@@ -22,7 +22,7 @@ export function DeleteWalletModal({ isOpen, onClose, onConfirm, walletName, isLo
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -40,7 +40,7 @@ export function DeleteWalletModal({ isOpen, onClose, onConfirm, walletName, isLo
     >
       <p className="text-sm text-text-secondary">
         Tem certeza que deseja excluir a carteira{" "}
-        <span className="font-semibold text-white">"{walletName}"</span>? Esta ação não poderá ser desfeita.
+        <span className="font-semibold text-text-primary">"{walletName}"</span>? Esta ação não poderá ser desfeita.
         Carteiras com histórico de transações não podem ser apagadas.
       </p>
     </ModalShell>

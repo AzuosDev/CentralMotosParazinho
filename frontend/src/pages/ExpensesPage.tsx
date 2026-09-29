@@ -45,12 +45,12 @@ function CategoryRow({ category, onClick }: { category: CategoryExpense; onClick
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-white">{category.name}</p>
+        <p className="text-sm font-semibold text-text-primary">{category.name}</p>
         <p className="text-xs text-text-secondary">Total no período</p>
       </div>
 
       <div className="text-right">
-        <p className="text-sm font-semibold text-white">{formatCurrency(category.amount)}</p>
+        <p className="text-sm font-semibold text-text-primary">{formatCurrency(category.amount)}</p>
         <p
           className={cn(
             "text-xs font-semibold",
@@ -119,7 +119,7 @@ export function ExpensesPage() {
               <select
                 value={month}
                 onChange={(e) => setMonth(Number(e.target.value))}
-                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-white outline-none transition focus:border-accent-lime"
+                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent-lime"
               >
                 {MONTH_OPTIONS.map((label, i) => (
                   <option key={label} value={i + 1}>
@@ -130,7 +130,7 @@ export function ExpensesPage() {
               <select
                 value={year}
                 onChange={(e) => setYear(Number(e.target.value))}
-                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-white outline-none transition focus:border-accent-lime"
+                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent-lime"
               >
                 {years.map((y) => (
                   <option key={y} value={y}>
@@ -160,8 +160,8 @@ export function ExpensesPage() {
             className={cn(
               "rounded-xl px-4 py-2.5 text-sm font-semibold transition",
               period === tab.value
-                ? "bg-bg-muted text-white"
-                : "text-text-secondary hover:bg-bg-overlay hover:text-white",
+                ? "bg-bg-muted text-text-primary"
+                : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
             )}
           >
             {tab.label}
@@ -183,7 +183,7 @@ export function ExpensesPage() {
       ) : (
         <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
           <div className="rounded-2xl bg-bg-card p-5">
-            <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+            <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-text-primary">
               <TrendingDown className="h-4 w-4 text-accent-red" />
               Gastos por categoria
             </div>
@@ -206,20 +206,20 @@ export function ExpensesPage() {
                     <Tooltip
                       formatter={(value: number) => formatCurrency(Number(value))}
                       contentStyle={{
-                        backgroundColor: "#1f2937",
-                        border: "1px solid rgba(148,163,184,0.2)",
+                        backgroundColor: "var(--tooltip-bg)",
+                        border: "1px solid var(--tooltip-border)",
                         borderRadius: 14,
-                        color: "#fff",
+                        color: "var(--tooltip-text)",
                       }}
-                      labelStyle={{ color: "#fff", fontWeight: 600 }}
-                      itemStyle={{ color: "#e5e7eb" }}
+                      labelStyle={{ color: "var(--tooltip-text)", fontWeight: 600 }}
+                      itemStyle={{ color: "var(--tooltip-item)" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="relative -mt-44 flex h-24 items-center justify-center text-center">
                   <div className="max-w-[160px]">
                     <p className="text-[11px] uppercase tracking-[0.25em] text-text-muted">Mais gasto</p>
-                    <p className="text-sm font-semibold text-white">{topCategory?.name ?? "—"}</p>
+                    <p className="text-sm font-semibold text-text-primary">{topCategory?.name ?? "—"}</p>
                   </div>
                 </div>
               </div>
@@ -232,7 +232,7 @@ export function ExpensesPage() {
                       style={{ backgroundColor: category.color }}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white">{category.name}</p>
+                      <p className="text-sm font-semibold text-text-primary">{category.name}</p>
                       <p className="text-xs text-text-secondary">{formatCurrency(category.amount)}</p>
                     </div>
                   </div>
@@ -242,7 +242,7 @@ export function ExpensesPage() {
           </div>
 
           <aside className="rounded-2xl bg-bg-card p-5">
-            <div className="mb-4 flex items-center justify-between gap-2 text-sm font-semibold text-white">
+            <div className="mb-4 flex items-center justify-between gap-2 text-sm font-semibold text-text-primary">
               <span>Resumo</span>
               <TrendingUp className="h-4 w-4 text-accent-lime" />
             </div>

@@ -185,7 +185,7 @@ export function FaqPage() {
             }}
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              topic === t.key ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+              topic === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             {t.label}
@@ -201,7 +201,7 @@ export function FaqPage() {
               <button
                 type="button"
                 onClick={() => setOpenIndex(isOpen ? null : index)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-white"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-text-primary"
               >
                 {item.q}
                 <ChevronDown className={cn("h-4 w-4 shrink-0 text-text-secondary transition", isOpen && "rotate-180")} />
@@ -223,7 +223,7 @@ function SupportForm() {
 
   return (
     <div className="rounded-2xl bg-bg-card p-5">
-      <h2 className="font-sans text-lg font-bold text-white">Não achou sua dúvida?</h2>
+      <h2 className="font-sans text-lg font-bold text-text-primary">Não achou sua dúvida?</h2>
       <p className="mt-1 text-sm text-text-secondary">
         Relate um erro ou mande uma sugestão — a mensagem vai direto pro suporte.
       </p>
@@ -285,7 +285,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
             type="button"
             onClick={onClose}
             disabled={mutation.isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -311,7 +311,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
         onChange={(e) => setTitulo(e.target.value)}
         placeholder="Resuma em poucas palavras, ex: Erro ao pagar fatura"
         maxLength={150}
-        className="mt-1.5 w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+        className="mt-1.5 w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
       />
 
       <p className="mt-4 text-xs font-semibold text-text-secondary">Assunto</p>
@@ -323,7 +323,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
             onClick={() => setTipo(value)}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition",
-              tipo === value ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+              tipo === value ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             <Icon className="h-4 w-4" /> {label}
@@ -341,7 +341,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
         placeholder={tipo === "bug" ? "O que aconteceu? Em qual tela?" : "O que você gostaria de ver no app?"}
         rows={4}
         maxLength={2000}
-        className="mt-1.5 w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+        className="mt-1.5 w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
       />
     </ModalShell>
   );
@@ -385,7 +385,7 @@ function MySupportMessages() {
 
   return (
     <div className="rounded-2xl bg-bg-card p-5">
-      <h2 className="flex items-center gap-1.5 font-sans text-lg font-bold text-white">
+      <h2 className="flex items-center gap-1.5 font-sans text-lg font-bold text-text-primary">
         <MessageCircle className="h-4 w-4 text-accent-lime" /> Suas mensagens
       </h2>
       <p className="mt-1 text-sm text-text-secondary">Acompanhe as respostas do suporte por aqui.</p>
@@ -408,7 +408,7 @@ function MySupportMessages() {
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">{m.titulo}</p>
+                <p className="truncate text-sm font-semibold text-text-primary">{m.titulo}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
                   <span className={cn("font-semibold", cfg.color)}>{cfg.label}</span>
                   <span className="text-text-muted">{formatDisplayDate(m.createdAt)}</span>

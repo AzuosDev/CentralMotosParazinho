@@ -19,7 +19,7 @@ import { useToast } from "../components/ui/Toast";
 import type { Cartao, Fatura, FaturaStatus, Parcelamento, Transaction, Wallet } from "../types/api";
 
 const statusConfig: Record<FaturaStatus, { label: string; cls: string }> = {
-  aberta: { label: "Aberta", cls: "bg-blue-500/15 text-blue-400" },
+  aberta: { label: "Aberta", cls: "bg-blue-500/15 text-status-info" },
   fechada: { label: "Fechada", cls: "bg-accent-yellow/15 text-accent-yellow" },
   parcial: { label: "Parcial", cls: "bg-accent-orange/15 text-accent-orange" },
   paga: { label: "Paga", cls: "bg-accent-lime/15 text-accent-lime" },
@@ -112,7 +112,7 @@ function PagarFaturaModal({
             type="button"
             onClick={onClose}
             disabled={payMutation.isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -143,10 +143,10 @@ function PagarFaturaModal({
               onChange={(e) => setFormAffectsBalance(!e.target.checked)}
             />
             <div>
-              <span className="block text-sm font-medium text-yellow-300">
+              <span className="block text-sm font-medium text-status-warning-soft">
                 Esta fatura é de um mês passado. Deseja que este pagamento não afete seu saldo atual?
               </span>
-              <span className="mt-0.5 block text-xs text-yellow-300/70">
+              <span className="mt-0.5 block text-xs text-status-warning-soft/70">
                 Marque se já foi paga na vida real antes de começar a rastrear aqui — fica marcada como paga, sem lançar transferência na carteira.
               </span>
             </div>
@@ -168,8 +168,8 @@ function PagarFaturaModal({
                     className={cn(
                       "rounded-xl border px-4 py-2 text-sm font-medium transition",
                       carteiraPagadoraId === w._id
-                        ? "border-accent-lime bg-accent-lime/10 text-white"
-                        : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-white",
+                        ? "border-accent-lime bg-accent-lime/10 text-text-primary"
+                        : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-text-primary",
                     )}
                   >
                     {w.nome}
@@ -188,7 +188,7 @@ function PagarFaturaModal({
               onClick={() => setModoParcial(false)}
               className={cn(
                 "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                !modoParcial ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+                !modoParcial ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               Valor integral
@@ -198,7 +198,7 @@ function PagarFaturaModal({
               onClick={() => setModoParcial(true)}
               className={cn(
                 "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                modoParcial ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+                modoParcial ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               Valor parcial
@@ -218,11 +218,11 @@ function PagarFaturaModal({
         {viraRotativo && (
           <div className="flex gap-3 rounded-xl border border-accent-yellow/40 bg-accent-yellow/10 p-4">
             <AlertTriangle className="h-5 w-5 shrink-0 text-accent-yellow" />
-            <div className="text-sm text-yellow-200">
+            <div className="text-sm text-status-warning-softer">
               <p className="font-semibold">
                 O restante de {formatCurrency(faltaAposPagamento)} vai virar rotativo.
               </p>
-              <p className="mt-1 text-yellow-200/80">
+              <p className="mt-1 text-status-warning-softer/80">
                 Esse valor será cobrado{cartao.taxaJurosRotativo ? ` com juros de ${cartao.taxaJurosRotativo}% ao mês` : ""} na
                 próxima fatura, junto com as novas compras do ciclo seguinte.
               </p>
@@ -446,7 +446,7 @@ export function CartaoPage() {
         </div>
         <Link
           to="/faq?topic=cartoes"
-          className="rounded-xl p-2 text-text-secondary transition hover:bg-bg-muted hover:text-white"
+          className="rounded-xl p-2 text-text-secondary transition hover:bg-bg-muted hover:text-text-primary"
           title="Dúvidas sobre o cartão"
         >
           <HelpCircle className="h-5 w-5" />
@@ -458,7 +458,7 @@ export function CartaoPage() {
           <div className="min-w-0 flex-1">
             <BankLogo nome={cartao.nome} icone={cartao.icone} className="h-12 w-12" />
             <p className="mt-3 text-sm uppercase tracking-widest text-text-secondary">Limite usado</p>
-            <p className="mt-1 font-sans text-2xl font-extrabold text-white">
+            <p className="mt-1 font-sans text-2xl font-extrabold text-text-primary">
               {formatCurrency(cartao.limiteUsado)} <span className="text-sm font-normal text-text-secondary">/ {formatCurrency(cartao.limite ?? 0)}</span>
             </p>
             <div className="mt-2 h-2 w-full max-w-xs overflow-hidden rounded-full bg-bg-muted">
@@ -475,7 +475,7 @@ export function CartaoPage() {
           <button
             type="button"
             onClick={() => setArchiveOpen(true)}
-            className="rounded-xl border border-bg-muted p-2 text-text-secondary transition hover:bg-bg-muted hover:text-white"
+            className="rounded-xl border border-bg-muted p-2 text-text-secondary transition hover:bg-bg-muted hover:text-text-primary"
             title="Arquivar cartão"
           >
             <Archive className="h-4 w-4" />
@@ -492,7 +492,7 @@ export function CartaoPage() {
               onClick={() => setTab(t)}
               className={cn(
                 "rounded-lg px-4 py-2 text-sm font-semibold transition",
-                tab === t ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+                tab === t ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               {t === "faturas" ? "Faturas" : "Compras parceladas"}
@@ -514,7 +514,7 @@ export function CartaoPage() {
                 <button
                   type="button"
                   onClick={() => { setNovaMenuOpen(false); setNovaCompraOpen(true); }}
-                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-text-primary transition hover:bg-bg-muted"
                 >
                   Compra à vista
                   <span className="block text-xs font-normal text-text-secondary">Uma cobrança só, vai pra fatura do ciclo certo</span>
@@ -522,7 +522,7 @@ export function CartaoPage() {
                 <button
                   type="button"
                   onClick={() => { setNovaMenuOpen(false); setNovoParcelamentoOpen(true); }}
-                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-text-primary transition hover:bg-bg-muted"
                 >
                   Nova compra parcelada
                   <span className="block text-xs font-normal text-text-secondary">Cria as N parcelas de uma vez, com descrição própria</span>
@@ -530,7 +530,7 @@ export function CartaoPage() {
                 <button
                   type="button"
                   onClick={() => { setNovaMenuOpen(false); setVincularRecorrenteOpen(true); }}
-                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-text-primary transition hover:bg-bg-muted"
                 >
                   Vincular conta recorrente
                   <span className="block text-xs font-normal text-text-secondary">Uma assinatura já cadastrada passa a cobrar neste cartão</span>
@@ -538,7 +538,7 @@ export function CartaoPage() {
                 <button
                   type="button"
                   onClick={() => { setNovaMenuOpen(false); setVincularCartaoOpen(true); }}
-                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white transition hover:bg-bg-muted"
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-text-primary transition hover:bg-bg-muted"
                 >
                   Vincular conta parcelada
                   <span className="block text-xs font-normal text-text-secondary">Converte uma conta avulsa ou parcelada já cadastrada em parcelamento deste cartão</span>
@@ -571,7 +571,7 @@ export function CartaoPage() {
                         active ? "border-accent-lime bg-accent-lime/10" : "border-bg-muted bg-bg-card hover:border-bg-overlay",
                       )}
                     >
-                      <span className="text-sm font-semibold capitalize text-white">{mesReferenciaLabel(f.mesReferencia)}</span>
+                      <span className="text-sm font-semibold capitalize text-text-primary">{mesReferenciaLabel(f.mesReferencia)}</span>
                       <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", cfg.cls)}>{cfg.label}</span>
                     </button>
                   );
@@ -598,7 +598,7 @@ export function CartaoPage() {
                       </p>
                       <p className={cn(
                         "font-sans text-2xl font-extrabold",
-                        fatura.valorTotal + fatura.saldoRotativoAnterior < 0 ? "text-accent-lime" : "text-white",
+                        fatura.valorTotal + fatura.saldoRotativoAnterior < 0 ? "text-accent-lime" : "text-text-primary",
                       )}>
                         {formatCurrency(Math.abs(Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2))))}
                       </p>
@@ -623,7 +623,7 @@ export function CartaoPage() {
                         <span className="text-text-secondary">
                           {fatura.saldoRotativoAnterior > 0 ? "Saldo rotativo do mês anterior" : "Crédito do mês anterior"}
                         </span>
-                        <span className={cn("font-semibold", fatura.saldoRotativoAnterior > 0 ? "text-white" : "text-accent-lime")}>
+                        <span className={cn("font-semibold", fatura.saldoRotativoAnterior > 0 ? "text-text-primary" : "text-accent-lime")}>
                           {fatura.saldoRotativoAnterior > 0 ? "" : "− "}{formatCurrency(Math.abs(fatura.saldoRotativoAnterior))}
                         </span>
                       </div>
@@ -661,11 +661,11 @@ export function CartaoPage() {
                           <div key={tx._id} className="flex items-center justify-between gap-3 py-3">
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <p className={cn("truncate text-sm font-semibold", isJuros ? "text-accent-yellow" : "text-white")}>
+                                <p className={cn("truncate text-sm font-semibold", isJuros ? "text-accent-yellow" : "text-text-primary")}>
                                   {tx.description || "Compra"}
                                 </p>
                                 {tx.numeroParcela && tx.totalParcelas && (
-                                  <span className="shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-semibold text-blue-400">
+                                  <span className="shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-semibold text-status-info">
                                     {tx.numeroParcela}/{tx.totalParcelas}
                                   </span>
                                 )}
@@ -683,7 +683,7 @@ export function CartaoPage() {
                               <p className="text-xs text-text-secondary">{formatDisplayDate(tx.date)}</p>
                             </div>
                             <div className="flex shrink-0 items-center gap-3">
-                              <span className={cn("font-bold tabular-nums", tx.isEstorno ? "text-accent-lime" : "text-white")}>
+                              <span className={cn("font-bold tabular-nums", tx.isEstorno ? "text-accent-lime" : "text-text-primary")}>
                                 {tx.isEstorno ? "+" : ""}{formatCurrency(tx.value)}
                               </span>
                               {!tx.isEstorno && !isJuros && !estornadasIds.has(tx._id) && (
@@ -726,19 +726,19 @@ export function CartaoPage() {
               <div key={p._id} className="rounded-2xl bg-bg-card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-white">{p.descricao}</p>
+                    <p className="font-semibold text-text-primary">{p.descricao}</p>
                     <p className="text-xs text-text-secondary">
                       Comprado em {formatDisplayDate(p.dataCompra)} · {formatCurrency(p.valorTotal)} em {p.totalParcelas}x
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-semibold text-blue-400">
+                    <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-semibold text-status-info">
                       {p.parcelasPagas}/{p.totalParcelas} pagas
                     </span>
                     <button
                       type="button"
                       onClick={() => { setEditParcelamentoTarget(p); setEditDescricao(p.descricao); }}
-                      className="rounded-lg p-1.5 text-text-muted transition hover:bg-bg-muted hover:text-white"
+                      className="rounded-lg p-1.5 text-text-muted transition hover:bg-bg-muted hover:text-text-primary"
                       title="Editar nome da compra parcelada"
                     >
                       <Pencil className="h-4 w-4" />
@@ -782,17 +782,17 @@ export function CartaoPage() {
               <div className="rounded-xl bg-accent-red/10 p-2.5">
                 <RotateCcw className="h-5 w-5 text-accent-red" />
               </div>
-              <h2 className="text-base font-bold text-white">Estornar esta compra?</h2>
+              <h2 className="text-base font-bold text-text-primary">Estornar esta compra?</h2>
             </div>
             <p className="text-sm text-text-secondary">
-              Vai lançar um estorno de <span className="font-semibold text-white">{formatCurrency(estornoTarget.value)}</span> na fatura, reduzindo o valor devido. A transação original continua no histórico.
+              Vai lançar um estorno de <span className="font-semibold text-text-primary">{formatCurrency(estornoTarget.value)}</span> na fatura, reduzindo o valor devido. A transação original continua no histórico.
             </p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setEstornoTarget(null)}
                 disabled={estornoMutation.isPending}
-                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -817,10 +817,10 @@ export function CartaoPage() {
               <div className="rounded-xl bg-accent-red/10 p-2.5">
                 <RotateCcw className="h-5 w-5 text-accent-red" />
               </div>
-              <h2 className="text-base font-bold text-white">Desfazer pagamento desta fatura?</h2>
+              <h2 className="text-base font-bold text-text-primary">Desfazer pagamento desta fatura?</h2>
             </div>
             <p className="text-sm text-text-secondary">
-              Vai zerar os <span className="font-semibold text-white">{formatCurrency(desfazerPagamentoTarget.valorPago)}</span> pagos
+              Vai zerar os <span className="font-semibold text-text-primary">{formatCurrency(desfazerPagamentoTarget.valorPago)}</span> pagos
               e voltar a fatura para não paga. Se o pagamento tinha lançado uma transferência de verdade, ela é removida e o
               saldo da carteira pagadora volta ao normal.
             </p>
@@ -829,7 +829,7 @@ export function CartaoPage() {
                 type="button"
                 onClick={() => setDesfazerPagamentoTarget(null)}
                 disabled={desfazerPagamentoMutation.isPending}
-                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -854,7 +854,7 @@ export function CartaoPage() {
               <div className="rounded-xl bg-bg-muted p-2.5">
                 <Pencil className="h-5 w-5 text-accent-lime" />
               </div>
-              <h2 className="text-base font-bold text-white">Renomear compra parcelada</h2>
+              <h2 className="text-base font-bold text-text-primary">Renomear compra parcelada</h2>
             </div>
             <label className="block">
               <span className="mb-2 block text-sm text-text-secondary">Descrição</span>
@@ -862,7 +862,7 @@ export function CartaoPage() {
                 value={editDescricao}
                 onChange={(e) => setEditDescricao(e.target.value)}
                 maxLength={200}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
               />
             </label>
             <div className="flex gap-3">
@@ -870,7 +870,7 @@ export function CartaoPage() {
                 type="button"
                 onClick={() => setEditParcelamentoTarget(null)}
                 disabled={editParcelamentoMutation.isPending}
-                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -895,10 +895,10 @@ export function CartaoPage() {
               <div className="rounded-xl bg-accent-red/10 p-2.5">
                 <Trash2 className="h-5 w-5 text-accent-red" />
               </div>
-              <h2 className="text-base font-bold text-white">Excluir esta compra parcelada?</h2>
+              <h2 className="text-base font-bold text-text-primary">Excluir esta compra parcelada?</h2>
             </div>
             <p className="text-sm text-text-secondary">
-              Vai remover <span className="font-semibold text-white">{deleteParcelamentoTarget.descricao}</span> e todas
+              Vai remover <span className="font-semibold text-text-primary">{deleteParcelamentoTarget.descricao}</span> e todas
               as suas {deleteParcelamentoTarget.totalParcelas} parcelas, recalculando as faturas afetadas. Não é possível
               se alguma dessas faturas já tiver pagamento registrado — nesse caso, desfaça o pagamento da fatura primeiro.
             </p>
@@ -915,7 +915,7 @@ export function CartaoPage() {
                   setDeleteParcelamentoTarget(null);
                 }}
                 disabled={deleteParcelamentoMutation.isPending}
-                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-50"
+                className="flex-1 rounded-xl border border-bg-muted bg-transparent px-4 py-2.5 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-50"
               >
                 Cancelar
               </button>

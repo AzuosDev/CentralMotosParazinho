@@ -86,7 +86,7 @@ export function SupportAdminPage() {
             onClick={() => setTab(t.key)}
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              tab === t.key ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+              tab === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             {t.label}
@@ -144,7 +144,7 @@ function SupportMessagesTab() {
             onClick={() => setFilter(t.key)}
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              filter === t.key ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+              filter === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             {t.label}
@@ -175,7 +175,7 @@ function SupportMessagesTab() {
               >
                 <Icon className={cn("h-4 w-4 shrink-0", cfg.color)} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-white">{m.titulo}</p>
+                  <p className="truncate text-sm font-semibold text-text-primary">{m.titulo}</p>
                   <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
                     <span className={cn("font-semibold", cfg.color)}>{cfg.label}</span>
                     <span className="text-text-muted">{formatDisplayDate(m.createdAt)}</span>
@@ -324,7 +324,7 @@ function AdminUsersTab() {
               onClick={() => setFilter(t.key)}
               className={cn(
                 "rounded-lg px-4 py-2 text-sm font-semibold transition",
-                filter === t.key ? "bg-accent-lime text-black" : "text-white hover:bg-bg-overlay",
+                filter === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               {t.label}
@@ -339,7 +339,7 @@ function AdminUsersTab() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por email ou nome"
-            className="w-full rounded-xl border border-bg-muted bg-bg-card py-2 pl-9 pr-3 text-sm text-white placeholder:text-text-muted focus:border-accent-lime focus:outline-none"
+            className="w-full rounded-xl border border-bg-muted bg-bg-card py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-lime focus:outline-none"
           />
         </div>
       </div>
@@ -393,7 +393,7 @@ function AdminUserCard({
     <div className="rounded-2xl border border-bg-muted bg-bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-white">{u.name || u.email}</p>
+          <p className="text-sm font-semibold text-text-primary">{u.name || u.email}</p>
           {u.name && <p className="text-xs text-text-muted">{u.email}</p>}
         </div>
         <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", cfg.className)}>
@@ -432,7 +432,7 @@ function AdminUserCard({
             max={365}
             value={days}
             onChange={(e) => setDays(Math.max(1, Math.min(365, Number(e.target.value) || 1)))}
-            className="w-12 bg-transparent text-xs font-semibold text-white focus:outline-none"
+            className="w-12 bg-transparent text-xs font-semibold text-text-primary focus:outline-none"
             aria-label="Dias de teste"
           />
           <span className="text-xs text-text-secondary">dias</span>
@@ -440,7 +440,7 @@ function AdminUserCard({
             type="button"
             onClick={() => onSetTrial(days)}
             disabled={trialPending}
-            className="rounded-full bg-bg-overlay px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-accent-lime hover:text-black"
+            className="rounded-full bg-bg-overlay px-2.5 py-1 text-xs font-semibold text-text-primary transition hover:bg-accent-lime hover:text-black"
           >
             Definir teste
           </button>

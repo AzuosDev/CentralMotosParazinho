@@ -100,7 +100,7 @@ export function VincularRecorrenteModal({
             type="button"
             onClick={onClose}
             disabled={mutation.isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -119,11 +119,11 @@ export function VincularRecorrenteModal({
       <div className="space-y-4">
         <p className="text-sm text-text-secondary">
           {selectedTemplateTitle ? (
-            <>A partir de agora, <span className="font-semibold text-white">"{selectedTemplateTitle}"</span> é cobrada</>
+            <>A partir de agora, <span className="font-semibold text-text-primary">"{selectedTemplateTitle}"</span> é cobrada</>
           ) : (
             "A partir de agora, a assinatura escolhida é cobrada"
           )}{" "}
-          automaticamente {pickingTemplate ? <>em <span className="font-semibold text-white">{cartaoNome}</span></> : "no cartão escolhido"} todo
+          automaticamente {pickingTemplate ? <>em <span className="font-semibold text-text-primary">{cartaoNome}</span></> : "no cartão escolhido"} todo
           mês, na fatura do ciclo certo — sem precisar marcar como paga manualmente. Isso vale só pra cobranças a
           partir de hoje; meses já pagos não mudam.
         </p>
@@ -134,14 +134,14 @@ export function VincularRecorrenteModal({
             {templatesQuery.isLoading ? (
               <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
             ) : (templatesQuery.data ?? []).length === 0 ? (
-              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-yellow-400">
+              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
                 Você não tem nenhuma conta recorrente cadastrada.
               </p>
             ) : (
               <select
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
               >
                 <option value="">Selecione…</option>
                 {(templatesQuery.data ?? []).map((t) => (
@@ -156,14 +156,14 @@ export function VincularRecorrenteModal({
             {cartoesQuery.isLoading ? (
               <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
             ) : (cartoesQuery.data ?? []).length === 0 ? (
-              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-yellow-400">
+              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
                 Você ainda não tem nenhum cartão cadastrado.
               </p>
             ) : (
               <select
                 value={carteiraId}
                 onChange={(e) => setCarteiraId(e.target.value)}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
               >
                 <option value="">Selecione…</option>
                 {(cartoesQuery.data ?? []).map((c) => (

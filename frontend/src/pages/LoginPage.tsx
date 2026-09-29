@@ -165,6 +165,7 @@ export function LoginPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Field
           {...register("email")}
+          label="E-mail"
           type="email"
           placeholder="seu@email.com"
           autoComplete="email"
@@ -174,6 +175,7 @@ export function LoginPage() {
 
         <Field
           {...register("password")}
+          label="Senha"
           type={showPassword ? "text" : "password"}
           placeholder="Sua senha"
           autoComplete="current-password"
@@ -209,10 +211,10 @@ export function LoginPage() {
       </form>
 
       {webAuthnSupported && (
-        <div className="mt-3 space-y-2">
+        <div className="mt-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-border-default" />
-            <span className="text-xs text-text-secondary">ou</span>
+            <span className="text-xs text-text-muted">ou</span>
             <div className="h-px flex-1 bg-border-default" />
           </div>
 
@@ -220,7 +222,7 @@ export function LoginPage() {
             type="button"
             onClick={() => handleBiometricLogin()}
             disabled={biometricLoading || isSubmitting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-default bg-bg-muted px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-bg-overlay disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-pill border border-border-strong px-4 py-3 text-sm font-medium text-text-primary transition-colors hover:bg-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-lime disabled:cursor-not-allowed disabled:opacity-50"
           >
             {biometricLoading ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Aguardando biometria...</>

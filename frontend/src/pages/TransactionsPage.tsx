@@ -254,8 +254,8 @@ export function TransactionsPage() {
               className={cn(
                 "rounded-xl px-4 py-2.5 text-sm font-semibold transition",
                 active
-                  ? "bg-bg-muted text-white"
-                  : "text-text-secondary hover:bg-bg-overlay hover:text-white",
+                  ? "bg-bg-muted text-text-primary"
+                  : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
               )}
             >
               {tab.label}
@@ -268,7 +268,7 @@ export function TransactionsPage() {
         <button
           type="button"
           onClick={() => setFiltersOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-3 text-sm font-semibold text-white"
+          className="flex w-full items-center justify-between gap-3 text-sm font-semibold text-text-primary"
         >
           <span className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-accent-lime" />
@@ -283,7 +283,7 @@ export function TransactionsPage() {
               value={categoryId}
               disabled={selectedType === "INCOME"}
               onChange={(event) => patchParams({ categoryId: event.target.value || undefined })}
-              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-white outline-none focus:border-accent-lime disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Todas as categorias</option>
               {(categoriesQuery.data ?? []).map((category) => (
@@ -296,7 +296,7 @@ export function TransactionsPage() {
             <select
               value={month}
               onChange={(event) => patchParams({ month: event.target.value })}
-              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-white outline-none focus:border-accent-lime"
+              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime"
             >
               {months.map((label, index) => (
                 <option key={label} value={index + 1}>
@@ -308,7 +308,7 @@ export function TransactionsPage() {
             <select
               value={year}
               onChange={(event) => patchParams({ year: event.target.value })}
-              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-white outline-none focus:border-accent-lime"
+              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime"
             >
               {years.map((option) => (
                 <option key={option} value={option}>
@@ -359,7 +359,7 @@ export function TransactionsPage() {
             type="button"
             onClick={() => transactionsQuery.fetchNextPage()}
             disabled={transactionsQuery.isFetchingNextPage}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-white hover:bg-bg-muted disabled:opacity-60"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-text-primary hover:bg-bg-muted disabled:opacity-60"
           >
             {transactionsQuery.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" />}
             Carregar mais
@@ -374,7 +374,7 @@ export function TransactionsPage() {
         // Conteúdo interno em coluna no mobile (texto em cima, controles embaixo) para
         // não estourar a largura da tela; volta a ser uma linha só a partir de sm:.
         <div className="fixed bottom-24 left-1/2 z-30 flex w-[min(92vw,32rem)] -translate-x-1/2 flex-col gap-3 rounded-2xl border border-bg-muted bg-bg-card/95 p-4 shadow-2xl shadow-black/40 backdrop-blur sm:flex-row sm:items-center sm:gap-3 lg:bottom-6">
-          <p className="shrink-0 text-sm font-semibold text-white">
+          <p className="shrink-0 text-sm font-semibold text-text-primary">
             {selectedTxIds.length} transaç{selectedTxIds.length === 1 ? "ão" : "ões"} selecionada{selectedTxIds.length === 1 ? "" : "s"}
           </p>
 
@@ -386,7 +386,7 @@ export function TransactionsPage() {
                 const targetWalletId = event.target.value;
                 if (targetWalletId) bulkWalletMutation.mutate(targetWalletId);
               }}
-              className="flex-1 rounded-xl border border-bg-muted bg-bg-muted px-3 py-2.5 text-sm text-white outline-none focus:border-accent-lime disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+              className="flex-1 rounded-xl border border-bg-muted bg-bg-muted px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent-lime disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
             >
               <option value="" disabled>
                 {realWallets.length === 0 ? "Nenhuma carteira disponível" : "Mover para…"}
@@ -404,7 +404,7 @@ export function TransactionsPage() {
               type="button"
               onClick={() => setSelectedTxIds([])}
               disabled={bulkWalletMutation.isPending}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-text-secondary hover:bg-bg-overlay hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-text-secondary hover:bg-bg-overlay hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
               aria-label="Cancelar seleção"
             >
               <X className="h-4 w-4" />
@@ -421,7 +421,7 @@ export function TransactionsPage() {
               <button
                 type="button"
                 onClick={() => setChoiceOpen(false)}
-                className="rounded-lg px-2 py-1 text-text-secondary hover:bg-bg-overlay hover:text-white"
+                className="rounded-lg px-2 py-1 text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
               >
                 Fechar
               </button>
@@ -448,7 +448,7 @@ export function TransactionsPage() {
                 onClick={() => { setChoiceOpen(false); setSelectedTx(null); setTxTab("TRANSFER"); setTxOpen(true); }}
                 className="flex items-center gap-3 rounded-xl bg-bg-muted p-4 text-left hover:bg-bg-overlay"
               >
-                <ArrowLeftRight className="h-5 w-5 text-blue-400" />
+                <ArrowLeftRight className="h-5 w-5 text-status-info" />
                 <span className="font-semibold">Nova Transferência</span>
               </button>
             </div>
@@ -479,7 +479,7 @@ export function TransactionsPage() {
               <button
                 type="button"
                 onClick={() => setDeleting(null)}
-                className="rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-white hover:bg-bg-muted"
+                className="rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-text-primary hover:bg-bg-muted"
               >
                 Cancelar
               </button>

@@ -1,0 +1,969 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-29T15:57:53.673Z",
+  "title": "Design System: MeuGasto",
+  "extensions": {
+    "colorMeta": {
+      "bg-base": {
+        "role": "neutral",
+        "displayName": "Chão do app",
+        "canonical": "#0a0a0a",
+        "oklch": "oklch(14.5% 0.000 89.9)",
+        "layer": "app",
+        "purpose": "Fundo da página no app e das faixas de respiro da landing.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ],
+        "cssVar": "rgb(var(--bg-base))",
+        "lightTheme": {
+          "light": "#f3f3f0"
+        }
+      },
+      "bg-card": {
+        "role": "neutral",
+        "displayName": "Card do app",
+        "canonical": "#141414",
+        "oklch": "oklch(19.1% 0.000 89.9)",
+        "layer": "app",
+        "purpose": "Superfície de card no app.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ],
+        "cssVar": "rgb(var(--bg-card))",
+        "lightTheme": {
+          "light": "#ffffff"
+        }
+      },
+      "bg-muted": {
+        "role": "neutral",
+        "displayName": "Degrau afundado",
+        "canonical": "#1c1c1c",
+        "oklch": "oklch(22.6% 0.000 89.9)",
+        "layer": "app",
+        "purpose": "Campos, chips inativos, trilhos, item de navegação ativo.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ],
+        "cssVar": "rgb(var(--bg-muted))",
+        "lightTheme": {
+          "light": "#ecece8"
+        }
+      },
+      "bg-overlay": {
+        "role": "neutral",
+        "displayName": "Degrau de hover",
+        "canonical": "#232323",
+        "oklch": "oklch(25.6% 0.000 89.9)",
+        "layer": "app",
+        "purpose": "Hover e seções secundárias.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ],
+        "cssVar": "rgb(var(--bg-overlay))",
+        "lightTheme": {
+          "light": "#e2e2dd"
+        }
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Tinta principal",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "layer": "app",
+        "purpose": "Títulos e valores no app.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ],
+        "cssVar": "rgb(var(--text-primary))",
+        "lightTheme": {
+          "light": "#111111"
+        }
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Tinta de apoio",
+        "canonical": "#9ca3af",
+        "oklch": "oklch(71.4% 0.019 261.3)",
+        "layer": "app",
+        "purpose": "Texto de apoio, rótulos de campo.",
+        "tonalRamp": [
+          "#070b13",
+          "#1f242d",
+          "#3a404a",
+          "#585e69",
+          "#7a818c",
+          "#9ba2ae",
+          "#c0c8d4",
+          "#e7effc"
+        ],
+        "cssVar": "rgb(var(--text-secondary))",
+        "lightTheme": {
+          "light": "#52565e"
+        }
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Tinta de legenda",
+        "canonical": "#80868f",
+        "oklch": "oklch(61.8% 0.015 258.4)",
+        "layer": "app",
+        "purpose": "Legendas; 5,0:1 sobre o card.",
+        "tonalRamp": [
+          "#070b12",
+          "#20242c",
+          "#3b4048",
+          "#585e66",
+          "#7b818a",
+          "#9ca2ab",
+          "#c1c8d1",
+          "#e8eff9"
+        ],
+        "cssVar": "rgb(var(--text-muted))",
+        "lightTheme": {
+          "light": "#6b7079"
+        }
+      },
+      "border-default": {
+        "role": "neutral",
+        "displayName": "Borda padrão",
+        "canonical": "#2a2a2a",
+        "oklch": "oklch(28.5% 0.000 89.9)",
+        "layer": "app",
+        "purpose": "Bordas de card, menu, tooltip.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ],
+        "cssVar": "rgb(var(--border-default))",
+        "lightTheme": {
+          "light": "#e2e2dd"
+        }
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Borda forte",
+        "canonical": "#3a3a3a",
+        "oklch": "oklch(34.8% 0.000 89.9)",
+        "layer": "app",
+        "purpose": "Bordas enfatizadas.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ],
+        "cssVar": "rgb(var(--border-strong))",
+        "lightTheme": {
+          "light": "#ccccc5"
+        }
+      },
+      "accent-lime": {
+        "role": "primary",
+        "displayName": "Lima do app",
+        "canonical": "#a3e635",
+        "oklch": "oklch(84.9% 0.207 128.8)",
+        "layer": "app",
+        "purpose": "Preenchimento de ação no app; papéis fill/ink/line.",
+        "tonalRamp": [
+          "#060e00",
+          "#192a00",
+          "#2f4900",
+          "#476a03",
+          "#64901a",
+          "#7fb524",
+          "#9de02b",
+          "#d7feaa"
+        ],
+        "cssVar": "rgb(var(--accent-lime))",
+        "lightTheme": {
+          "light": "#84cc16",
+          "lightInk": "#4d7c0f",
+          "lightLine": "#65a30d"
+        }
+      },
+      "accent-orange": {
+        "role": "secondary",
+        "displayName": "Laranja do app",
+        "canonical": "#f97316",
+        "oklch": "oklch(70.5% 0.187 47.6)",
+        "layer": "app",
+        "purpose": "Acento secundário do app.",
+        "tonalRamp": [
+          "#1b0400",
+          "#3e1701",
+          "#672c06",
+          "#93430f",
+          "#c95c11",
+          "#fb7519",
+          "#fbb591",
+          "#ffe9df"
+        ],
+        "cssVar": "rgb(var(--accent-orange))",
+        "lightTheme": {
+          "lightInk": "#c2410c"
+        }
+      },
+      "color-income": {
+        "role": "secondary",
+        "displayName": "Entrada",
+        "canonical": "#22c55e",
+        "oklch": "oklch(72.3% 0.192 149.6)",
+        "layer": "app",
+        "purpose": "Valores de entrada.",
+        "tonalRamp": [
+          "#001002",
+          "#012d10",
+          "#074d21",
+          "#117033",
+          "#109a46",
+          "#18c15a",
+          "#55e980",
+          "#c8ffd1"
+        ],
+        "cssVar": "rgb(var(--color-income))",
+        "lightTheme": {
+          "light": "#15803d"
+        }
+      },
+      "color-expense": {
+        "role": "secondary",
+        "displayName": "Saída",
+        "canonical": "#ef4444",
+        "oklch": "oklch(63.7% 0.208 25.3)",
+        "layer": "app",
+        "purpose": "Valores de saída; erros.",
+        "tonalRamp": [
+          "#200001",
+          "#4b0005",
+          "#7c020f",
+          "#b0081b",
+          "#e23639",
+          "#fc6e67",
+          "#fdb1a9",
+          "#fee9e6"
+        ],
+        "cssVar": "rgb(var(--color-expense))",
+        "lightTheme": {
+          "light": "#dc2626"
+        }
+      },
+      "color-pending": {
+        "role": "secondary",
+        "displayName": "Pendente",
+        "canonical": "#eab308",
+        "oklch": "oklch(79.5% 0.162 86.0)",
+        "layer": "app",
+        "purpose": "Valores pendentes.",
+        "tonalRamp": [
+          "#120a00",
+          "#302200",
+          "#523c00",
+          "#765901",
+          "#9f7a18",
+          "#c79a21",
+          "#f6be27",
+          "#ffedc5"
+        ],
+        "cssVar": "rgb(var(--color-pending))",
+        "lightTheme": {
+          "light": "#a16207"
+        }
+      },
+      "forest": {
+        "role": "neutral",
+        "displayName": "Verde-floresta",
+        "canonical": "#0e2a1e",
+        "oklch": "oklch(25.9% 0.041 163.1)",
+        "layer": "brand",
+        "purpose": "Campo da mesa: fundo da landing, AuthShowcase, preço, fechamento. Independente de tema.",
+        "tonalRamp": [
+          "#001007",
+          "#0e2a1e",
+          "#2b4739",
+          "#486557",
+          "#6a8879",
+          "#8baa9a",
+          "#b0d0c0",
+          "#d7f8e7"
+        ]
+      },
+      "forest-deep": {
+        "role": "neutral",
+        "displayName": "Floresta profunda",
+        "canonical": "#091f15",
+        "oklch": "oklch(21.8% 0.035 161.8)",
+        "layer": "brand",
+        "purpose": "Rodapé, trilho do toggle, trilho da rolagem.",
+        "tonalRamp": [
+          "#000f07",
+          "#13291f",
+          "#2f463a",
+          "#4c6458",
+          "#6e877a",
+          "#8fa99b",
+          "#b4cfc0",
+          "#dbf6e7"
+        ]
+      },
+      "forest-nav": {
+        "role": "neutral",
+        "displayName": "Floresta da barra",
+        "canonical": "#0b2419",
+        "oklch": "oklch(23.7% 0.038 162.4)",
+        "layer": "brand",
+        "purpose": "Barra de navegação da landing após rolar.",
+        "tonalRamp": [
+          "#001007",
+          "#112a1e",
+          "#2d463a",
+          "#4a6557",
+          "#6c8879",
+          "#8da99a",
+          "#b2cfc0",
+          "#d9f7e7"
+        ]
+      },
+      "forest-raised": {
+        "role": "neutral",
+        "displayName": "Floresta elevada",
+        "canonical": "#163a2a",
+        "oklch": "oklch(31.7% 0.051 162.2)",
+        "layer": "brand",
+        "purpose": "Peças escuras sobre a mesa; plano Empresarial.",
+        "tonalRamp": [
+          "#001007",
+          "#062b1c",
+          "#254837",
+          "#436755",
+          "#658a77",
+          "#85ac98",
+          "#abd2bd",
+          "#d1fae4"
+        ]
+      },
+      "brand-lime": {
+        "role": "primary",
+        "displayName": "Lima de marca",
+        "canonical": "#bef264",
+        "oklch": "oklch(89.7% 0.179 126.7)",
+        "layer": "brand",
+        "purpose": "Única cor de ação sobre o verde-floresta.",
+        "tonalRamp": [
+          "#070e00",
+          "#1c2901",
+          "#334804",
+          "#4c690c",
+          "#688f0a",
+          "#84b410",
+          "#a9db4b",
+          "#d8ff9f"
+        ]
+      },
+      "brand-lime-hover": {
+        "role": "primary",
+        "displayName": "Lima de marca, hover",
+        "canonical": "#d9f99d",
+        "oklch": "oklch(93.8% 0.122 124.3)",
+        "layer": "brand",
+        "purpose": "Hover do CTA de marca; topo do gradiente do cartão.",
+        "tonalRamp": [
+          "#070e00",
+          "#1e2902",
+          "#364707",
+          "#506810",
+          "#718c31",
+          "#91ae55",
+          "#b6d57a",
+          "#ddfda1"
+        ]
+      },
+      "forest-text": {
+        "role": "neutral",
+        "displayName": "Texto sobre floresta",
+        "canonical": "#eef5ec",
+        "oklch": "oklch(96.2% 0.014 138.7)",
+        "layer": "brand",
+        "purpose": "Texto principal na marca.",
+        "tonalRamp": [
+          "#080d07",
+          "#21261f",
+          "#3c423b",
+          "#5a6058",
+          "#7c827a",
+          "#9da49b",
+          "#c3cac1",
+          "#eaf1e8"
+        ]
+      },
+      "forest-ink-soft": {
+        "role": "neutral",
+        "displayName": "Tinta suave sobre floresta",
+        "canonical": "#bdd0bb",
+        "oklch": "oklch(83.7% 0.035 142.6)",
+        "layer": "brand",
+        "purpose": "Parágrafos e links de navegação sobre floresta.",
+        "tonalRamp": [
+          "#030f03",
+          "#1a2819",
+          "#354533",
+          "#526351",
+          "#748673",
+          "#95a893",
+          "#bbceb9",
+          "#e1f5df"
+        ]
+      },
+      "floor-ink": {
+        "role": "neutral",
+        "displayName": "Tinta sobre o chão",
+        "canonical": "#a9b8a6",
+        "oklch": "oklch(76.6% 0.030 140.5)",
+        "layer": "brand",
+        "purpose": "Parágrafos sobre as faixas #0a0a0a da landing.",
+        "tonalRamp": [
+          "#050e04",
+          "#1c281a",
+          "#374435",
+          "#556252",
+          "#778574",
+          "#98a695",
+          "#bdcdba",
+          "#e4f4e1"
+        ]
+      },
+      "caption-green": {
+        "role": "neutral",
+        "displayName": "Legenda verde",
+        "canonical": "#8fa68d",
+        "oklch": "oklch(70.0% 0.044 142.9)",
+        "layer": "brand",
+        "purpose": "\"Valores ilustrativos.\"; segunda frase apagada de título.",
+        "tonalRamp": [
+          "#011001",
+          "#172915",
+          "#324630",
+          "#4f644d",
+          "#71876f",
+          "#92a990",
+          "#b7cfb5",
+          "#def7dc"
+        ]
+      },
+      "floor-rule": {
+        "role": "neutral",
+        "displayName": "Régua do chão",
+        "canonical": "#1f2b24",
+        "oklch": "oklch(27.5% 0.021 159.1)",
+        "layer": "brand",
+        "purpose": "Divisórias de lista sobre #0a0a0a.",
+        "tonalRamp": [
+          "#040e08",
+          "#1b2720",
+          "#37433c",
+          "#546159",
+          "#76847c",
+          "#97a69d",
+          "#bcccc2",
+          "#e3f3e9"
+        ]
+      },
+      "forest-ring": {
+        "role": "neutral",
+        "displayName": "Anel verde",
+        "canonical": "#2f4a3c",
+        "oklch": "oklch(38.3% 0.041 161.1)",
+        "layer": "brand",
+        "purpose": "Anel de botões circulares no chão escuro.",
+        "tonalRamp": [
+          "#001006",
+          "#102a1e",
+          "#2c4739",
+          "#496556",
+          "#6b8878",
+          "#8caa99",
+          "#b1d0bf",
+          "#d8f8e6"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Papel",
+        "canonical": "#f6f8f3",
+        "oklch": "oklch(97.6% 0.007 124.4)",
+        "layer": "brand",
+        "purpose": "Peças claras da marca.",
+        "tonalRamp": [
+          "#0a0c09",
+          "#232521",
+          "#3f403c",
+          "#5d5e5a",
+          "#7f817c",
+          "#a0a29e",
+          "#c6c8c3",
+          "#edefea"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Papel branco",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "layer": "brand",
+        "purpose": "Peças brancas da mesa (saldo, contas, meta).",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a1a1a1",
+          "#c7c7c7",
+          "#eeeeee"
+        ]
+      },
+      "paper-ink": {
+        "role": "neutral",
+        "displayName": "Tinta de papel",
+        "canonical": "#10231a",
+        "oklch": "oklch(23.6% 0.031 162.3)",
+        "layer": "brand",
+        "purpose": "Valores e texto sobre papel; texto sobre brand-lime.",
+        "tonalRamp": [
+          "#010f07",
+          "#16291f",
+          "#31453b",
+          "#4e6358",
+          "#70867b",
+          "#91a89c",
+          "#b6cec1",
+          "#ddf5e8"
+        ]
+      },
+      "paper-ink-body": {
+        "role": "neutral",
+        "displayName": "Tinta de linha",
+        "canonical": "#34473b",
+        "oklch": "oklch(37.8% 0.032 156.8)",
+        "layer": "brand",
+        "purpose": "Linhas de lista no papel.",
+        "tonalRamp": [
+          "#010f06",
+          "#17291e",
+          "#324539",
+          "#4f6356",
+          "#718679",
+          "#92a89a",
+          "#b7cebf",
+          "#def5e6"
+        ]
+      },
+      "paper-ink-secondary": {
+        "role": "neutral",
+        "displayName": "Tinta de rótulo",
+        "canonical": "#4b5f52",
+        "oklch": "oklch(46.5% 0.032 156.4)",
+        "layer": "brand",
+        "purpose": "Rótulos e legendas no papel.",
+        "tonalRamp": [
+          "#010f06",
+          "#17291e",
+          "#324539",
+          "#4f6356",
+          "#718678",
+          "#92a899",
+          "#b7cebf",
+          "#def5e6"
+        ]
+      },
+      "paper-rule": {
+        "role": "neutral",
+        "displayName": "Régua de papel",
+        "canonical": "#dfe7da",
+        "oklch": "oklch(91.8% 0.019 133.1)",
+        "layer": "brand",
+        "purpose": "Divisórias no papel.",
+        "tonalRamp": [
+          "#080d05",
+          "#20261d",
+          "#3c4238",
+          "#596055",
+          "#7c8377",
+          "#9da498",
+          "#c2cabe",
+          "#e9f2e4"
+        ]
+      },
+      "paper-track": {
+        "role": "neutral",
+        "displayName": "Trilho de papel",
+        "canonical": "#e5ecdf",
+        "oklch": "oklch(93.4% 0.019 130.2)",
+        "layer": "brand",
+        "purpose": "Trilhos de progresso; hover de menu de papel.",
+        "tonalRamp": [
+          "#090d05",
+          "#21261c",
+          "#3c4237",
+          "#5a6055",
+          "#7c8377",
+          "#9ea498",
+          "#c3cabd",
+          "#eaf1e4"
+        ]
+      },
+      "paper-lime-tint": {
+        "role": "primary",
+        "displayName": "Lima tingido",
+        "canonical": "#ecfccb",
+        "oklch": "oklch(96.7% 0.066 122.3)",
+        "layer": "brand",
+        "purpose": "Fundo de chip e tile de ícone positivos no papel.",
+        "tonalRamp": [
+          "#080e00",
+          "#1f2802",
+          "#3a451b",
+          "#576439",
+          "#79875a",
+          "#9aa97b",
+          "#c0cf9f",
+          "#e6f6c6"
+        ]
+      },
+      "paper-lime-ink": {
+        "role": "primary",
+        "displayName": "Lima-tinta",
+        "canonical": "#3f6212",
+        "oklch": "oklch(45.3% 0.113 130.9)",
+        "layer": "brand",
+        "purpose": "Texto positivo no papel (estorno, meta, economia).",
+        "tonalRamp": [
+          "#050f00",
+          "#182a02",
+          "#2d4907",
+          "#466a1c",
+          "#688e42",
+          "#89b063",
+          "#aed788",
+          "#d4ffae"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "brand-display": {
+        "displayName": "Brand display",
+        "layer": "brand",
+        "purpose": "Títulos da landing, duas frases curtas, a segunda em brand-lime ou caption-green. Só em /landing.",
+        "sizes": {
+          "hero": "2.6rem / sm 3.75rem / lg 4.1rem, leading 0.98",
+          "section": "2.2rem / sm 3rem, leading 1.02",
+          "step": "2rem / sm 2.6rem, leading 1.02",
+          "closing": "2.5rem / sm 3.75rem / lg 4.5rem, leading 0.98"
+        },
+        "textWrap": "balance"
+      },
+      "brand-headline": {
+        "displayName": "Brand headline",
+        "layer": "brand",
+        "purpose": "Subtítulos de seção da landing (1.5rem → sm 1.875rem)."
+      },
+      "brand-figure": {
+        "displayName": "Brand figure",
+        "layer": "brand",
+        "purpose": "Valores monetários nas peças e no preço; unidade em DM Sans 500 com tracking normal."
+      },
+      "app-title": {
+        "displayName": "App title",
+        "layer": "app",
+        "purpose": "Título de página (PageHeader) e headings base. Syne está configurada mas nunca é carregada; renderiza a sans padrão do navegador (estado pré-existente, mantido de propósito)."
+      },
+      "auth-title": {
+        "displayName": "Auth title",
+        "layer": "app",
+        "purpose": "Títulos das telas de autenticação e dos slides do AuthShowcase."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Parágrafos; 34–36rem de medida na landing; text-wrap: pretty."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "Botões, navegação, linhas de lista do app."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Rótulo de campo e legendas."
+      }
+    },
+    "shadows": [
+      {
+        "name": "mesa-piece",
+        "value": "0 1.6em 3em -1em rgba(0,0,0,0.55)",
+        "purpose": "Peças em escala em dentro da mesa."
+      },
+      {
+        "name": "paper-on-floor",
+        "value": "0 1.75rem 3.5rem -1.25rem rgba(0,0,0,0.75)",
+        "purpose": "Papel sobre as faixas #0a0a0a da landing."
+      },
+      {
+        "name": "plan",
+        "value": "0 2rem 4rem -1.5rem rgba(0,0,0,0.55)",
+        "purpose": "Card do plano Básico sobre floresta."
+      },
+      {
+        "name": "paper-menu",
+        "value": "0 1.5rem 3rem -1rem rgba(0,0,0,0.6)",
+        "purpose": "Menu de papel que abre de um botão de marca."
+      },
+      {
+        "name": "app-floating",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+        "purpose": "Tailwind shadow-xl: tooltips e menus do app. Cards do app não têm sombra."
+      },
+      {
+        "name": "moon",
+        "value": "radial-gradient(closest-side, rgba(190,242,100,0.14), rgba(255,255,255,0.04) 55%, transparent 72%)",
+        "purpose": "Luz ambiente lima num canto de cada seção de floresta (alfa 0,12–0,16). É gradiente de fundo, não sombra."
+      },
+      {
+        "name": "card-gradient",
+        "value": "linear-gradient(135deg, #d9f99d 0%, #a3e635 42%, #65a30d 100%)",
+        "purpose": "Cartão de crédito da marca, texto #132414."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-house",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "A curva única da casa: mesa, toggle, FAQ, AuthShowcase, auth-rise."
+      },
+      {
+        "name": "mesa-repose",
+        "value": "transform, opacity, filter 900ms ease-house; entrada escalonada 70ms por peça",
+        "purpose": "Troca de arranjo da mesa conforme a rolagem."
+      },
+      {
+        "name": "auth-rise",
+        "value": "700ms ease-house; from opacity 0, translateY(10px), blur(6px)",
+        "purpose": "Entrada de texto de slide no AuthShowcase."
+      },
+      {
+        "name": "toggle",
+        "value": "300ms ease-house",
+        "purpose": "Indicador do toggle Mensal/Anual, abertura de FAQ."
+      },
+      {
+        "name": "hover",
+        "value": "200ms",
+        "purpose": "Cor de fundo/texto em hover; active:scale(0.98) nos botões de marca."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "motion-reduce:transition-none; rotação automática desligada",
+        "purpose": "Obrigatório em todo movimento dirigido por rolagem ou tempo."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão principal do app",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal nas telas do app (SubmitButton). Usa o token de tema.",
+      "html": "<button class=\"ds-btn-app\">Salvar lançamento</button>",
+      "css": ".ds-btn-app { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 9999px; background: rgb(var(--accent-lime, 163 230 53)); color: #000; padding: 12px 20px; font: 600 14px/1.43 'DM Sans', sans-serif; cursor: pointer; transition: filter 150ms; } .ds-btn-app:hover { filter: brightness(1.1); } .ds-btn-app:focus-visible { outline: none; box-shadow: 0 0 0 2px rgb(var(--accent-lime-line, 163 230 53)); } .ds-btn-app:disabled { opacity: 0.6; cursor: not-allowed; }"
+    },
+    {
+      "name": "Campo do app",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo com rótulo (Field): fundo afundado, sem borda visível até o foco.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Descrição</span><span class=\"ds-field-box\"><input class=\"ds-field-input\" placeholder=\"Ex.: Mercado\" /></span></label>",
+      "css": ".ds-field { display: block; } .ds-field-label { display: block; margin-bottom: 6px; font: 500 12px/1.33 'DM Sans', sans-serif; color: rgb(var(--text-secondary, 156 163 175)); } .ds-field-box { display: flex; align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 12px; background: rgb(var(--bg-muted, 28 28 28)); padding: 10px 12px; transition: border-color 150ms, box-shadow 150ms; } .ds-field-box:focus-within { border-color: rgb(var(--accent-lime-line, 163 230 53)); box-shadow: 0 0 0 2px rgb(var(--accent-lime-line, 163 230 53) / 0.2); } .ds-field-input { flex: 1; border: 0; background: transparent; outline: none; font: 400 14px 'DM Sans', sans-serif; color: rgb(var(--text-primary, 255 255 255)); } .ds-field-input::placeholder { color: rgb(var(--text-muted, 128 134 143)); }"
+    },
+    {
+      "name": "Card do app",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Card plano: profundidade por degrau tonal, sem sombra.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-label\">Saldo</p><p class=\"ds-card-value\">R$ 4.182,50</p></div>",
+      "css": ".ds-card { border: 1px solid rgb(var(--bg-muted, 28 28 28)); border-radius: 16px; background: rgb(var(--bg-card, 20 20 20)); padding: 20px; color: rgb(var(--text-primary, 255 255 255)); font-family: 'DM Sans', sans-serif; } .ds-card-label { margin: 0; font-size: 14px; color: rgb(var(--text-secondary, 156 163 175)); } .ds-card-value { margin: 4px 0 0; font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Navegação lateral do app",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Itens da barra lateral: ativo sobe um degrau e acende o ícone em lima.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item is-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"1\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"1\"/></svg><span>Dashboard</span></a><a class=\"ds-nav-item\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1\"/><path d=\"M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4\"/></svg><span>Carteiras</span></a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 4px; width: 240px; padding: 8px; background: rgb(var(--bg-card, 20 20 20)); font-family: 'DM Sans', sans-serif; } .ds-nav-item { display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 500; text-decoration: none; color: rgb(var(--text-secondary, 156 163 175)); transition: background-color 150ms, color 150ms; } .ds-nav-item:hover { background: rgb(var(--bg-overlay, 35 35 35)); color: rgb(var(--text-primary, 255 255 255)); } .ds-nav-item.is-active { background: rgb(var(--bg-muted, 28 28 28)); color: rgb(var(--text-primary, 255 255 255)); } .ds-nav-item.is-active svg { color: rgb(var(--accent-lime-ink, 163 230 53)); } .ds-nav-item:focus-visible { outline: none; box-shadow: 0 0 0 2px rgb(var(--accent-lime-line, 163 230 53)); }"
+    },
+    {
+      "name": "CTA de marca",
+      "kind": "button",
+      "refersTo": "brand-button-primary",
+      "description": "Única cor de ação sobre o verde-floresta. Independente de tema.",
+      "html": "<div class=\"ds-forest\"><a class=\"ds-btn-brand\" href=\"#\">Começar teste grátis <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></a></div>",
+      "css": ".ds-forest { background: #0e2a1e; padding: 32px; } .ds-btn-brand { display: inline-flex; align-items: center; gap: 8px; border-radius: 9999px; background: #bef264; color: #10231a; padding: 14px 28px; font: 700 16px 'DM Sans', sans-serif; text-decoration: none; transition: background-color 200ms, transform 200ms; } .ds-btn-brand:hover { background: #d9f99d; } .ds-btn-brand:active { transform: scale(0.98); } .ds-btn-brand:focus-visible { outline: none; box-shadow: 0 0 0 2px #0e2a1e, 0 0 0 4px #bef264; }"
+    },
+    {
+      "name": "Botão ghost de marca",
+      "kind": "button",
+      "refersTo": "brand-button-ghost",
+      "description": "Ação secundária sobre floresta (\"Já tenho conta\", \"Falar com vendas\").",
+      "html": "<div class=\"ds-forest-g\"><a class=\"ds-btn-ghost\" href=\"#\">Já tenho conta</a></div>",
+      "css": ".ds-forest-g { background: #0e2a1e; padding: 32px; } .ds-btn-ghost { display: inline-flex; align-items: center; border-radius: 9999px; padding: 14px 24px; color: #eef5ec; font: 600 16px 'DM Sans', sans-serif; text-decoration: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); transition: background-color 200ms; } .ds-btn-ghost:hover { background: rgba(255,255,255,0.1); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px #0e2a1e, 0 0 0 4px #bef264; }"
+    },
+    {
+      "name": "Toggle de ciclo",
+      "kind": "chip",
+      "refersTo": "brand-button-primary",
+      "description": "Mensal/Anual: indicador lima que desliza no trilho de floresta profunda.",
+      "html": "<div class=\"ds-forest-t\"><div class=\"ds-toggle\" role=\"group\"><span class=\"ds-toggle-thumb\"></span><button class=\"ds-toggle-opt is-on\" aria-pressed=\"true\">Mensal</button><button class=\"ds-toggle-opt\" aria-pressed=\"false\">Anual</button></div></div>",
+      "css": ".ds-forest-t { background: #0e2a1e; padding: 32px; } .ds-toggle { position: relative; display: inline-flex; border-radius: 9999px; background: #091f15; padding: 4px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); } .ds-toggle-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: 112px; border-radius: 9999px; background: #bef264; transition: transform 300ms cubic-bezier(0.16,1,0.3,1); } .ds-toggle:has(.ds-toggle-opt:nth-of-type(2).is-on) .ds-toggle-thumb { transform: translateX(112px); } .ds-toggle-opt { position: relative; z-index: 1; width: 112px; border: 0; border-radius: 9999px; background: transparent; padding: 10px 0; font: 700 14px 'DM Sans', sans-serif; color: #bdd0bb; cursor: pointer; transition: color 300ms; } .ds-toggle-opt:hover { color: #fff; } .ds-toggle-opt.is-on { color: #10231a; } .ds-toggle-opt:focus-visible { outline: none; box-shadow: 0 0 0 2px #091f15, 0 0 0 4px #bef264; }"
+    },
+    {
+      "name": "Peça de papel",
+      "kind": "card",
+      "refersTo": "brand-paper-piece",
+      "description": "Fragmento fiel do app em papel claro sobre a mesa, com sombra longa e macia.",
+      "html": "<div class=\"ds-forest-p\"><div class=\"ds-paper\"><p class=\"ds-paper-label\">Fatura de outubro <span>vence dia 15</span></p><p class=\"ds-paper-value\">R$ 1.284,37</p><div class=\"ds-paper-track\"><span></span></div><p class=\"ds-paper-note\">43% de R$ 3.000,00 de limite</p></div><p class=\"ds-caption\">Valores ilustrativos.</p></div>",
+      "css": ".ds-forest-p { background: #0e2a1e; padding: 40px; font-family: 'DM Sans', sans-serif; } .ds-paper { width: 300px; border-radius: 20px; background: #f6f8f3; color: #10231a; padding: 20px; box-shadow: 0 1.6em 3em -1em rgba(0,0,0,0.6); transform: rotate(-1deg); } .ds-paper-label { display: flex; justify-content: space-between; margin: 0; font-size: 13px; font-weight: 500; color: #4b5f52; } .ds-paper-value { margin: 4px 0 0; font: 800 32px/1 'Bricolage Grotesque', 'DM Sans', sans-serif; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; } .ds-paper-track { height: 6px; margin-top: 12px; border-radius: 9999px; background: #dfe7da; overflow: hidden; } .ds-paper-track span { display: block; width: 43%; height: 100%; border-radius: 9999px; background: #65a30d; } .ds-paper-note { margin: 6px 0 0; font-size: 11px; color: #4b5f52; font-variant-numeric: tabular-nums; } .ds-caption { margin: 24px 0 0; font-size: 12px; color: #8fa68d; }"
+    },
+    {
+      "name": "Título de marca",
+      "kind": "custom",
+      "refersTo": "brand-display",
+      "description": "Duas frases curtas; a segunda em bloco, em lima de marca.",
+      "html": "<div class=\"ds-forest-h\"><h2 class=\"ds-display\">Seus dados ficam com você.<span>E só com você.</span></h2></div>",
+      "css": ".ds-forest-h { background: #0e2a1e; padding: 40px; } .ds-display { margin: 0; max-width: 14ch; font: 800 48px/1.02 'Bricolage Grotesque', 'DM Sans', sans-serif; letter-spacing: -0.035em; color: #fff; text-wrap: balance; } .ds-display span { display: block; color: #bef264; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A mesa verde-floresta",
+    "overview": "O MeuGasto tem duas camadas visuais, e cada uma governa um território próprio. A **camada do app** (Operate: dashboard, carteiras, cartões, contas, metas, insights, configurações) é um sistema de tokens por papel em `frontend/src/styles.css` + `tailwind.config.ts`: escuro por padrão (#0a0a0a), com tema claro espelhado sob `html.light`, superfícies que sobem em degraus tonais e um único acento lima. É denso, calmo e funcional; o número que o usuário vê é o protagonista.\n\nA **camada de marca** (a landing em `/landing` e o painel `AuthShowcase` das telas de autenticação) é a mesa verde-floresta: um campo #0e2a1e iluminado por uma \"lua\" de luz lima no canto, sobre o qual peças do próprio app, impressas em papel claro com tinta verde-escura e sombras longas e macias, se arrumam como objetos sobre uma mesa. Essa camada é independente de tema: é idêntica no claro e no escuro, por isso suas cores vivem como valores fixos nos próprios componentes, não nos tokens de tema. As faixas #0a0a0a da landing são \"o chão do app\": o mesmo fundo do produto, usado como respiro entre os trechos de mesa.\n\nAs duas camadas se ligam pelo lima, pela DM Sans no corpo e pelas peças: a marca não inventa ilustrações, ela mostra fragmentos fiéis da interface (saldo, cartão, fatura, contas, meta) rotulados como \"Valores ilustrativos\". A camada de marca recusa o hero centralizado seguido de grade de cards com ícone; a prova é o produto em cena.",
+    "keyCharacteristics": [
+      "Dois territórios: tokens de tema no app; valores fixos, independentes de tema, na marca.",
+      "Dois limas com papéis distintos: #a3e635 (app, com papéis fill/ink/line) e #bef264 (marca, única cor de ação sobre o verde-floresta).",
+      "Profundidade no app por degraus tonais; na marca, por papel com sombra longa e macia.",
+      "Bricolage Grotesque 700–800 só na landing; DM Sans auto-hospedada no resto.",
+      "Números sempre tabulares.",
+      "Movimento com uma curva só, `cubic-bezier(0.16, 1, 0.3, 1)`, e `prefers-reduced-motion` respeitado."
+    ],
+    "rules": [
+      {
+        "name": "The Two Limes Rule",
+        "body": "#a3e635 pertence ao app e passa por tokens com papéis fill/ink/line; #bef264 pertence à mesa verde-floresta e nunca entra em tela do app. Não misture os dois na mesma superfície.",
+        "section": "colors"
+      },
+      {
+        "name": "The Role Token Rule",
+        "body": "No app, cor só por token (`bg-bg-card`, `text-accent-lime`, `border-accent-lime`), nunca hex solto: `text-*` resolve para a versão ink, `border/ring/stroke` para a versão line. Valores fixos só são legítimos na camada de marca, que é independente de tema.",
+        "section": "colors"
+      },
+      {
+        "name": "The Dark-Stays-Put Rule",
+        "body": "Mudança no tema claro fica sob `html.light` (ou a variante `light:`) e deixa o escuro idêntico ao pixel.",
+        "section": "colors"
+      },
+      {
+        "name": "The Display Quarantine Rule",
+        "body": "A Bricolage Grotesque só é baixada na rota `/landing` (script inline do `index.html` + `useLandingChrome`). Nenhuma tela do app nem de autenticação depende dela; títulos fora da landing usam DM Sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Todo valor monetário, porcentagem e dígito de cartão usa `tabular-nums`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Casts, Screens Don't Rule",
+        "body": "Sombra grande é privilégio do papel na camada de marca. No app, profundidade vem do degrau tonal; sombra só em elemento flutuante.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Moon Rule",
+        "body": "A luz da marca é um único gradiente radial lima (alfa 0,12–0,16) num canto, fora da área de leitura. Um por seção de floresta, nunca atrás de texto.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** usar tokens por papel no app (`bg-bg-card`, `text-accent-lime`, `border-accent-lime`) e deixar o Tailwind resolver ink/line.",
+      "**Do** escopar qualquer ajuste do tema claro em `html.light`/`light:` e conferir que o escuro não mudou.",
+      "**Do** construir a ilustração de marca com peças fiéis do app, rotuladas \"Valores ilustrativos.\".",
+      "**Do** escrever títulos de marca como duas frases curtas, a segunda em brand-lime ou caption-green.",
+      "**Do** usar `tabular-nums` em todo número e a curva `cubic-bezier(0.16,1,0.3,1)` em todo movimento, com fallback para `prefers-reduced-motion`.",
+      "**Do** usar texto com matiz verde (forest-ink-soft, floor-ink, caption-green) sobre o verde e sobre o chão da landing."
+    ],
+    "donts": [
+      "**Don't** usar #bef264, o verde-floresta ou a Bricolage Grotesque dentro das telas do app.",
+      "**Don't** escrever hex solto em componente do app; valor fixo só na camada de marca.",
+      "**Don't** usar #a3e635 como texto sobre fundo claro (1,4:1); use accent-lime-ink.",
+      "**Don't** apresentar recursos na marca como grade de cards idênticos com ícone nem hero centralizado; a peça do app é a ilustração.",
+      "**Don't** inventar prova social (depoimentos, número de usuários, imprensa).",
+      "**Don't** pôr sombra grande em card do app; a profundidade dele é tonal."
+    ]
+  }
+}

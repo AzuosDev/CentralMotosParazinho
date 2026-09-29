@@ -45,9 +45,9 @@ export const TransactionRow = memo(function TransactionRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-medium text-white">{category.name}</p>
+          <p className="truncate text-sm font-medium text-text-primary">{category.name}</p>
           {transaction.agendado && (
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-semibold text-blue-400">
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-semibold text-status-info">
               <Calendar className="h-3 w-3" />
               Agendado
             </span>
@@ -73,7 +73,7 @@ export const TransactionRow = memo(function TransactionRow({
         <button
           type="button"
           onClick={() => onEdit(transaction)}
-          className="grid h-8 w-8 place-items-center rounded-lg text-text-secondary hover:bg-bg-overlay hover:text-white"
+          className="grid h-8 w-8 place-items-center rounded-lg text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
           aria-label="Editar transação"
         >
           <Edit2 className="h-4 w-4" />

@@ -100,7 +100,7 @@ export function WalletsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-white transition hover:bg-bg-muted"
+            className="flex items-center gap-2 rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-text-primary transition hover:bg-bg-muted"
           >
             <FileUp className="h-4 w-4" />
             Importar OFX
@@ -124,7 +124,7 @@ export function WalletsPage() {
           </strong>
           <button
             onClick={toggle}
-            className="rounded-lg p-1 text-text-secondary transition hover:text-white"
+            className="rounded-lg p-1 text-text-secondary transition hover:text-text-primary"
             aria-label={show ? "Ocultar valores" : "Mostrar valores"}
           >
             {show ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
@@ -170,7 +170,7 @@ export function WalletsPage() {
                       if (auto) setIcone(auto);
                     }}
                     placeholder="Ex: Banco Safra, Sicoob…"
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
                   />
                 ) : (
                   <select
@@ -186,7 +186,7 @@ export function WalletsPage() {
                         if (auto) setIcone(auto); else setIcone("🏦");
                       }
                     }}
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
                   >
                     <option value="">Selecione um banco…</option>
                     {BANKS.map((b) => (
@@ -203,7 +203,7 @@ export function WalletsPage() {
                 <CurrencyInput
                   value={saldo}
                   onChange={setSaldo}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
                 />
               </label>
             </div>

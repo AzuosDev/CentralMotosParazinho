@@ -110,14 +110,14 @@ const tabConfig = {
     label: "Transferência",
     icon: ArrowLeftRight,
     activeCls: "bg-blue-600 text-white",
-    iconCls: "text-blue-400",
+    iconCls: "text-status-info",
     submitLabel: "Transferir",
     submitCls: "bg-blue-600 text-white",
   },
 } as const;
 
 const selectCls =
-  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime";
+  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime";
 
 export function TransactionModal({
   open,
@@ -364,7 +364,7 @@ export function TransactionModal({
             type="button"
             onClick={onClose}
             disabled={mutation.isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -395,7 +395,7 @@ export function TransactionModal({
               onClick={() => handleTabChange(tab)}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition",
-                activeTab === tab ? t.activeCls : "text-text-secondary hover:text-white",
+                activeTab === tab ? t.activeCls : "text-text-secondary hover:text-text-primary",
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -410,7 +410,7 @@ export function TransactionModal({
         <div className="rounded-xl bg-bg-muted p-5 text-center text-sm text-text-secondary">
           <ArrowLeftRight className="mx-auto mb-3 h-8 w-8 text-text-muted" />
           <p>
-            Você precisa de pelo menos <strong className="text-white">2 carteiras</strong> para realizar uma
+            Você precisa de pelo menos <strong className="text-text-primary">2 carteiras</strong> para realizar uma
             transferência.
           </p>
           <Link
@@ -428,7 +428,7 @@ export function TransactionModal({
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
         >
           {isEditingCardTx && (
-            <div className="rounded-xl bg-blue-500/10 p-3 text-xs text-blue-300">
+            <div className="rounded-xl bg-blue-500/10 p-3 text-xs text-status-info-soft">
               Transações de cartão de crédito só permitem editar descrição e categoria. Para corrigir valor ou
               data, estorne e lance novamente na tela do cartão.
             </div>
@@ -479,7 +479,7 @@ export function TransactionModal({
                       type="number"
                       min={1}
                       max={48}
-                      className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-white outline-none transition focus:border-accent-lime"
+                      className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
                       {...form.register("parcelas")}
                     />
                     <span className="mt-1 block text-xs text-text-secondary">
@@ -559,9 +559,9 @@ export function TransactionModal({
             <div className="space-y-3 rounded-xl border border-accent-red/40 bg-accent-red/10 p-4">
               <div className="flex gap-3">
                 <AlertTriangle className="h-5 w-5 shrink-0 text-accent-red" />
-                <div className="text-sm text-red-200">
+                <div className="text-sm text-status-danger-soft">
                   <p className="font-semibold">{limitBlock.message}</p>
-                  <p className="mt-1 text-red-200/80">
+                  <p className="mt-1 text-status-danger-soft/80">
                     Limite disponível: {formatCurrency(limitBlock.limiteDisponivel)} de {formatCurrency(limitBlock.limite)}.
                     Esta é uma compra que de fato aconteceu — você pode confirmar mesmo assim.
                   </p>

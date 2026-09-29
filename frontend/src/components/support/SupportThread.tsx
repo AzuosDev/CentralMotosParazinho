@@ -87,7 +87,7 @@ export function SupportThread({
                 key={r._id}
                 className={cn(
                   "max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm",
-                  isViewer ? "self-end bg-accent-lime/15 text-white" : "self-start bg-bg-muted text-white",
+                  isViewer ? "self-end bg-accent-lime/15 text-text-primary" : "self-start bg-bg-muted text-text-primary",
                 )}
               >
                 <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-text-secondary">
@@ -111,7 +111,7 @@ export function SupportThread({
           placeholder={viewerRole === "admin" ? "Responder ao usuário..." : "Escreva sua resposta..."}
           rows={2}
           maxLength={2000}
-          className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+          className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-3.5 py-2.5 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
         />
         <button
           type="button"

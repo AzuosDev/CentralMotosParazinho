@@ -36,7 +36,7 @@ export function PayBillModal({ open, onClose, title, value, defaultCarteiraId, i
             type="button"
             onClick={onClose}
             disabled={isPending}
-            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70"
           >
             Cancelar
           </button>
@@ -79,8 +79,8 @@ export function PayBillModal({ open, onClose, title, value, defaultCarteiraId, i
                   onClick={() => setSelectedId(w._id)}
                   className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
                     selectedId === w._id
-                      ? "border-accent-lime bg-accent-lime/10 text-white"
-                      : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-white"
+                      ? "border-accent-lime bg-accent-lime/10 text-text-primary"
+                      : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-text-primary"
                   }`}
                 >
                   {w.nome}
