@@ -1,5 +1,8 @@
 import { Coins } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+
+import { AuthShowcase } from "./AuthShowcase";
 
 export function AuthCard({
   title,
@@ -13,32 +16,44 @@ export function AuthCard({
   footer?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-base px-4">
-      <div className="mx-auto mt-20 w-full max-w-sm rounded-card bg-bg-card p-8 shadow-xl ring-1 ring-bg-overlay">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="grid h-10 w-10 place-items-center rounded-icon bg-accent-lime/10">
-              <Coins className="h-5 w-5 text-accent-lime" />
-            </span>
-            <span className="font-sans text-xl font-bold tracking-tight">
-              MeuGasto
-            </span>
-          </div>
-          <h1 className="font-sans text-2xl font-bold text-text-primary">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>
-          )}
-        </div>
+    <div className="min-h-dvh bg-bg-card lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
+      <div className="flex min-h-dvh flex-col px-5 py-6 sm:px-10 lg:px-14">
+        <Link
+          to="/landing"
+          className="flex w-fit items-center gap-2 rounded-icon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-lime"
+        >
+          <span className="grid h-9 w-9 place-items-center rounded-icon bg-accent-lime/10">
+            <Coins className="h-[18px] w-[18px] text-accent-lime" />
+          </span>
+          <span className="font-body text-lg font-bold tracking-tight text-text-primary">
+            MeuGasto
+          </span>
+        </Link>
 
-        {children}
+        <main className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-[400px] py-10">
+            <header className="mb-8">
+              <h1 className="text-balance font-body text-[1.875rem] font-bold leading-tight tracking-[-0.02em] text-text-primary">
+                {title}
+              </h1>
+              {subtitle && (
+                <p className="mt-2 text-sm text-text-secondary">{subtitle}</p>
+              )}
+            </header>
 
-        {footer && (
-          <div className="mt-6 text-center text-sm text-text-secondary">
-            {footer}
+            {children}
+
+            {footer && (
+              <div className="mt-8 text-center text-sm text-text-secondary">
+                {footer}
+              </div>
+            )}
           </div>
-        )}
+        </main>
+      </div>
+
+      <div className="hidden lg:sticky lg:top-0 lg:block lg:h-dvh lg:p-3">
+        <AuthShowcase />
       </div>
     </div>
   );

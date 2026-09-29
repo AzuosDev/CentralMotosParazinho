@@ -77,6 +77,15 @@ export default {
       backgroundColor: { scrollbar: token("scrollbar-modal") },
       stroke: { accent: accentLine },
       borderRadius: { card: "16px", pill: "9999px", icon: "12px" },
+      keyframes: {
+        "auth-rise": {
+          from: { opacity: "0", transform: "translateY(10px)", filter: "blur(6px)" },
+          to: { opacity: "1", transform: "none", filter: "none" },
+        },
+      },
+      animation: {
+        "auth-rise": "auth-rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
+      },
       fontFamily: {
         sans: ["Syne", "sans-serif"],
         body: ["DM Sans", "sans-serif"],
