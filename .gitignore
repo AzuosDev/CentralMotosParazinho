@@ -6,3 +6,9 @@ dist-ssr
 .env.*.local
 *.log
 .DS_Store
+
+# Impeccable: capturas de revisão e logs locais (brief e design.json são versionados)
+.impeccable/review/
+.impeccable/questions/
+.impeccable/build/
+.impeccable/config.local.json
