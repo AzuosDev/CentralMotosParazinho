@@ -47,6 +47,23 @@
         } catch (error) {
           document.documentElement.classList.add("dark");
         }
+
+        // Fonte dos títulos da landing: só nessa rota, para não pesar no app.
+        // Navegações internas até a landing carregam o CSS pelo próprio LandingPage.
+        if (location.pathname === "/landing") {
+          const font = document.createElement("link");
+          font.rel = "preload";
+          font.as = "font";
+          font.type = "font/woff2";
+          font.href = "/fonts/files/bricolage-grotesque-latin-var.woff2";
+          font.crossOrigin = "";
+          document.head.appendChild(font);
+
+          const css = document.createElement("link");
+          css.rel = "stylesheet";
+          css.href = "/fonts/bricolage-grotesque.css";
+          document.head.appendChild(css);
+        }
       })();
     </script>
     <title>MeuGasto</title>

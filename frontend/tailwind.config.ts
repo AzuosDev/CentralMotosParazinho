@@ -89,6 +89,8 @@ export default {
       fontFamily: {
         sans: ["Syne", "sans-serif"],
         body: ["DM Sans", "sans-serif"],
+        // Só a landing carrega esta fonte (public/fonts/bricolage-grotesque.css).
+        display: ["Bricolage Grotesque", "DM Sans", "sans-serif"],
       },
     },
   },
