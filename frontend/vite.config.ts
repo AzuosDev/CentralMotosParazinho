@@ -20,6 +20,35 @@ const SHELL_FILE = "app.html";
 
 const ROOT_DIV = '<div id="root"></div>';
 
+// Trechos do index.html que o shell precisa alterar. Ficam aqui como constantes
+// para o build quebrar alto se alguém mexer no cabeçalho e esquecer do shell.
+const ROBOTS_INDEX = '<meta name="robots" content="index, follow" />';
+const ROBOTS_NOINDEX = '<meta name="robots" content="noindex, follow" />';
+// A linha inteira, com a indentação e a quebra — que é CRLF no index.html.
+const CANONICAL_LINE = /[ \t]*<link rel="canonical"[^>]*>\r?\n/;
+
+/**
+ * Deriva o shell (app.html) do index.html.
+ *
+ * O shell atende toda rota que não é "/": /login, /register, /checkout, o
+ * dashboard e o resto do app, além de /landing, que é cópia da home. Nenhuma
+ * delas tem o que fazer num índice de busca, então o shell vai com noindex —
+ * o index.html é o único arquivo que pede indexação.
+ *
+ * O canonical sai junto: numa página noindex, apontar canonical para outra URL
+ * é sinal contraditório. O noindex sozinho é a instrução mais clara.
+ */
+function toShell(html: string): string {
+  if (!html.includes(ROBOTS_INDEX)) {
+    throw new Error("[meugasto-seo] não achei a meta robots do index.html para gerar o shell.");
+  }
+  if (!CANONICAL_LINE.test(html)) {
+    throw new Error("[meugasto-seo] não achei o canonical do index.html para remover do shell.");
+  }
+
+  return html.replace(ROBOTS_INDEX, ROBOTS_NOINDEX).replace(CANONICAL_LINE, "");
+}
+
 /**
  * Renderiza a landing para HTML usando o bundle SSR gerado antes do build do
  * cliente. Devolve null (com aviso) se o bundle não existir, para que um
@@ -71,7 +100,7 @@ function seoPlugin(isBuild: boolean): Plugin {
       // tudo, como sempre.
       if (!isBuild) return withDomain;
 
-      shell = withDomain;
+      shell = toShell(withDomain);
 
       const markup = await renderLanding();
       if (!markup) return withDomain;
