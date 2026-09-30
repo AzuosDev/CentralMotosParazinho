@@ -347,7 +347,7 @@ function Nav() {
       )}
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:h-[4.5rem] sm:px-6 lg:px-10">
-        <Link to="/landing" className={cn("rounded-icon", focusRing)} aria-label="MeuGasto, início">
+        <Link to="/" className={cn("rounded-icon", focusRing)} aria-label="MeuGasto, início">
           <Logo />
         </Link>
 
@@ -485,11 +485,15 @@ function HeroAndMesa() {
           className="flex flex-col justify-center pb-6 pt-12 sm:pt-16 lg:min-h-[calc(100svh-4.5rem)] lg:py-16"
         >
           <h1 id="hero-title" className={cn(display, "text-[2.6rem] leading-[0.98] text-white sm:text-6xl lg:text-[4.1rem]")}>
-            Saiba quanto você tem.
-            <span className="block text-[#bef264]">Sem conectar o banco.</span>
+            Controle seus gastos
+            <span className="block text-[#bef264]">e sua vida financeira em um só lugar.</span>
           </h1>
-          <p className="mt-6 max-w-[34rem] text-pretty text-lg leading-relaxed text-[#bdd0bb]">
-            Carteiras, cartão, contas a pagar e metas num só lugar. Você lança ou importa o extrato; o MeuGasto faz as contas.
+          <p className="mt-6 max-w-[34rem] text-pretty text-xl font-semibold leading-snug text-white sm:text-2xl">
+            Saiba quanto você tem. Sem conectar o banco.
+          </p>
+          <p className="mt-4 max-w-[34rem] text-pretty text-lg leading-relaxed text-[#bdd0bb]">
+            O MeuGasto é um aplicativo de controle financeiro pessoal: carteiras, cartão, contas a pagar e metas num só
+            lugar. Você lança ou importa o extrato; o MeuGasto faz as contas.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link to="/register" className={cn(limeButton, "px-7 py-3.5 text-base")}>
@@ -909,6 +913,8 @@ function Precos() {
 
 // ─── Dúvidas + contato ──────────────────────────────────────────────────────
 
+// Estas perguntas também são publicadas como FAQPage (JSON-LD) no index.html.
+// Ao mexer aqui, atualize lá — structured data precisa bater com o texto visível.
 const faqs: { question: string; answer: string }[] = [
   {
     question: "Como funciona o teste grátis de 15 dias?",

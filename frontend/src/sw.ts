@@ -21,10 +21,12 @@ clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// Toda rota que não seja /api cai no index.html (React Router cuida do resto)
+// Toda rota que não seja /api cai no index.html (React Router cuida do resto).
+// robots.txt e sitemap.xml ficam de fora: são arquivos de verdade no build e
+// devolver o index.html no lugar deles quebraria quem os abrir pelo navegador.
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('index.html'), {
-    denylist: [/^\/api\//],
+    denylist: [/^\/api\//, /^\/robots\.txt$/, /^\/sitemap\.xml$/],
   }),
 );
 

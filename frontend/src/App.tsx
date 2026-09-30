@@ -89,7 +89,13 @@ function RootRoute() {
   const { isLocked } = useAuth();
   const redirect = resolveAuthRedirect(getAccessToken(), isLocked);
 
-  return <Navigate to={redirect ?? "/landing"} replace />;
+  // Visitante deslogado vê a landing na própria "/", sem redirect: "/" é a URL
+  // que os buscadores indexam e que o canonical aponta, e um <Navigate> deixava
+  // ela sem conteúdo nenhum pro robô. "/landing" continua valendo para links
+  // antigos, renderizando a mesma página.
+  if (!redirect) return <LandingPage />;
+
+  return <Navigate to={redirect} replace />;
 }
 
 type BootStatus = 'booting' | 'ready' | 'offline';
