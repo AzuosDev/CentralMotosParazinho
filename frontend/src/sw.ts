@@ -32,11 +32,21 @@ registerRoute(
 // Todas as outras rotas caem no shell vazio, e não no index.html: o React
 // Router cuida do resto. Servir o index.html aqui pintaria a landing inteira
 // antes de o React trocar pelo conteúdo certo em cada deep link.
-// robots.txt e sitemap.xml ficam de fora: são arquivos de verdade no build e
-// devolver HTML no lugar deles quebraria quem os abrir pelo navegador.
+//
+// A denylist são os arquivos de verdade que moram em public/ e que alguém pode
+// abrir direto na barra de endereços: devolver HTML no lugar deles quebraria a
+// leitura. Os robôs de busca não passam por service worker, mas os arquivos de
+// verificação entram aqui do mesmo jeito para o que a gente vê no navegador
+// bater com o que o Bing e o Google recebem.
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('app.html'), {
-    denylist: [/^\/api\//, /^\/robots\.txt$/, /^\/sitemap\.xml$/],
+    denylist: [
+      /^\/api\//,
+      /^\/robots\.txt$/,
+      /^\/sitemap\.xml$/,
+      /^\/BingSiteAuth\.xml$/,
+      /^\/google[0-9a-f]+\.html$/,
+    ],
   }),
 );
 
