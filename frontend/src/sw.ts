@@ -21,11 +21,21 @@ clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// Toda rota que não seja /api cai no index.html (React Router cuida do resto).
-// robots.txt e sitemap.xml ficam de fora: são arquivos de verdade no build e
-// devolver o index.html no lugar deles quebraria quem os abrir pelo navegador.
+// "/" é a única rota com HTML pré-renderizado (a landing), e é esse arquivo
+// que ela recebe também offline.
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('index.html'), {
+    allowlist: [/^\/$/],
+  }),
+);
+
+// Todas as outras rotas caem no shell vazio, e não no index.html: o React
+// Router cuida do resto. Servir o index.html aqui pintaria a landing inteira
+// antes de o React trocar pelo conteúdo certo em cada deep link.
+// robots.txt e sitemap.xml ficam de fora: são arquivos de verdade no build e
+// devolver HTML no lugar deles quebraria quem os abrir pelo navegador.
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('app.html'), {
     denylist: [/^\/api\//, /^\/robots\.txt$/, /^\/sitemap\.xml$/],
   }),
 );

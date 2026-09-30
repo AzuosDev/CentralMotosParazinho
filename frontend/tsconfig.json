@@ -20,6 +20,7 @@
   "include": [
     "src/main.tsx",
     "src/App.tsx",
+    "src/entry-prerender.tsx",
     "src/pages/**/*.tsx",
     "src/components/AuthCard.tsx",
     "src/components/Field.tsx",
