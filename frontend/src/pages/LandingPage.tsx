@@ -485,7 +485,7 @@ function HeroAndMesa() {
           className="flex flex-col justify-center pb-6 pt-12 sm:pt-16 lg:min-h-[calc(100svh-4.5rem)] lg:py-16"
         >
           <h1 id="hero-title" className={cn(display, "text-[2.6rem] leading-[0.98] text-white sm:text-6xl lg:text-[4.1rem]")}>
-            Controle seus gastos
+            Controle seus gastos{" "}
             <span className="block text-[#bef264]">e sua vida financeira em um só lugar.</span>
           </h1>
           <p className="mt-6 max-w-[34rem] text-pretty text-xl font-semibold leading-snug text-white sm:text-2xl">
@@ -583,7 +583,7 @@ function MenosDigitacao() {
     <section aria-labelledby="menos-digitacao" className="bg-[#0a0a0a] py-24 sm:py-32">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10">
         <h2 id="menos-digitacao" className={cn(display, "max-w-3xl text-[2.2rem] leading-[1.02] text-white sm:text-5xl")}>
-          Menos digitação.
+          Menos digitação.{" "}
           <span className="block text-[#8fa68d]">Mais tempo pra decidir.</span>
         </h2>
 
@@ -671,7 +671,7 @@ function Seguranca() {
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-14 border-t border-[#1f2b24] px-4 pt-20 sm:px-6 sm:pt-24 lg:grid-cols-12 lg:gap-16 lg:px-10">
         <div className="lg:col-span-5">
           <h2 id="seguranca-title" className={cn(display, "text-[2.2rem] leading-[1.02] text-white sm:text-5xl")}>
-            Seus dados ficam com você.
+            Seus dados ficam com você.{" "}
             <span className="block text-[#bef264]">E só com você.</span>
           </h2>
 
@@ -810,7 +810,7 @@ function Precos() {
       <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <h2 id="precos-title" className={cn(display, "max-w-2xl text-[2.2rem] leading-[1.02] text-white sm:text-5xl")}>
-            Um plano pra você.
+            Um plano pra você.{" "}
             <span className="block text-[#bef264]">Quinze dias pra decidir.</span>
           </h2>
 
@@ -1008,7 +1008,7 @@ function Duvidas() {
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-14 px-4 sm:px-6 lg:grid-cols-12 lg:gap-10 lg:px-10">
         <div className="lg:col-span-5">
           <h2 id="duvidas-title" className={cn(display, "text-[2.2rem] leading-[1.02] text-white sm:text-5xl")}>
-            Ficou alguma dúvida?
+            Ficou alguma dúvida?{" "}
             <span className="block text-[#8fa68d]">A gente responde.</span>
           </h2>
 
@@ -1074,7 +1074,7 @@ function Fechamento() {
       />
       <div className="relative mx-auto flex w-full max-w-7xl flex-col items-start gap-10 px-4 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-10">
         <h2 id="fechamento-title" className={cn(display, "max-w-3xl text-[2.5rem] leading-[0.98] text-white sm:text-6xl lg:text-7xl")}>
-          Comece hoje.
+          Comece hoje.{" "}
           <span className="block text-[#bef264]">Em 15 dias você sabe se é pra você.</span>
         </h2>
         <div className="shrink-0">
