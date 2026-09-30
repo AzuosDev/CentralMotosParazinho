@@ -9,6 +9,7 @@
     "build:prerender": "vite build --ssr src/entry-prerender.tsx --outDir .prerender",
     "preview": "vite preview",
     "lint": "eslint .",
+    "seo:indexnow": "node scripts/indexnow.mjs",
     "test": "vitest run",
     "generate-icons": "pwa-assets-generator --preset minimal-2023 public/favicon.svg"
   },

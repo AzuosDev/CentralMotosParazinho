@@ -7,7 +7,7 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from "vite-plugin-pwa";
-import { SITE_URL, robotsTxt, sitemapXml } from "./site.config";
+import { SITE_URL, robotsTxt, sitemapXml, indexNowKeyFile } from "./site.config";
 
 // Saída do build SSR ("npm run build:prerender"), que exporta render().
 const PRERENDER_DIR = ".prerender";
@@ -51,9 +51,12 @@ async function renderLanding(): Promise<string | null> {
  * saem do mesmo site.config.ts — um domínio só, num lugar só.
  */
 function seoPlugin(isBuild: boolean): Plugin {
+  const keyFile = indexNowKeyFile();
+
   const files: Record<string, { body: string; type: string }> = {
     "/robots.txt": { body: robotsTxt(), type: "text/plain; charset=utf-8" },
     "/sitemap.xml": { body: sitemapXml(), type: "application/xml; charset=utf-8" },
+    [`/${keyFile.name}`]: { body: keyFile.body, type: "text/plain; charset=utf-8" },
   };
 
   // Guardado no transformIndexHtml e gravado como app.html no writeBundle.
@@ -92,6 +95,7 @@ function seoPlugin(isBuild: boolean): Plugin {
     generateBundle() {
       this.emitFile({ type: "asset", fileName: "robots.txt", source: files["/robots.txt"].body });
       this.emitFile({ type: "asset", fileName: "sitemap.xml", source: files["/sitemap.xml"].body });
+      this.emitFile({ type: "asset", fileName: keyFile.name, source: keyFile.body });
     },
     // Gravado aqui, e não via emitFile, para garantir que o arquivo já esteja
     // em disco quando o vite-plugin-pwa varrer o dist no closeBundle: o service

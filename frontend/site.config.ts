@@ -31,6 +31,30 @@ const PUBLIC_ROUTES: { path: string; lastmod: string; changefreq: string; priori
   { path: "/", lastmod: "2026-09-30", changefreq: "monthly", priority: "1.0" },
 ];
 
+/*
+ * IndexNow: protocolo que avisa Bing, Yandex, Seznam e Naver de que uma URL
+ * mudou, em vez de esperar o rastreamento espontâneo. A chave não é segredo —
+ * ela precisa estar publicada em <SITE_URL>/<chave>.txt para o buscador provar
+ * que quem notificou controla o domínio. O plugin meugasto-seo publica esse
+ * arquivo no build; "npm run seo:indexnow" dispara a notificação.
+ */
+export const INDEXNOW_KEY = "8b5af6eb1d48e4f016e7a792c925c49c";
+
+export function indexNowKeyFile(): { name: string; body: string } {
+  // O corpo do arquivo tem de ser exatamente a chave, sem quebra de linha.
+  return { name: `${INDEXNOW_KEY}.txt`, body: INDEXNOW_KEY };
+}
+
+/** URL de notificação para as rotas públicas do sitemap. */
+export function indexNowPingUrl(): string {
+  const params = new URLSearchParams({
+    url: siteUrl("/"),
+    key: INDEXNOW_KEY,
+    keyLocation: siteUrl(`/${INDEXNOW_KEY}.txt`),
+  });
+  return `https://api.indexnow.org/indexnow?${params}`;
+}
+
 export function robotsTxt(): string {
   return [
     "User-agent: *",

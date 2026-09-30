@@ -46,6 +46,7 @@ registerRoute(
       /^\/sitemap\.xml$/,
       /^\/BingSiteAuth\.xml$/,
       /^\/google[0-9a-f]+\.html$/,
+      /^\/[0-9a-f]{32}\.txt$/, // chave do IndexNow
     ],
   }),
 );
