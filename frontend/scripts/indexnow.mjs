@@ -9,7 +9,7 @@
  * Precisa de Node 22.18+ ou 24+, que lê .ts direto — é assim que a chave e o
  * domínio vêm de site.config.ts, sem cópia.
  */
-import { indexNowPingUrl, siteUrl, INDEXNOW_KEY } from "../site.config.ts";
+import { INDEXNOW_ENDPOINT, indexNowPayload, siteUrl, INDEXNOW_KEY } from "../site.config.ts";
 
 const keyUrl = siteUrl(`/${INDEXNOW_KEY}.txt`);
 
@@ -34,11 +34,23 @@ async function main() {
 
   console.log(`Chave conferida em ${keyUrl}`);
 
-  const ping = await fetch(indexNowPingUrl(), { cache: "no-store" });
+  /*
+   * POST com a lista inteira: o GET do IndexNow aceita uma URL por chamada, e
+   * as rotas públicas são a home mais as páginas temáticas (ver PUBLIC_ROUTES
+   * em site.config.ts).
+   */
+  const payload = indexNowPayload();
+  const ping = await fetch(INDEXNOW_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
 
   // 200 = aceito; 202 = aceito, com a chave a ser validada depois.
   if (ping.status === 200 || ping.status === 202) {
-    console.log(`IndexNow aceitou (HTTP ${ping.status}): ${siteUrl("/")}`);
+    console.log(`IndexNow aceitou (HTTP ${ping.status}) ${payload.urlList.length} URLs:`);
+    for (const url of payload.urlList) console.log(`  ${url}`);
     return 0;
   }
 

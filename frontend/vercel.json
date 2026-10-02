@@ -1,12 +1,13 @@
 {
   "rewrites": [
-    {
-      "source": "/",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/app.html"
-    }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/controle-financeiro-pessoal", "destination": "/controle-financeiro-pessoal.html" },
+    { "source": "/controle-de-gastos", "destination": "/controle-de-gastos.html" },
+    { "source": "/controle-de-cartao", "destination": "/controle-de-cartao.html" },
+    { "source": "/controle-de-contas", "destination": "/controle-de-contas.html" },
+    { "source": "/metas-financeiras", "destination": "/metas-financeiras.html" },
+    { "source": "/importar-extrato-ofx", "destination": "/importar-extrato-ofx.html" },
+    { "source": "/sobre-o-meugasto", "destination": "/sobre-o-meugasto.html" },
+    { "source": "/(.*)", "destination": "/app.html" }
   ]
 }

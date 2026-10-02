@@ -6,12 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0A0A0A" />
 
+    <!-- meugasto-seo:head -->
     <!--
-      SEO: esta SPA não tem SSR, então este é o único HTML que o robô recebe.
-      Title, description, canonical, Open Graph e JSON-LD ficam aqui, estáticos,
-      e descrevem "/" — que é onde a landing é renderizada (ver RootRoute em
-      src/App.tsx). __SITE_URL__ é trocado no build pelo plugin meugasto-seo
+      SEO: esta SPA não tem SSR, então o HTML que o robô recebe é o que o build
+      grava em disco. Title, description, canonical, Open Graph e JSON-LD deste
+      trecho descrevem "/" — que é onde a landing é renderizada (ver RootRoute
+      em src/App.tsx). __SITE_URL__ é trocado no build pelo plugin meugasto-seo
       (vite.config.ts), que lê o domínio de site.config.ts.
+
+      Este comentário está DENTRO dos marcadores meugasto-seo:head de propósito:
+      cada página pública temática troca o trecho marcado pelo <head> da sua
+      própria rota (ver renderPublicPage em src/entry-prerender.tsx), e o que
+      vale só para "/" não deve sobrar no HTML das outras. Não remova nem
+      renomeie os marcadores — o build quebra de propósito se eles não
+      estiverem aqui.
     -->
     <title>MeuGasto | Controle Financeiro Pessoal e de Gastos</title>
     <meta name="description" content="Controle seus gastos, contas, cartões, parcelas e metas em um só lugar. Conheça o MeuGasto, seu aplicativo de controle financeiro pessoal sem conexão com o banco." />
@@ -35,6 +43,7 @@
     <meta name="twitter:title" content="MeuGasto | Controle Financeiro Pessoal e de Gastos" />
     <meta name="twitter:description" content="Controle seus gastos, contas, cartões, parcelas e metas em um só lugar. Conheça o MeuGasto, seu aplicativo de controle financeiro pessoal sem conexão com o banco." />
     <meta name="twitter:image" content="__SITE_URL__/pwa-512x512.png" />
+    <!-- /meugasto-seo:head -->
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
@@ -74,12 +83,15 @@
           document.documentElement.classList.add("dark");
         }
 
-        // Fonte dos títulos da landing: só nessas rotas, para não pesar no app.
-        // Em "/" quem já tem sessão vai direto pro /dashboard, então o preload
-        // só vale para visitante deslogado. Navegações internas até a landing
-        // carregam o CSS pelo próprio LandingPage.
+        // Fonte dos títulos da landing e das páginas públicas temáticas: só
+        // nessas rotas, para não pesar no app. Em "/" quem já tem sessão vai
+        // direto pro /dashboard, então ali o preload só vale para visitante
+        // deslogado. Navegações internas carregam o CSS pelo useLandingChrome.
+        // __PUBLIC_PATHS__ é trocado no build pelo plugin meugasto-seo, a
+        // partir de src/content/public-pages.ts.
         const isLanding =
           location.pathname === "/landing" ||
+          __PUBLIC_PATHS__.indexOf(location.pathname) !== -1 ||
           (location.pathname === "/" &&
             !localStorage.getItem("contacerta.refreshToken"));
         if (isLanding) {
@@ -102,11 +114,16 @@
   <body>
     <div id="root"></div>
 
+    <!-- meugasto-seo:jsonld -->
     <!--
-      Structured data. Só descreve o que a landing realmente mostra: o produto,
-      os preços do plano Básico e as perguntas da seção "Dúvidas". Se as FAQs de
-      src/pages/LandingPage.tsx mudarem, atualize o FAQPage aqui — o markup
-      precisa bater com o texto visível na página.
+      Structured data de "/". Só descreve o que a landing realmente mostra: o
+      produto, os preços do plano Básico e as perguntas da seção "Dúvidas". Se
+      as perguntas de src/pages/LandingPage.tsx mudarem, atualize este bloco — o
+      markup precisa bater com o texto visível na página.
+
+      As páginas temáticas não mostram preço nem lista de perguntas, então elas
+      não levam este bloco: o plugin meugasto-seo troca o trecho marcado pelo
+      JSON-LD da rota (WebPage + BreadcrumbList), montado em pageJsonLd().
     -->
     <script type="application/ld+json">
       {
@@ -243,6 +260,7 @@
         ]
       }
     </script>
+    <!-- /meugasto-seo:jsonld -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

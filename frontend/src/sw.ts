@@ -11,6 +11,8 @@ import { CacheFirst, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
+import { PUBLIC_PAGES, pageFileName } from './content/public-pages';
+
 declare const self: ServiceWorkerGlobalScope;
 
 // Assume o controle imediatamente sem esperar o reload do usuário
@@ -28,6 +30,19 @@ registerRoute(
     allowlist: [/^\/$/],
   }),
 );
+
+// Cada página pública temática tem o seu próprio HTML pré-renderizado, com o
+// conteúdo e o <head> dela (ver o plugin meugasto-seo em vite.config.ts). Elas
+// são registradas antes do shell porque a primeira rota que casa é a que vale:
+// cair no app.html aqui mostraria uma tela vazia até o React montar, e offline
+// não mostraria nada.
+for (const page of PUBLIC_PAGES) {
+  registerRoute(
+    new NavigationRoute(createHandlerBoundToURL(pageFileName(page)), {
+      allowlist: [new RegExp(`^${page.path}/?$`)],
+    }),
+  );
+}
 
 // Todas as outras rotas caem no shell vazio, e não no index.html: o React
 // Router cuida do resto. Servir o index.html aqui pintaria a landing inteira

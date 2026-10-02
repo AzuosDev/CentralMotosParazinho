@@ -9,6 +9,7 @@ import { AuthProvider, useAuth, computeHasAccess, extractSubscription } from "./
 import { getAccessToken, hasRefreshToken, refreshAccessToken } from "./lib/auth";
 import { api } from "./lib/api";
 import { ADMIN_EMAIL } from "./lib/brand";
+import { PUBLIC_PAGES } from "./content/public-pages";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react"
 import type { User } from "./types/api";
@@ -33,6 +34,8 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage").then((m) => ({ de
 const FaqPage = lazy(() => import("./pages/FaqPage").then((m) => ({ default: m.FaqPage })));
 const SupportAdminPage = lazy(() => import("./pages/SupportAdminPage").then((m) => ({ default: m.SupportAdminPage })));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage").then((m) => ({ default: m.CheckoutPage })));
+// As sete páginas públicas temáticas em um chunk só — ver src/pages/publicas/index.tsx.
+const PublicRoute = lazy(() => import("./pages/publicas").then((m) => ({ default: m.PublicRoute })));
 
 function PageLoader() {
   return (
@@ -167,6 +170,18 @@ export default function App() {
             <Routes>
               <Route path="/" element={<RootRoute />} />
               <Route path="/landing" element={<LandingPage />} />
+
+              {/*
+                Páginas públicas temáticas: ficam fora do PrivateRoute e do
+                SubscriptionGate de propósito — são conteúdo aberto, que o
+                visitante deslogado e o robô de busca precisam alcançar. Cada
+                uma tem HTML pré-renderizado próprio no build, com title,
+                canonical e JSON-LD seus (ver src/entry-prerender.tsx); aqui é
+                a versão que o React monta depois.
+              */}
+              {PUBLIC_PAGES.map((page) => (
+                <Route key={page.id} path={page.path} element={<PublicRoute />} />
+              ))}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />

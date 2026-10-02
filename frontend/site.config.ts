@@ -7,6 +7,8 @@
  * refaça o build — nada mais precisa mudar.
  */
 
+import { PUBLIC_PAGES } from "./src/content/public-pages";
+
 /** Sem barra no final; use `siteUrl("/caminho")` para montar URLs. */
 export const SITE_URL = "https://meugasto.vercel.app";
 
@@ -16,20 +18,36 @@ export function siteUrl(path = "/"): string {
 
 /*
  * Rotas públicas que entram no sitemap. Só entra aqui página que um visitante
- * deslogado consegue ver e que queremos indexada — nada de /dashboard, /faq,
- * /checkout ou qualquer rota atrás do PrivateRoute.
+ * deslogado consegue ver e que queremos indexada — nada de /login, /register,
+ * /checkout, /dashboard, /faq ou qualquer rota atrás do PrivateRoute. Todas
+ * essas recebem o app.html, que é noindex (ver toShell em vite.config.ts).
  *
  * "/" é a própria landing (RootRoute renderiza LandingPage para quem não está
- * logado); "/landing" continua existindo como rota, mas aponta canonical para
- * "/" e por isso fica de fora daqui.
+ * logado); "/landing" continua existindo como rota, mas é a mesma página, sem
+ * canonical próprio, e por isso fica de fora daqui.
  *
- * `lastmod` é a data da última mudança de conteúdo da landing — atualize à mão
- * quando o texto mudar, em vez de usar a data do build (todo deploy viraria
- * "conteúdo novo" e o sinal perde o valor).
+ * As páginas temáticas vêm de src/content/public-pages.ts, que é a lista que o
+ * React Router, o prerender e o service worker também usam — assim não existe
+ * página pública fora do sitemap nem URL no sitemap sem página.
+ *
+ * `lastmod` é a data da última mudança de conteúdo — atualize à mão quando o
+ * texto mudar, em vez de usar a data do build (todo deploy viraria "conteúdo
+ * novo" e o sinal perde o valor).
  */
 const PUBLIC_ROUTES: { path: string; lastmod: string; changefreq: string; priority: string }[] = [
-  { path: "/", lastmod: "2026-09-30", changefreq: "monthly", priority: "1.0" },
+  { path: "/", lastmod: "2026-10-02", changefreq: "monthly", priority: "1.0" },
+  ...PUBLIC_PAGES.map((page) => ({
+    path: page.path,
+    lastmod: page.lastmod,
+    changefreq: "monthly",
+    priority: "0.8",
+  })),
 ];
+
+/** As URLs públicas do sitemap, absolutas. */
+export function publicUrls(): string[] {
+  return PUBLIC_ROUTES.map(({ path }) => siteUrl(path));
+}
 
 /*
  * IndexNow: protocolo que avisa Bing, Yandex, Seznam e Naver de que uma URL
@@ -45,14 +63,34 @@ export function indexNowKeyFile(): { name: string; body: string } {
   return { name: `${INDEXNOW_KEY}.txt`, body: INDEXNOW_KEY };
 }
 
-/** URL de notificação para as rotas públicas do sitemap. */
-export function indexNowPingUrl(): string {
+export const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
+
+/** URL de notificação de uma única página (o GET simples do IndexNow). */
+export function indexNowPingUrl(path = "/"): string {
   const params = new URLSearchParams({
-    url: siteUrl("/"),
+    url: siteUrl(path),
     key: INDEXNOW_KEY,
     keyLocation: siteUrl(`/${INDEXNOW_KEY}.txt`),
   });
-  return `https://api.indexnow.org/indexnow?${params}`;
+  return `${INDEXNOW_ENDPOINT}?${params}`;
+}
+
+/**
+ * Corpo do POST que notifica todas as rotas públicas de uma vez — o GET aceita
+ * só uma URL, e são oito desde que as páginas temáticas existem.
+ */
+export function indexNowPayload(): {
+  host: string;
+  key: string;
+  keyLocation: string;
+  urlList: string[];
+} {
+  return {
+    host: new URL(SITE_URL).host,
+    key: INDEXNOW_KEY,
+    keyLocation: siteUrl(`/${INDEXNOW_KEY}.txt`),
+    urlList: publicUrls(),
+  };
 }
 
 export function robotsTxt(): string {
