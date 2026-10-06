@@ -1,9 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="#111827"/>
-  <g transform="translate(8 8) scale(2)" fill="none" stroke="#A3E635" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"/>
-    <path d="M15 6h1v4"/>
-    <path d="m6.134 14.768.866-.5 2 3.464"/>
-    <circle cx="16" cy="8" r="6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Central Motos">
+  <!--
+    Redução do emblema da Central Motos para tamanhos pequenos: o disco vermelho
+    e o monograma, sem o lettering curvo nem as motos, que viram borrão abaixo de
+    64px. O emblema completo (public/brand/central-motos-logo.png) é usado onde
+    há espaço para ele: login, cadastro e as demais telas de autenticação.
+  -->
+  <rect width="512" height="512" rx="112" fill="#050505" />
+  <circle cx="256" cy="256" r="186" fill="#E10600" />
+  <g fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M233 217A58 58 0 1 0 233 295" />
+    <path d="M285 315V200l50 58 50-58v115" />
   </g>
 </svg>

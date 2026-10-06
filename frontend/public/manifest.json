@@ -1,15 +1,19 @@
 {
-  "name": "MeuGasto",
-  "short_name": "MeuGasto",
-  "description": "MeuGasto ajuda você a controlar gastos, orçamentos e metas financeiras.",
+  "name": "Central Motos",
+  "short_name": "Central Motos",
+  "description": "Sistema financeiro da Central Motos: gastos, contas, cartões, parcelas e metas em um só lugar.",
   "lang": "pt-BR",
-  "theme_color": "#0a0a0a",
-  "background_color": "#111827",
+  "theme_color": "#050505",
+  "background_color": "#050505",
   "display": "standalone",
   "start_url": "/",
   "scope": "/",
   "orientation": "portrait-primary",
-  "categories": ["finance", "utilities"],
+  "categories": [
+    "finance",
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "pwa-64x64.png",
