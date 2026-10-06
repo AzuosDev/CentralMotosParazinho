@@ -1,8 +1,7 @@
-import { Coins } from "lucide-react";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 
 import { AuthShowcase } from "./AuthShowcase";
+import { BrandBadge } from "./BrandMark";
 
 export function AuthCard({
   title,
@@ -18,17 +17,17 @@ export function AuthCard({
   return (
     <div className="min-h-dvh bg-bg-card lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
       <div className="flex min-h-dvh flex-col px-5 py-6 sm:px-10 lg:px-14">
-        <Link
-          to="/landing"
-          className="flex w-fit items-center gap-2 rounded-icon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand"
-        >
-          <span className="grid h-9 w-9 place-items-center rounded-icon bg-accent-brand/10">
-            <Coins className="h-[18px] w-[18px] text-accent-brand" />
+        <span className="flex w-fit items-center gap-3">
+          <BrandBadge className="h-11 w-11" />
+          <span className="flex flex-col leading-none">
+            <span className="text-sm font-extrabold uppercase tracking-[0.2em] text-text-primary">
+              Central
+            </span>
+            <span className="text-sm font-extrabold uppercase tracking-[0.2em] text-accent-brand">
+              Motos
+            </span>
           </span>
-          <span className="font-body text-lg font-bold tracking-tight text-text-primary">
-            MeuGasto
-          </span>
-        </Link>
+        </span>
 
         <main className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-[400px] py-10">
