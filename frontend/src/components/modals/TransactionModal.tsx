@@ -93,31 +93,31 @@ const tabConfig = {
   INCOME: {
     label: "Ganho",
     icon: TrendingUp,
-    activeCls: "bg-green-600 text-white",
-    iconCls: "text-accent-lime",
+    activeCls: "bg-semantic-income/15 text-semantic-income ring-1 ring-inset ring-semantic-income/40",
+    iconCls: "text-semantic-income",
     submitLabel: "Salvar Ganho",
-    submitCls: "bg-accent-lime text-black",
+    submitCls: "bg-accent-brand text-white",
   },
   EXPENSE: {
     label: "Gasto",
     icon: TrendingDown,
-    activeCls: "bg-red-600 text-white",
+    activeCls: "bg-accent-red/15 text-accent-red ring-1 ring-inset ring-accent-red/40",
     iconCls: "text-accent-red",
     submitLabel: "Salvar Gasto",
-    submitCls: "bg-accent-lime text-black",
+    submitCls: "bg-accent-brand text-white",
   },
   TRANSFER: {
     label: "Transferência",
     icon: ArrowLeftRight,
-    activeCls: "bg-blue-600 text-white",
+    activeCls: "bg-bg-overlay text-text-primary ring-1 ring-inset ring-border-strong",
     iconCls: "text-status-info",
     submitLabel: "Transferir",
-    submitCls: "bg-blue-600 text-white",
+    submitCls: "bg-accent-brand text-white",
   },
 } as const;
 
 const selectCls =
-  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime";
+  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand";
 
 export function TransactionModal({
   open,
@@ -373,7 +373,7 @@ export function TransactionModal({
             form="transaction-modal-form"
             disabled={submitDisabled}
             className={cn(
-              "flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70",
+              "flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-70",
               cfg.submitCls,
             )}
           >
@@ -416,7 +416,7 @@ export function TransactionModal({
           <Link
             to="/carteiras"
             onClick={onClose}
-            className="mt-3 inline-block font-bold text-accent-lime underline underline-offset-2 hover:brightness-110"
+            className="mt-3 inline-block font-bold text-accent-brand underline underline-offset-2 hover:text-text-primary"
           >
             Criar carteira agora →
           </Link>
@@ -428,7 +428,7 @@ export function TransactionModal({
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
         >
           {isEditingCardTx && (
-            <div className="rounded-xl bg-blue-500/10 p-3 text-xs text-status-info-soft">
+            <div className="rounded-xl bg-status-info/10 p-3 text-xs text-status-info-soft">
               Transações de cartão de crédito só permitem editar descrição e categoria. Para corrigir valor ou
               data, estorne e lance novamente na tela do cartão.
             </div>
@@ -479,7 +479,7 @@ export function TransactionModal({
                       type="number"
                       min={1}
                       max={48}
-                      className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
+                      className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
                       {...form.register("parcelas")}
                     />
                     <span className="mt-1 block text-xs text-text-secondary">
@@ -574,7 +574,7 @@ export function TransactionModal({
                   form.handleSubmit((values) => mutation.mutate({ ...values, confirmarMesmoAssim: true }))();
                 }}
                 disabled={mutation.isPending}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-red-hover disabled:opacity-70"
               >
                 {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Confirmar mesmo assim

@@ -19,10 +19,10 @@ import { useToast } from "../components/ui/Toast";
 import type { Cartao, Fatura, FaturaStatus, Parcelamento, Transaction, Wallet } from "../types/api";
 
 const statusConfig: Record<FaturaStatus, { label: string; cls: string }> = {
-  aberta: { label: "Aberta", cls: "bg-blue-500/15 text-status-info" },
+  aberta: { label: "Aberta", cls: "bg-status-info/15 text-status-info" },
   fechada: { label: "Fechada", cls: "bg-accent-yellow/15 text-accent-yellow" },
-  parcial: { label: "Parcial", cls: "bg-accent-orange/15 text-accent-orange" },
-  paga: { label: "Paga", cls: "bg-accent-lime/15 text-accent-lime" },
+  parcial: { label: "Parcial", cls: "bg-accent-yellow/15 text-accent-yellow" },
+  paga: { label: "Paga", cls: "bg-accent-brand/15 text-accent-brand" },
 };
 
 function mesReferenciaLabel(mesReferencia: string) {
@@ -105,7 +105,7 @@ function PagarFaturaModal({
       open={open}
       onClose={onClose}
       title="Pagar Fatura"
-      icon={<WalletIcon className="h-6 w-6 text-accent-lime" />}
+      icon={<WalletIcon className="h-6 w-6 text-accent-brand" />}
       footer={
         <div className="flex gap-3">
           <button
@@ -120,7 +120,7 @@ function PagarFaturaModal({
             type="button"
             onClick={() => payMutation.mutate()}
             disabled={payMutation.isPending || (effectiveAffectsBalance && !carteiraPagadoraId) || valorEfetivo <= 0}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-70"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-70"
           >
             {payMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Confirmar Pagamento
@@ -131,14 +131,14 @@ function PagarFaturaModal({
       <div className="space-y-5">
         <div>
           <p className="text-sm text-text-secondary">Total devido</p>
-          <p className="mt-1 font-sans text-3xl font-extrabold text-accent-lime">{formatCurrency(restante)}</p>
+          <p className="mt-1 font-sans text-3xl font-extrabold text-accent-brand">{formatCurrency(restante)}</p>
         </div>
 
         {faturaMesPassado && (
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 transition hover:border-yellow-500/60">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-accent-yellow/40 bg-accent-yellow/10 p-3 transition hover:border-accent-yellow/60">
             <input
               type="checkbox"
-              className="mt-0.5 h-4 w-4 shrink-0 accent-accent-lime"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-accent-brand"
               checked={!formAffectsBalance}
               onChange={(e) => setFormAffectsBalance(!e.target.checked)}
             />
@@ -168,7 +168,7 @@ function PagarFaturaModal({
                     className={cn(
                       "rounded-xl border px-4 py-2 text-sm font-medium transition",
                       carteiraPagadoraId === w._id
-                        ? "border-accent-lime bg-accent-lime/10 text-text-primary"
+                        ? "border-accent-brand bg-accent-brand/10 text-text-primary"
                         : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-text-primary",
                     )}
                   >
@@ -188,7 +188,7 @@ function PagarFaturaModal({
               onClick={() => setModoParcial(false)}
               className={cn(
                 "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                !modoParcial ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+                !modoParcial ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               Valor integral
@@ -198,18 +198,18 @@ function PagarFaturaModal({
               onClick={() => setModoParcial(true)}
               className={cn(
                 "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                modoParcial ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+                modoParcial ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               Valor parcial
             </button>
           </div>
           {modoParcial && (
-            <div className="flex items-center rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 focus-within:border-accent-lime">
+            <div className="flex items-center rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 focus-within:border-accent-brand">
               <CurrencyInput
                 value={valor}
                 onChange={setValor}
-                className="w-full bg-transparent text-center font-sans text-2xl font-bold text-accent-lime outline-none"
+                className="w-full bg-transparent text-center font-sans text-2xl font-bold text-accent-brand outline-none"
               />
             </div>
           )}
@@ -425,7 +425,7 @@ export function CartaoPage() {
     return (
       <div className="rounded-2xl bg-bg-card p-8 text-center text-text-secondary">
         Cartão não encontrado.{" "}
-        <Link to="/cartoes" className="text-accent-lime underline">Voltar</Link>
+        <Link to="/cartoes" className="text-accent-brand underline">Voltar</Link>
       </div>
     );
   }
@@ -465,7 +465,7 @@ export function CartaoPage() {
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
-                  usadoPct >= 100 ? "bg-accent-red" : usadoPct >= 80 ? "bg-accent-yellow" : "bg-accent-lime",
+                  usadoPct >= 100 ? "bg-accent-red" : usadoPct >= 80 ? "bg-accent-yellow" : "bg-accent-brand",
                 )}
                 style={{ width: `${usadoPct}%` }}
               />
@@ -492,7 +492,7 @@ export function CartaoPage() {
               onClick={() => setTab(t)}
               className={cn(
                 "rounded-lg px-4 py-2 text-sm font-semibold transition",
-                tab === t ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+                tab === t ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               {t === "faturas" ? "Faturas" : "Compras parceladas"}
@@ -503,7 +503,7 @@ export function CartaoPage() {
           <button
             type="button"
             onClick={() => setNovaMenuOpen((v) => !v)}
-            className="rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110"
+            className="rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
           >
             + Nova Compra
           </button>
@@ -568,7 +568,7 @@ export function CartaoPage() {
                       onClick={() => setSelectedFaturaId(f._id)}
                       className={cn(
                         "flex shrink-0 flex-col items-start gap-1 rounded-xl border px-4 py-2 text-left transition",
-                        active ? "border-accent-lime bg-accent-lime/10" : "border-bg-muted bg-bg-card hover:border-bg-overlay",
+                        active ? "border-accent-brand bg-accent-brand/10" : "border-bg-muted bg-bg-card hover:border-bg-overlay",
                       )}
                     >
                       <span className="text-sm font-semibold capitalize text-text-primary">{mesReferenciaLabel(f.mesReferencia)}</span>
@@ -598,13 +598,13 @@ export function CartaoPage() {
                       </p>
                       <p className={cn(
                         "font-sans text-2xl font-extrabold",
-                        fatura.valorTotal + fatura.saldoRotativoAnterior < 0 ? "text-accent-lime" : "text-text-primary",
+                        fatura.valorTotal + fatura.saldoRotativoAnterior < 0 ? "text-accent-brand" : "text-text-primary",
                       )}>
                         {formatCurrency(Math.abs(Number((fatura.valorTotal + fatura.saldoRotativoAnterior).toFixed(2))))}
                       </p>
                       {fatura.valorPago > 0 && (
                         <div className="flex items-center justify-end gap-2">
-                          <p className="text-xs text-accent-lime">{formatCurrency(fatura.valorPago)} já pago</p>
+                          <p className="text-xs text-accent-brand">{formatCurrency(fatura.valorPago)} já pago</p>
                           <button
                             type="button"
                             onClick={() => setDesfazerPagamentoTarget(fatura)}
@@ -623,7 +623,7 @@ export function CartaoPage() {
                         <span className="text-text-secondary">
                           {fatura.saldoRotativoAnterior > 0 ? "Saldo rotativo do mês anterior" : "Crédito do mês anterior"}
                         </span>
-                        <span className={cn("font-semibold", fatura.saldoRotativoAnterior > 0 ? "text-text-primary" : "text-accent-lime")}>
+                        <span className={cn("font-semibold", fatura.saldoRotativoAnterior > 0 ? "text-text-primary" : "text-accent-brand")}>
                           {fatura.saldoRotativoAnterior > 0 ? "" : "− "}{formatCurrency(Math.abs(fatura.saldoRotativoAnterior))}
                         </span>
                       </div>
@@ -645,7 +645,7 @@ export function CartaoPage() {
                     <button
                       type="button"
                       onClick={() => setPayOpen(true)}
-                      className="mt-4 w-full rounded-xl bg-accent-lime py-3 text-sm font-bold text-black transition hover:brightness-110 sm:w-auto sm:px-6"
+                      className="mt-4 w-full rounded-xl bg-accent-brand py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover sm:w-auto sm:px-6"
                     >
                       Pagar Fatura
                     </button>
@@ -665,12 +665,12 @@ export function CartaoPage() {
                                   {tx.description || "Compra"}
                                 </p>
                                 {tx.numeroParcela && tx.totalParcelas && (
-                                  <span className="shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-semibold text-status-info">
+                                  <span className="shrink-0 rounded-full bg-status-info/15 px-2 py-0.5 text-[11px] font-semibold text-status-info">
                                     {tx.numeroParcela}/{tx.totalParcelas}
                                   </span>
                                 )}
                                 {tx.isEstorno && (
-                                  <span className="shrink-0 rounded-full bg-accent-lime/15 px-2 py-0.5 text-[11px] font-semibold text-accent-lime">
+                                  <span className="shrink-0 rounded-full bg-accent-brand/15 px-2 py-0.5 text-[11px] font-semibold text-accent-brand">
                                     Estorno
                                   </span>
                                 )}
@@ -683,7 +683,7 @@ export function CartaoPage() {
                               <p className="text-xs text-text-secondary">{formatDisplayDate(tx.date)}</p>
                             </div>
                             <div className="flex shrink-0 items-center gap-3">
-                              <span className={cn("font-bold tabular-nums", tx.isEstorno ? "text-accent-lime" : "text-text-primary")}>
+                              <span className={cn("font-bold tabular-nums", tx.isEstorno ? "text-accent-brand" : "text-text-primary")}>
                                 {tx.isEstorno ? "+" : ""}{formatCurrency(tx.value)}
                               </span>
                               {!tx.isEstorno && !isJuros && !estornadasIds.has(tx._id) && (
@@ -732,7 +732,7 @@ export function CartaoPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-semibold text-status-info">
+                    <span className="rounded-full bg-status-info/15 px-2.5 py-1 text-[11px] font-semibold text-status-info">
                       {p.parcelasPagas}/{p.totalParcelas} pagas
                     </span>
                     <button
@@ -758,7 +758,7 @@ export function CartaoPage() {
                 </div>
                 <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-bg-muted">
                   <div
-                    className="h-full rounded-full bg-accent-lime transition-all"
+                    className="h-full rounded-full bg-accent-brand transition-all"
                     style={{ width: `${p.totalParcelas > 0 ? (p.parcelasPagas / p.totalParcelas) * 100 : 0}%` }}
                   />
                 </div>
@@ -800,7 +800,7 @@ export function CartaoPage() {
                 type="button"
                 onClick={() => estornoMutation.mutate(estornoTarget._id)}
                 disabled={estornoMutation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-red-hover disabled:opacity-50"
               >
                 {estornoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Confirmar Estorno
@@ -837,7 +837,7 @@ export function CartaoPage() {
                 type="button"
                 onClick={() => desfazerPagamentoMutation.mutate(desfazerPagamentoTarget._id)}
                 disabled={desfazerPagamentoMutation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-red-hover disabled:opacity-50"
               >
                 {desfazerPagamentoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Confirmar
@@ -852,7 +852,7 @@ export function CartaoPage() {
           <div className="w-full max-w-sm space-y-4 rounded-2xl border border-bg-muted bg-bg-card p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-bg-muted p-2.5">
-                <Pencil className="h-5 w-5 text-accent-lime" />
+                <Pencil className="h-5 w-5 text-accent-brand" />
               </div>
               <h2 className="text-base font-bold text-text-primary">Renomear compra parcelada</h2>
             </div>
@@ -862,7 +862,7 @@ export function CartaoPage() {
                 value={editDescricao}
                 onChange={(e) => setEditDescricao(e.target.value)}
                 maxLength={200}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
               />
             </label>
             <div className="flex gap-3">
@@ -878,7 +878,7 @@ export function CartaoPage() {
                 type="button"
                 onClick={() => editParcelamentoMutation.mutate({ parcelamentoId: editParcelamentoTarget._id, descricao: editDescricao.trim() })}
                 disabled={editParcelamentoMutation.isPending || !editDescricao.trim()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-50"
               >
                 {editParcelamentoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Salvar
@@ -923,7 +923,7 @@ export function CartaoPage() {
                 type="button"
                 onClick={() => deleteParcelamentoMutation.mutate(deleteParcelamentoTarget._id)}
                 disabled={deleteParcelamentoMutation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-red-hover disabled:opacity-50"
               >
                 {deleteParcelamentoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Confirmar Exclusão

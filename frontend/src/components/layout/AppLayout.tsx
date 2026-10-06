@@ -133,7 +133,7 @@ function Avatar({ email, name, avatarUrl }: { email: string; name?: string; avat
   }
 
   return (
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-bg-muted text-sm font-bold text-accent-lime">
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-bg-muted text-sm font-bold text-accent-brand">
       {letter}
     </span>
   );
@@ -206,7 +206,7 @@ function SidebarContent({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="shrink-0 text-accent-lime transition hover:opacity-75"
+              className="shrink-0 text-accent-brand transition hover:opacity-75"
               aria-label={collapsed ? "Expandir menu lateral" : "Comprimir menu lateral"}
               title={collapsed ? "Expandir menu" : "Comprimir menu"}
             >
@@ -232,7 +232,7 @@ function SidebarContent({
             )}
             title={collapsed ? "MeuGasto" : undefined}
           >
-            <Coins className="h-7 w-7 shrink-0 text-accent-lime" />
+            <Coins className="h-7 w-7 shrink-0 text-accent-brand" />
             {!collapsed && <span className="truncate">MeuGasto</span>}
           </Link>
         )}
@@ -276,7 +276,7 @@ function SidebarContent({
                   : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
               )}
             >
-              <Icon className={cn("h-5 w-5", active && "text-accent-lime")} />
+              <Icon className={cn("h-5 w-5", active && "text-accent-brand")} />
               {!collapsed && <span>{label}</span>}
               {collapsed && (
                 <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
@@ -302,7 +302,7 @@ function SidebarContent({
                 : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
             )}
           >
-            <LifeBuoy className={cn("h-5 w-5", currentPath === "/admin/suporte" && "text-accent-lime")} />
+            <LifeBuoy className={cn("h-5 w-5", currentPath === "/admin/suporte" && "text-accent-brand")} />
             {!collapsed && <span>Painel Admin</span>}
             {collapsed && (
               <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
@@ -323,7 +323,7 @@ function SidebarContent({
               : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
           )}
         >
-          <HelpCircle className={cn("h-5 w-5", currentPath === "/faq" && "text-accent-lime")} />
+          <HelpCircle className={cn("h-5 w-5", currentPath === "/faq" && "text-accent-brand")} />
           {!collapsed && <span>FAQ</span>}
           {collapsed && (
             <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
@@ -350,7 +350,7 @@ function SidebarContent({
             <button
               type="button"
               onClick={collapsed ? () => setUserMenuOpen((v) => !v) : onOpenProfile}
-              className="shrink-0 rounded-full transition hover:ring-2 hover:ring-accent-lime/50 focus:outline-none"
+              className="shrink-0 rounded-full transition hover:ring-2 hover:ring-accent-brand/50 focus:outline-none"
               title={collapsed ? (name || email) : "Abrir perfil"}
               aria-label={collapsed ? "Menu do usuário" : "Abrir perfil do usuário"}
             >
@@ -581,7 +581,7 @@ export function AppLayout() {
           <MobileNotificationBell />
           <button
             onClick={() => setUserProfileOpen(true)}
-            className="rounded-full transition hover:ring-2 hover:ring-accent-lime/50 focus:outline-none"
+            className="rounded-full transition hover:ring-2 hover:ring-accent-brand/50 focus:outline-none"
             aria-label="Abrir perfil do usuário"
           >
             <Avatar email={email} name={name} avatarUrl={avatarUrl} />
@@ -609,7 +609,7 @@ export function AppLayout() {
               to={to}
               className={cn(
                 "flex flex-col items-center gap-1 text-xs",
-                active ? "text-accent-lime" : "text-text-muted",
+                active ? "text-accent-brand" : "text-text-muted",
               )}
             >
               <Icon className="h-5 w-5" />
@@ -620,7 +620,7 @@ export function AppLayout() {
 
         <button
           onClick={() => setAddModalOpen(true)}
-          className="-mt-6 mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent-lime text-black shadow-lg shadow-lime-500/20"
+          className="-mt-6 mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent-brand text-white shadow-lg shadow-accent-brand/40"
           aria-label="Adicionar transação"
         >
           <Plus className="h-6 w-6" />
@@ -634,7 +634,7 @@ export function AppLayout() {
               to={to}
               className={cn(
                 "flex flex-col items-center gap-1 text-xs",
-                active ? "text-accent-lime" : "text-text-muted",
+                active ? "text-accent-brand" : "text-text-muted",
               )}
             >
               <Icon className="h-5 w-5" />
@@ -661,7 +661,7 @@ export function AppLayout() {
                 onClick={() => openTx("EXPENSE")}
                 className="flex items-center gap-3 rounded-xl bg-bg-muted p-4 text-left hover:bg-bg-overlay"
               >
-                <ArrowLeftRight className="h-5 w-5 text-accent-lime" />
+                <ArrowLeftRight className="h-5 w-5 text-accent-brand" />
                 <span className="font-semibold">Nova Movimentação</span>
               </button>
               <button
@@ -675,7 +675,7 @@ export function AppLayout() {
                 onClick={() => { setAddModalOpen(false); navigate("/goals?action=create"); }}
                 className="flex items-center gap-3 rounded-xl bg-bg-muted p-4 text-left hover:bg-bg-overlay"
               >
-                <Target className="h-5 w-5 text-accent-lime" />
+                <Target className="h-5 w-5 text-accent-brand" />
                 <span className="font-semibold">Nova Meta</span>
               </button>
               <button

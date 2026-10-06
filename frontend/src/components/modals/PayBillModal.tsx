@@ -29,7 +29,7 @@ export function PayBillModal({ open, onClose, title, value, defaultCarteiraId, i
       open={open}
       onClose={onClose}
       title={isReceber ? "Confirmar Recebimento" : "Confirmar Pagamento"}
-      icon={<Wallet className="h-6 w-6 text-accent-lime" />}
+      icon={<Wallet className="h-6 w-6 text-accent-brand" />}
       footer={
         <div className="flex gap-3">
           <button
@@ -44,7 +44,7 @@ export function PayBillModal({ open, onClose, title, value, defaultCarteiraId, i
             type="button"
             onClick={() => onConfirm(selectedId || undefined)}
             disabled={isPending || !selectedId}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {isReceber ? "Confirmar Recebimento" : "Confirmar Pagamento"}
@@ -55,7 +55,7 @@ export function PayBillModal({ open, onClose, title, value, defaultCarteiraId, i
       <div className="space-y-5">
         <div>
           <p className="truncate text-sm text-text-secondary">{title}</p>
-          <p className="mt-1 font-sans text-3xl font-extrabold text-accent-lime">{formatCurrency(value)}</p>
+          <p className="mt-1 font-sans text-3xl font-extrabold text-accent-brand">{formatCurrency(value)}</p>
         </div>
 
         <div>
@@ -79,7 +79,7 @@ export function PayBillModal({ open, onClose, title, value, defaultCarteiraId, i
                   onClick={() => setSelectedId(w._id)}
                   className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
                     selectedId === w._id
-                      ? "border-accent-lime bg-accent-lime/10 text-text-primary"
+                      ? "border-accent-brand bg-accent-brand/10 text-text-primary"
                       : "border-bg-muted text-text-secondary hover:border-bg-overlay hover:text-text-primary"
                   }`}
                 >

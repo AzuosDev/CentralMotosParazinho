@@ -107,7 +107,7 @@ export function WalletsPage() {
           </button>
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition hover:brightness-110"
+            className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
           >
             <Plus className="h-4 w-4" />
             Nova Carteira
@@ -119,7 +119,7 @@ export function WalletsPage() {
       <div className="rounded-2xl bg-bg-card p-6">
         <p className="text-sm uppercase tracking-widest text-text-secondary">Saldo Total</p>
         <div className="mt-2 flex items-center gap-3">
-          <strong className={cn("font-sans text-4xl font-extrabold", totalSaldo < 0 ? "text-accent-red" : "text-accent-lime")}>
+          <strong className={cn("font-sans text-4xl font-extrabold", totalSaldo < 0 ? "text-accent-red" : "text-text-primary")}>
             {fmt(totalSaldo)}
           </strong>
           <button
@@ -154,7 +154,7 @@ export function WalletsPage() {
                     <button
                       type="button"
                       onClick={() => { setIsCustomBank(false); setNome(""); setIcone("🏦"); }}
-                      className="text-xs text-accent-lime hover:underline"
+                      className="text-xs text-accent-brand hover:underline"
                     >
                       ← Voltar para a lista
                     </button>
@@ -170,7 +170,7 @@ export function WalletsPage() {
                       if (auto) setIcone(auto);
                     }}
                     placeholder="Ex: Banco Safra, Sicoob…"
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                   />
                 ) : (
                   <select
@@ -186,7 +186,7 @@ export function WalletsPage() {
                         if (auto) setIcone(auto); else setIcone("🏦");
                       }
                     }}
-                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                    className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                   >
                     <option value="">Selecione um banco…</option>
                     {BANKS.map((b) => (
@@ -203,7 +203,7 @@ export function WalletsPage() {
                 <CurrencyInput
                   value={saldo}
                   onChange={setSaldo}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 />
               </label>
             </div>
@@ -218,7 +218,7 @@ export function WalletsPage() {
             <button
               onClick={() => { if (nome.trim()) createMutation.mutate(); }}
               disabled={createMutation.isPending || !nome.trim()}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-60"
             >
               {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Criar Carteira
@@ -254,7 +254,7 @@ export function WalletsPage() {
                 <BankLogo nome={wallet.nome} icone={wallet.icone} className="h-10 w-10 opacity-70" />
                 <div>
                   <p className="text-sm text-text-secondary">{wallet.nome}</p>
-                  <strong className={cn("font-sans text-2xl font-bold", wallet.saldo < 0 ? "text-accent-red" : "text-accent-lime")}>
+                  <strong className={cn("font-sans text-2xl font-bold", wallet.saldo < 0 ? "text-accent-red" : "text-text-primary")}>
                     {fmt(wallet.saldo)}
                   </strong>
                 </div>
@@ -268,7 +268,7 @@ export function WalletsPage() {
                   <BankLogo nome={wallet.nome} icone={wallet.icone} className="h-10 w-10" />
                   <div>
                     <p className="text-sm text-text-secondary">{wallet.nome}</p>
-                    <strong className={cn("font-sans text-2xl font-bold", wallet.saldo < 0 ? "text-accent-red" : "text-accent-lime")}>
+                    <strong className={cn("font-sans text-2xl font-bold", wallet.saldo < 0 ? "text-accent-red" : "text-text-primary")}>
                       {fmt(wallet.saldo)}
                     </strong>
                   </div>

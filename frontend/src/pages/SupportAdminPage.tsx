@@ -51,8 +51,8 @@ const tipoConfig: Record<SupportMessageTipo, { label: string; icon: typeof Bug; 
 };
 
 const statusConfig: Record<AdminUserStatus, { label: string; className: string }> = {
-  gratis_liberado: { label: "Grátis liberado", className: "bg-accent-lime/15 text-accent-lime" },
-  ativo: { label: "Ativo", className: "bg-accent-lime/15 text-accent-lime" },
+  gratis_liberado: { label: "Grátis liberado", className: "bg-accent-brand/15 text-accent-brand" },
+  ativo: { label: "Ativo", className: "bg-accent-brand/15 text-accent-brand" },
   em_teste: { label: "Em teste", className: "bg-accent-yellow/15 text-accent-yellow" },
   assinatura_expirada: { label: "Expirado", className: "bg-accent-red/15 text-accent-red" },
   teste_expirado: { label: "Teste expirado", className: "bg-accent-red/15 text-accent-red" },
@@ -86,7 +86,7 @@ export function SupportAdminPage() {
             onClick={() => setTab(t.key)}
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              tab === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+              tab === t.key ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             {t.label}
@@ -144,7 +144,7 @@ function SupportMessagesTab() {
             onClick={() => setFilter(t.key)}
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              filter === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+              filter === t.key ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             {t.label}
@@ -171,7 +171,7 @@ function SupportMessagesTab() {
                 key={m._id}
                 type="button"
                 onClick={() => setOpenTicketId(m._id)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-bg-muted bg-bg-card p-4 text-left transition hover:border-accent-lime/40"
+                className="flex w-full items-center gap-3 rounded-2xl border border-bg-muted bg-bg-card p-4 text-left transition hover:border-accent-brand/40"
               >
                 <Icon className={cn("h-4 w-4 shrink-0", cfg.color)} />
                 <div className="min-w-0 flex-1">
@@ -185,7 +185,7 @@ function SupportMessagesTab() {
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-3 py-1 text-xs font-semibold",
-                    isLido ? "bg-bg-muted text-text-secondary" : "bg-accent-lime/15 text-accent-lime",
+                    isLido ? "bg-bg-muted text-text-secondary" : "bg-accent-brand/15 text-accent-brand",
                   )}
                 >
                   {isLido ? "Lida" : "Aberta"}
@@ -222,14 +222,14 @@ function SupportMessagesTab() {
                   "rounded-full px-3 py-1 text-xs font-semibold transition",
                   openTicket.status === "lido"
                     ? "bg-bg-muted text-text-secondary hover:bg-bg-overlay"
-                    : "bg-accent-lime/15 text-accent-lime hover:bg-accent-lime/25",
+                    : "bg-accent-brand/15 text-accent-brand hover:bg-accent-brand/25",
                 )}
               >
                 {openTicket.status === "lido" ? "Reabrir" : "Marcar como lida"}
               </button>
               <a
                 href={`mailto:${openTicket.userEmail}?subject=${encodeURIComponent("Re: sua mensagem no MeuGasto")}`}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-lime hover:opacity-80"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-brand hover:opacity-80"
               >
                 <Mail className="h-3.5 w-3.5" /> Responder por email
               </a>
@@ -324,7 +324,7 @@ function AdminUsersTab() {
               onClick={() => setFilter(t.key)}
               className={cn(
                 "rounded-lg px-4 py-2 text-sm font-semibold transition",
-                filter === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+                filter === t.key ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
               )}
             >
               {t.label}
@@ -339,7 +339,7 @@ function AdminUsersTab() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por email ou nome"
-            className="w-full rounded-xl border border-bg-muted bg-bg-card py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-lime focus:outline-none"
+            className="w-full rounded-xl border border-bg-muted bg-bg-card py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-brand focus:outline-none"
           />
         </div>
       </div>
@@ -417,7 +417,7 @@ function AdminUserCard({
             "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition",
             u.isLegacyFree
               ? "bg-bg-muted text-text-secondary hover:bg-bg-overlay"
-              : "bg-accent-lime/15 text-accent-lime hover:bg-accent-lime/25",
+              : "bg-accent-brand/15 text-accent-brand hover:bg-accent-brand/25",
           )}
         >
           <Gift className="h-3.5 w-3.5" />
@@ -440,7 +440,7 @@ function AdminUserCard({
             type="button"
             onClick={() => onSetTrial(days)}
             disabled={trialPending}
-            className="rounded-full bg-bg-overlay px-2.5 py-1 text-xs font-semibold text-text-primary transition hover:bg-accent-lime hover:text-black"
+            className="rounded-full bg-bg-overlay px-2.5 py-1 text-xs font-semibold text-text-primary transition hover:bg-accent-brand hover:text-white"
           >
             Definir teste
           </button>

@@ -17,9 +17,9 @@ interface ConfirmDeleteModalProps {
 const btnCancel =
   'flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:cursor-not-allowed disabled:opacity-70';
 const btnDestructiveFilled =
-  'flex-1 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110';
+  'flex-1 rounded-xl bg-accent-red px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-red-hover';
 const btnDestructiveOutline =
-  'flex-1 rounded-xl border border-red-600/40 px-5 py-3 text-sm font-bold text-accent-red transition hover:bg-accent-red/10';
+  'flex-1 rounded-xl border border-accent-red/40 px-5 py-3 text-sm font-bold text-accent-red transition hover:bg-accent-red/10';
 
 export function ConfirmDeleteModal({
   open,

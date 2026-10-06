@@ -185,7 +185,7 @@ export function FaqPage() {
             }}
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              topic === t.key ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+              topic === t.key ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             {t.label}
@@ -231,7 +231,7 @@ function SupportForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110"
+        className="mt-4 flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
       >
         <Plus className="h-4 w-4" />
         Nova conversa
@@ -278,7 +278,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
       open={open}
       onClose={onClose}
       title="Nova conversa"
-      icon={<MessageCircle className="h-6 w-6 text-accent-lime" />}
+      icon={<MessageCircle className="h-6 w-6 text-accent-brand" />}
       footer={
         <div className="flex gap-3">
           <button
@@ -293,7 +293,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
             type="button"
             onClick={() => mutation.mutate()}
             disabled={!canSubmit || mutation.isPending}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Enviar
@@ -311,7 +311,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
         onChange={(e) => setTitulo(e.target.value)}
         placeholder="Resuma em poucas palavras, ex: Erro ao pagar fatura"
         maxLength={150}
-        className="mt-1.5 w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+        className="mt-1.5 w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-brand"
       />
 
       <p className="mt-4 text-xs font-semibold text-text-secondary">Assunto</p>
@@ -323,7 +323,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
             onClick={() => setTipo(value)}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition",
-              tipo === value ? "bg-accent-lime text-black" : "text-text-primary hover:bg-bg-overlay",
+              tipo === value ? "bg-accent-brand text-white" : "text-text-primary hover:bg-bg-overlay",
             )}
           >
             <Icon className="h-4 w-4" /> {label}
@@ -341,7 +341,7 @@ function NewConversationModal({ open, onClose }: { open: boolean; onClose: () =>
         placeholder={tipo === "bug" ? "O que aconteceu? Em qual tela?" : "O que você gostaria de ver no app?"}
         rows={4}
         maxLength={2000}
-        className="mt-1.5 w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+        className="mt-1.5 w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-brand"
       />
     </ModalShell>
   );
@@ -386,7 +386,7 @@ function MySupportMessages() {
   return (
     <div className="rounded-2xl bg-bg-card p-5">
       <h2 className="flex items-center gap-1.5 font-sans text-lg font-bold text-text-primary">
-        <MessageCircle className="h-4 w-4 text-accent-lime" /> Suas mensagens
+        <MessageCircle className="h-4 w-4 text-accent-brand" /> Suas mensagens
       </h2>
       <p className="mt-1 text-sm text-text-secondary">Acompanhe as respostas do suporte por aqui.</p>
 
@@ -399,12 +399,12 @@ function MySupportMessages() {
               key={m._id}
               type="button"
               onClick={() => setOpenTicketId(m._id)}
-              className="flex w-full items-center gap-3 rounded-xl border border-bg-muted p-3.5 text-left transition hover:border-accent-lime/40"
+              className="flex w-full items-center gap-3 rounded-xl border border-bg-muted p-3.5 text-left transition hover:border-accent-brand/40"
             >
               <span className="relative shrink-0">
                 <Icon className={cn("h-4 w-4", cfg.color)} />
                 {m.hasUnread && (
-                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-accent-lime" />
+                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-accent-brand" />
                 )}
               </span>
               <div className="min-w-0 flex-1">
@@ -413,12 +413,12 @@ function MySupportMessages() {
                   <span className={cn("font-semibold", cfg.color)}>{cfg.label}</span>
                   <span className="text-text-muted">{formatDisplayDate(m.createdAt)}</span>
                   {m.hasUnread ? (
-                    <span className="rounded-full bg-accent-lime px-2 py-0.5 font-bold text-black">
+                    <span className="rounded-full bg-accent-brand px-2 py-0.5 font-bold text-white">
                       Nova resposta
                     </span>
                   ) : (
                     m.status === "lido" && (
-                      <span className="rounded-full bg-accent-lime/15 px-2 py-0.5 font-semibold text-accent-lime">
+                      <span className="rounded-full bg-accent-brand/15 px-2 py-0.5 font-semibold text-accent-brand">
                         Respondida
                       </span>
                     )

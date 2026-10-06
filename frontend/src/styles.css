@@ -1,13 +1,21 @@
 /*
+ * Identidade visual: CENTRAL MOTOS.
+ * Vermelho #E10600, preto #050505, branco e cinzas. Nada de azul, roxo ou
+ * verde como cor decorativa — só onde a cor comunica um estado (entrada,
+ * saída, pendente) ou codifica um dado (matiz de categoria nos gráficos).
+ *
  * Tokens de cor em canais RGB ("r g b") para que o Tailwind consiga aplicar
- * modificadores de opacidade (text-accent-lime/70, bg-accent-red/10...).
+ * modificadores de opacidade (text-accent-brand/70, bg-accent-red/10...).
  * Em CSS/inline style, use sempre rgb(var(--token)).
  *
  * Acentos têm três papéis, porque um único valor não serve bem aos dois temas:
- *   --accent-*       preenchimento (bg-*), sempre com texto escuro/branco por cima
+ *   --accent-*       preenchimento (bg-*), sempre com texto branco por cima
  *   --accent-*-ink   texto e ícones sobre superfícies neutras (text-*)
  *   --accent-*-line  bordas, anéis e traços de gráfico (border-*, ring-*, stroke)
- * No tema escuro os três papéis têm o mesmo valor original.
+ * O #E10600 puro tem 3,9:1 sobre o card escuro — passa como traço, reprova como
+ * texto. Por isso o papel "ink" clareia para #FF3B30 no escuro e escurece para
+ * #B80000 no claro, enquanto o preenchimento continua sendo o vermelho da marca
+ * nos dois temas (branco sobre #E10600 dá 5,0:1).
  */
 
 /* ── Tema escuro (padrão) ── */
@@ -15,105 +23,110 @@
 html.dark {
   color-scheme: dark;
 
-  --bg-base: 10 10 10; /* #0a0a0a */
-  --bg-card: 20 20 20; /* #141414 */
-  --bg-muted: 28 28 28; /* #1c1c1c */
-  --bg-overlay: 35 35 35; /* #232323 */
+  --bg-base: 5 5 5; /* #050505 */
+  --bg-card: 13 13 13; /* #0d0d0d */
+  --bg-muted: 26 26 26; /* #1a1a1a */
+  --bg-overlay: 38 38 38; /* #262626 — degrau de hover, derivado do #1a1a1a */
 
   --text-primary: 255 255 255; /* #ffffff */
-  --text-secondary: 156 163 175; /* #9ca3af */
-  --text-muted: 128 134 143; /* #80868f  5,0:1 sobre card, 4,6:1 sobre bg-muted */
+  --text-secondary: 163 163 163; /* #a3a3a3  7,7:1 sobre o card */
+  --text-muted: 130 130 130; /* #828282  5,1:1 sobre o card, 4,5:1 dentro do campo */
 
-  --border-default: 42 42 42; /* #2a2a2a */
-  --border-strong: 58 58 58; /* #3a3a3a */
+  --border-default: 51 51 51; /* #333333 */
+  --border-strong: 74 74 74; /* #4a4a4a — segundo degrau, derivado do #333333 */
 
-  --color-income: 34 197 94; /* #22c55e */
-  --color-expense: 239 68 68; /* #ef4444 */
-  --color-pending: 234 179 8; /* #eab308 */
+  --color-income: 47 184 92; /* #2fb85c  7,5:1 — verde discreto, só "entrou dinheiro" */
+  --color-expense: 255 59 48; /* #ff3b30  5,5:1 — vermelho da família da marca */
+  --color-pending: 245 166 35; /* #f5a623  9,6:1 */
 
-  --accent-lime: 163 230 53; /* #a3e635 */
-  --accent-lime-ink: 163 230 53;
-  --accent-lime-line: 163 230 53;
-  --accent-orange: 249 115 22; /* #f97316 */
-  --accent-orange-ink: 249 115 22;
-  --accent-red: 239 68 68; /* #ef4444 */
-  --accent-red-ink: 239 68 68;
-  --accent-yellow: 234 179 8; /* #eab308 */
-  --accent-yellow-ink: 234 179 8;
+  --accent-brand: 225 6 0; /* #e10600 */
+  --accent-brand-ink: 255 59 48; /* #ff3b30  5,5:1 sobre o card */
+  --accent-brand-line: 225 6 0; /* #e10600  3,9:1 — traço e anel, não texto */
+  --accent-brand-hover: 184 0 0; /* #b80000 */
+  --accent-brand-soft: 255 229 229; /* #ffe5e5 — tinta clara da marca */
+  --accent-red: 211 17 9; /* #d31109 — preenchimento: branco por cima dá 5,5:1 */
+  --accent-red-ink: 255 59 48; /* #ff3b30 — texto sobre o card: 5,5:1 */
+  --accent-red-hover: 168 13 7; /* #a80d07 */
+  --accent-yellow: 245 166 35;
+  --accent-yellow-ink: 245 166 35;
 
-  /* avisos inline — mesmos tons da paleta Tailwind usados antes */
-  --status-info: 96 165 250; /* blue-400 */
-  --status-info-soft: 147 197 253; /* blue-300 */
-  --status-warning: 250 204 21; /* yellow-400 */
-  --status-warning-soft: 253 224 71; /* yellow-300 */
-  --status-warning-softer: 254 240 138; /* yellow-200 */
-  --status-danger: 248 113 113; /* red-400 */
-  --status-danger-soft: 254 202 202; /* red-200 */
+  /* avisos inline — informação em neutro, nunca em azul */
+  --status-info: 212 212 212; /* #d4d4d4 */
+  --status-info-soft: 163 163 163; /* #a3a3a3 */
+  --status-warning: 245 166 35;
+  --status-warning-soft: 250 191 97;
+  --status-warning-softer: 253 219 160;
+  --status-danger: 255 59 48;
+  --status-danger-soft: 255 154 148;
 
   /* gráficos */
-  --chart-axis: 156 163 175; /* #9ca3af */
-  --chart-track: 148 163 184;
-  --tooltip-bg: #1f2937;
-  --tooltip-border: rgba(148, 163, 184, 0.2);
-  --tooltip-text: #fff;
-  --tooltip-item: #e5e7eb;
+  --chart-axis: 122 122 122;
+  --chart-track: 163 163 163;
+  --tooltip-bg: #1a1a1a;
+  --tooltip-border: rgb(51 51 51);
+  --tooltip-text: #ffffff;
+  --tooltip-item: #a3a3a3;
 
-  --scrollbar-modal: 63 63 70; /* zinc-700 */
+  --scrollbar-modal: 51 51 51;
+
+  /* A paleta categórica dos gráficos vive em src/lib/colors.ts: a cor de uma
+   * categoria chega da API como hex e é concatenada com alfa em JS, então
+   * precisa ser literal e não dá para morar aqui. */
 }
 
 /*
  * ── Tema claro ──
- * Espelho do escuro: os mesmos cinzas neutros (sem o matiz verde de antes) e
- * a mesma lógica de profundidade, invertida — a página é o plano mais fundo,
- * os cards sobem em branco, inputs e chips afundam um degrau abaixo do card.
- * O lima continua sendo a marca, mas escurece quando vira texto: #a3e635
- * sobre branco tem 1,4:1, ilegível. Contrastes medidos sobre o card (#fff).
+ * Espelho do escuro: a página é o plano mais fundo, os cards sobem em branco,
+ * inputs e chips afundam um degrau abaixo do card. O vermelho continua sendo o
+ * preenchimento da marca (#E10600 com texto branco dá 5,0:1), mas escurece para
+ * #B80000 quando vira texto. Contrastes medidos sobre o card (#fff).
  */
 html.light {
   color-scheme: light;
 
-  --bg-base: 243 243 240; /* #f3f3f0 */
+  --bg-base: 245 245 245; /* #f5f5f5 */
   --bg-card: 255 255 255; /* #ffffff */
-  --bg-muted: 236 236 232; /* #ecece8 inputs, chips inativos, trilhos */
-  --bg-overlay: 226 226 221; /* #e2e2dd hover, seções secundárias */
+  --bg-muted: 237 237 237; /* #ededed inputs, chips inativos, trilhos */
+  --bg-overlay: 226 226 226; /* #e2e2e2 hover, seções secundárias */
 
-  --text-primary: 17 17 17; /* 18,9:1 */
-  --text-secondary: 82 86 94; /* 7,4:1 */
-  --text-muted: 107 112 121; /* 4,9:1 */
+  --text-primary: 10 10 10; /* 19,6:1 */
+  --text-secondary: 82 82 82; /* 7,4:1 */
+  --text-muted: 106 106 106; /* #6a6a6a  5,4:1 sobre o card, 4,6:1 dentro do campo */
 
-  --border-default: 226 226 221;
-  --border-strong: 204 204 197;
+  --border-default: 226 226 226;
+  --border-strong: 200 200 200;
 
   --color-income: 21 128 61; /* green-700  5,0:1 */
-  --color-expense: 220 38 38; /* red-600   4,8:1 */
+  --color-expense: 198 11 0; /* #c60b00   6,1:1 */
   --color-pending: 161 98 7; /* yellow-700 4,9:1 */
 
-  --accent-lime: 132 204 22; /* lime-500 — texto preto por cima: 10,8:1 */
-  --accent-lime-ink: 77 124 15; /* lime-700  5,1:1 */
-  --accent-lime-line: 101 163 13; /* lime-600  3,0:1 (não-texto) */
-  --accent-orange: 249 115 22;
-  --accent-orange-ink: 194 65 12; /* orange-700 5,2:1 */
-  --accent-red: 220 38 38; /* red-600 — texto branco por cima: 4,8:1 */
-  --accent-red-ink: 220 38 38;
-  --accent-yellow: 234 179 8;
-  --accent-yellow-ink: 161 98 7; /* yellow-700 4,9:1 */
+  --accent-brand: 225 6 0; /* texto branco por cima: 5,0:1 */
+  --accent-brand-ink: 184 0 0; /* #b80000  6,9:1 */
+  --accent-brand-line: 225 6 0; /* 5,0:1 */
+  --accent-brand-hover: 153 0 0; /* #990000 — hover escurece mais no claro */
+  --accent-brand-soft: 255 229 229;
+  --accent-red: 198 11 0; /* texto branco por cima: 6,1:1 */
+  --accent-red-ink: 198 11 0;
+  --accent-red-hover: 153 0 0;
+  --accent-yellow: 245 166 35;
+  --accent-yellow-ink: 161 98 7;
 
-  --status-info: 29 78 216; /* blue-700 */
-  --status-info-soft: 30 64 175; /* blue-800 */
-  --status-warning: 133 77 14; /* yellow-800 — legível sobre faixa amarela */
-  --status-warning-soft: 113 63 18; /* yellow-900 */
+  --status-info: 64 64 64;
+  --status-info-soft: 82 82 82;
+  --status-warning: 133 77 14;
+  --status-warning-soft: 113 63 18;
   --status-warning-softer: 113 63 18;
-  --status-danger: 185 28 28; /* red-700 */
-  --status-danger-soft: 153 27 27; /* red-800 */
+  --status-danger: 185 0 0;
+  --status-danger-soft: 153 0 0;
 
-  --chart-axis: 107 112 121;
-  --chart-track: 100 116 139;
+  --chart-axis: 110 110 110;
+  --chart-track: 140 140 140;
   --tooltip-bg: #ffffff;
-  --tooltip-border: rgb(226 226 221);
-  --tooltip-text: #111111;
-  --tooltip-item: #52565e;
+  --tooltip-border: rgb(226 226 226);
+  --tooltip-text: #0a0a0a; /* = text-primary do tema claro */
+  --tooltip-item: #525252;
 
-  --scrollbar-modal: 204 204 197;
+  --scrollbar-modal: 200 200 200;
 }
 
 @tailwind base;
@@ -145,18 +158,33 @@ html.light {
     letter-spacing: 0;
   }
 
-  /* superfícies do navegador no tema claro — o escuro segue o padrão nativo */
-  html.light body {
-    accent-color: rgb(var(--accent-lime-line));
-    caret-color: rgb(var(--accent-lime-ink));
+  /*
+   * Superfícies do navegador: seleção, cursor de texto, controles nativos e
+   * barra de rolagem. São as partes que não desenhamos e que, sem isto,
+   * chegariam no azul padrão do sistema — a marca tem que alcançar elas também.
+   */
+  body {
+    accent-color: rgb(var(--accent-brand));
+    caret-color: rgb(var(--accent-brand-ink));
   }
 
-  html.light ::selection {
-    background: rgb(var(--accent-lime) / 0.45);
+  ::selection {
+    background: rgb(var(--accent-brand) / 0.35);
     color: rgb(var(--text-primary));
   }
 
-  html.light * {
+  html.light ::selection {
+    background: rgb(var(--accent-brand-soft));
+    color: rgb(var(--text-primary));
+  }
+
+  * {
     scrollbar-color: rgb(var(--border-strong)) transparent;
+  }
+
+  /* Anel de foco único do app, para quem navega por teclado. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent-brand-line));
+    outline-offset: 2px;
   }
 }

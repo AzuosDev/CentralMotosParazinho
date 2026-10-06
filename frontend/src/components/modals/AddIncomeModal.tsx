@@ -89,7 +89,7 @@ export function AddIncomeModal({
       open={open}
       onClose={onClose}
       title="Novo Ganho"
-      icon={<TrendingUp className="h-6 w-6 text-accent-lime" />}
+      icon={<TrendingUp className="h-6 w-6 text-semantic-income" />}
       footer={
         <div className="flex gap-3">
           <button
@@ -104,7 +104,7 @@ export function AddIncomeModal({
             type="submit"
             form="add-income-form"
             disabled={mutation.isPending || !hasWallets}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Salvar Ganho

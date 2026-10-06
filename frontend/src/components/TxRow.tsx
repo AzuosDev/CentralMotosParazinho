@@ -43,7 +43,7 @@ export function TxRow({
   const amountCls = tx.agendado
     ? "text-text-muted"
     : isIncome
-      ? "text-accent-lime"
+      ? "text-semantic-income"
       : isIncomingTransfer
         ? "text-status-info"
         : "text-accent-red";
@@ -59,7 +59,7 @@ export function TxRow({
             type="checkbox"
             checked={Boolean(selected)}
             onChange={() => onToggleSelect?.(tx)}
-            className="h-4 w-4 shrink-0 cursor-pointer rounded border-bg-muted bg-bg-muted accent-accent-lime"
+            className="h-4 w-4 shrink-0 cursor-pointer rounded border-bg-muted bg-bg-muted accent-accent-brand"
             aria-label="Selecionar transação para associar a uma carteira"
           />
         )}
@@ -70,7 +70,7 @@ export function TxRow({
             )}
             <p className="truncate text-sm font-semibold">{label}</p>
             {tx.agendado && (
-              <span className="flex shrink-0 items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-semibold text-status-info">
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-status-info/15 px-2 py-0.5 text-xs font-semibold text-status-info">
                 <Calendar className="h-3 w-3" />
                 Agendado
               </span>

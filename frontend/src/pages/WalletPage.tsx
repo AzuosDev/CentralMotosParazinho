@@ -147,7 +147,7 @@ export function WalletPage() {
     return (
       <div className="rounded-2xl bg-bg-card p-8 text-center text-text-secondary">
         Carteira não encontrada.{" "}
-        <Link to="/carteiras" className="text-accent-lime underline">
+        <Link to="/carteiras" className="text-accent-brand underline">
           Voltar
         </Link>
       </div>
@@ -179,7 +179,7 @@ export function WalletPage() {
             <strong
               className={cn(
                 "mt-1 block font-sans text-3xl font-extrabold",
-                wallet.saldo < 0 ? "text-accent-red" : "text-accent-lime",
+                wallet.saldo < 0 ? "text-accent-red" : "text-text-primary",
               )}
             >
               {fmt(wallet.saldo)}
@@ -223,7 +223,7 @@ export function WalletPage() {
                 const auto = detectBankIcon(e.target.value);
                 if (auto) setIcone(auto);
               }}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
             />
           </label>
           <label className="block">
@@ -232,7 +232,7 @@ export function WalletPage() {
               value={icone}
               onChange={(e) => setIcone(e.target.value)}
               placeholder="🏦"
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
             />
           </label>
           <label className="block">
@@ -243,7 +243,7 @@ export function WalletPage() {
             <CurrencyInput
               value={saldoInicial}
               onChange={setSaldoInicial}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
             />
           </label>
           <div className="flex gap-3">
@@ -256,7 +256,7 @@ export function WalletPage() {
             <button
               onClick={() => updateMutation.mutate()}
               disabled={updateMutation.isPending}
-              className="flex-1 rounded-xl bg-accent-lime py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-60"
+              className="flex-1 rounded-xl bg-accent-brand py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-60"
             >
               Salvar
             </button>
@@ -385,7 +385,7 @@ export function WalletPage() {
                 type="button"
                 onClick={() => undoBatchMutation.mutate(undoBatchTarget._id)}
                 disabled={undoBatchMutation.isPending}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white hover:brightness-110 transition disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white hover:bg-accent-red-hover transition disabled:opacity-50"
               >
                 {undoBatchMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

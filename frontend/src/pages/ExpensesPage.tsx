@@ -54,7 +54,7 @@ function CategoryRow({ category, onClick }: { category: CategoryExpense; onClick
         <p
           className={cn(
             "text-xs font-semibold",
-            isIncrease ? "text-accent-red" : "text-accent-lime",
+            isIncrease ? "text-accent-red" : "text-semantic-income",
           )}
         >
           {isIncrease ? "↑" : "↓"} {Math.abs(variation).toFixed(1)}%
@@ -119,7 +119,7 @@ export function ExpensesPage() {
               <select
                 value={month}
                 onChange={(e) => setMonth(Number(e.target.value))}
-                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent-lime"
+                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent-brand"
               >
                 {MONTH_OPTIONS.map((label, i) => (
                   <option key={label} value={i + 1}>
@@ -130,7 +130,7 @@ export function ExpensesPage() {
               <select
                 value={year}
                 onChange={(e) => setYear(Number(e.target.value))}
-                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent-lime"
+                className="rounded-xl border border-bg-muted bg-bg-card px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-accent-brand"
               >
                 {years.map((y) => (
                   <option key={y} value={y}>
@@ -143,7 +143,7 @@ export function ExpensesPage() {
           <button
             type="button"
             onClick={() => setAddExpenseOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition hover:brightness-110"
+            className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
           >
             <Plus className="h-4 w-4" />
             Nova
@@ -172,7 +172,7 @@ export function ExpensesPage() {
       {expensesQuery.isLoading ? (
         <div className="rounded-2xl bg-bg-card p-6">
           <div className="flex items-center justify-center gap-2 text-sm text-text-secondary">
-            <Loader2 className="h-4 w-4 animate-spin text-accent-lime" />
+            <Loader2 className="h-4 w-4 animate-spin text-accent-brand" />
             Carregando categorias...
           </div>
         </div>
@@ -244,7 +244,7 @@ export function ExpensesPage() {
           <aside className="rounded-2xl bg-bg-card p-5">
             <div className="mb-4 flex items-center justify-between gap-2 text-sm font-semibold text-text-primary">
               <span>Resumo</span>
-              <TrendingUp className="h-4 w-4 text-accent-lime" />
+              <TrendingUp className="h-4 w-4 text-accent-brand" />
             </div>
             <p className="text-xs text-text-secondary">
               Clique em uma categoria para filtrar as transações do período atual.

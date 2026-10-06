@@ -165,7 +165,7 @@ export function CartoesPage() {
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition hover:brightness-110"
+          className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
         >
           <Plus className="h-4 w-4" />
           Novo Cartão
@@ -187,7 +187,7 @@ export function CartoesPage() {
                   onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
                   placeholder="Ex: Nubank Empresarial, Cartão da viagem…"
                   maxLength={100}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 />
               </label>
 
@@ -201,7 +201,7 @@ export function CartoesPage() {
                     const auto = detectBankIcon(banco);
                     setForm((f) => ({ ...f, nome: banco, icone: auto || f.icone }));
                   }}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 >
                   <option value="">Selecione para preencher…</option>
                   {BANKS.map((b) => (
@@ -215,7 +215,7 @@ export function CartoesPage() {
                 <select
                   value={form.bandeira}
                   onChange={(e) => setForm((f) => ({ ...f, bandeira: e.target.value }))}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 >
                   <option value="">Selecione…</option>
                   {BANDEIRAS.map((b) => (
@@ -231,7 +231,7 @@ export function CartoesPage() {
                   onChange={(e) => setForm((f) => ({ ...f, ultimosDigitos: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
                   placeholder="1234"
                   maxLength={4}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 />
               </label>
 
@@ -240,7 +240,7 @@ export function CartoesPage() {
                 <CurrencyInput
                   value={form.limite}
                   onChange={(v) => setForm((f) => ({ ...f, limite: v }))}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 />
               </label>
 
@@ -253,7 +253,7 @@ export function CartoesPage() {
                   value={form.diaFechamento}
                   onChange={(e) => setForm((f) => ({ ...f, diaFechamento: e.target.value }))}
                   placeholder="Ex: 20"
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 />
               </label>
 
@@ -266,7 +266,7 @@ export function CartoesPage() {
                   value={form.diaVencimento}
                   onChange={(e) => setForm((f) => ({ ...f, diaVencimento: e.target.value }))}
                   placeholder="Ex: 27"
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 />
               </label>
 
@@ -275,7 +275,7 @@ export function CartoesPage() {
                 <select
                   value={form.carteiraPagamentoId}
                   onChange={(e) => setForm((f) => ({ ...f, carteiraPagamentoId: e.target.value }))}
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 >
                   <option value="">Nenhuma</option>
                   {carteirasPagadoras.map((w) => (
@@ -293,7 +293,7 @@ export function CartoesPage() {
                   value={form.taxaJurosRotativo}
                   onChange={(e) => setForm((f) => ({ ...f, taxaJurosRotativo: e.target.value }))}
                   placeholder="Ex: 12.5"
-                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+                  className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
                 />
               </label>
             </div>
@@ -309,7 +309,7 @@ export function CartoesPage() {
             <button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || !canSave}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-60"
             >
               {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               {form.id ? "Salvar Alterações" : "Criar Cartão"}
@@ -356,7 +356,7 @@ export function CartoesPage() {
                     <div
                       className={cn(
                         "h-full rounded-full transition-all",
-                        usadoPct >= 100 ? "bg-accent-red" : usadoPct >= 80 ? "bg-accent-yellow" : "bg-accent-lime",
+                        usadoPct >= 100 ? "bg-accent-red" : usadoPct >= 80 ? "bg-accent-yellow" : "bg-accent-brand",
                       )}
                       style={{ width: `${usadoPct}%` }}
                     />

@@ -5,6 +5,7 @@ import type {
   TransactionType,
   VirtualWallet,
 } from "../types/finance";
+import { CATEGORY_NEUTRAL, INCOME_HEX } from "./colors";
 
 export const brlFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -60,7 +61,7 @@ export function normalizeCategory(value: unknown, fallbackIndex = 0): Category {
       readString(item.id, item._id, item.categoryId) ||
       `category-${fallbackIndex}`,
     name: readString(item.name, item.categoryName, item.label) || "Categoria",
-    color: readString(item.color, item.categoryColor) || "#6B7280",
+    color: readString(item.color, item.categoryColor) || CATEGORY_NEUTRAL,
     icon: readString(item.icon, item.iconName, item.categoryIcon) || "Receipt",
     isDefault: item.isDefault === true,
   };
@@ -114,7 +115,7 @@ export function normalizeTransaction(
         ? {
             id: "income",
             name: "Ganho",
-            color: "#A3E635",
+            color: INCOME_HEX,
             icon: "TrendingUp",
           }
         : undefined),

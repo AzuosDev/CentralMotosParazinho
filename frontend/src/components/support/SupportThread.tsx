@@ -87,11 +87,11 @@ export function SupportThread({
                 key={r._id}
                 className={cn(
                   "max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm",
-                  isViewer ? "self-end bg-accent-lime/15 text-text-primary" : "self-start bg-bg-muted text-text-primary",
+                  isViewer ? "self-end bg-accent-brand/15 text-text-primary" : "self-start bg-bg-muted text-text-primary",
                 )}
               >
                 <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-text-secondary">
-                  <span className={r.authorRole === "admin" ? "text-accent-lime" : undefined}>{label}</span>
+                  <span className={r.authorRole === "admin" ? "text-accent-brand" : undefined}>{label}</span>
                   <span>{formatDateTime(r.createdAt)}</span>
                 </div>
                 <p className="whitespace-pre-wrap">{r.mensagem}</p>
@@ -111,13 +111,13 @@ export function SupportThread({
           placeholder={viewerRole === "admin" ? "Responder ao usuário..." : "Escreva sua resposta..."}
           rows={2}
           maxLength={2000}
-          className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-3.5 py-2.5 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-lime"
+          className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-3.5 py-2.5 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-brand"
         />
         <button
           type="button"
           onClick={() => replyMutation.mutate()}
           disabled={reply.trim().length === 0 || replyMutation.isPending}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-accent-lime px-3.5 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-accent-brand px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {replyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </button>

@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "theme(\"fontfamily.body\")",
+        "createdAt": "2026-10-06T19:06:57.538Z",
+        "reason": "falso positivo: é a função theme() do Tailwind resolvendo a pilha DM Sans já declarada em DESIGN.md, não uma fonte nova"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "theme(\"fontfamily.sans\")",
+        "createdAt": "2026-10-06T19:06:57.742Z",
+        "reason": "falso positivo: é a função theme() do Tailwind resolvendo a pilha de títulos já declarada em DESIGN.md, não uma fonte nova"
+      }
+    ]
+  }
+}

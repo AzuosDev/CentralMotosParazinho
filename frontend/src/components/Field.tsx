@@ -24,7 +24,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
         <div
           className={cn(
             "flex items-center gap-2 rounded-icon border border-transparent bg-bg-muted px-3 py-2.5 transition-colors",
-            "focus-within:border-accent-lime focus-within:ring-2 focus-within:ring-accent-lime/20",
+            "focus-within:border-accent-brand focus-within:ring-2 focus-within:ring-accent-brand/20",
             error && "border-accent-red focus-within:border-accent-red focus-within:ring-accent-red/20",
           )}
         >

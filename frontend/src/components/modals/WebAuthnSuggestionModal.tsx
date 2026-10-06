@@ -58,13 +58,13 @@ export function WebAuthnSuggestionModal({ open, isForm1, onDismiss, onRegistered
           <X className="h-4 w-4" />
         </button>
 
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-lime/10">
-          <Fingerprint className="h-6 w-6 text-accent-lime" />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-brand/10">
+          <Fingerprint className="h-6 w-6 text-accent-brand" />
         </div>
 
         {success ? (
           <div className="flex flex-col items-center gap-3 py-2 text-center">
-            <ShieldCheck className="h-10 w-10 text-accent-lime" />
+            <ShieldCheck className="h-10 w-10 text-accent-brand" />
             <p className="font-semibold text-text-primary">Biometria ativada!</p>
             <p className="text-sm text-text-secondary">
               No próximo login, use o Face ID ou digital para entrar mais rápido.
@@ -89,7 +89,7 @@ export function WebAuthnSuggestionModal({ open, isForm1, onDismiss, onRegistered
               <button
                 onClick={handleRegister}
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-70"
               >
                 {loading ? (
                   <>

@@ -94,13 +94,13 @@ export function RegisterPage() {
       <AuthCard
         title="Cadastro iniciado"
         footer={
-          <Link to="/login" className="font-semibold text-accent-lime hover:underline">
+          <Link to="/login" className="font-semibold text-accent-brand hover:underline">
             Voltar para login
           </Link>
         }
       >
         <div className="flex flex-col items-center gap-3 text-center">
-          <CheckCircle2 className="h-12 w-12 text-accent-lime" />
+          <CheckCircle2 className="h-12 w-12 text-accent-brand" />
           <p className="text-sm text-text-secondary">
             Verifique seu email para confirmar o cadastro
           </p>
@@ -121,7 +121,7 @@ export function RegisterPage() {
               : "Reenviar email de verificação"}
           </button>
 
-          {resendMessage && <p className="text-xs text-accent-lime">{resendMessage}</p>}
+          {resendMessage && <p className="text-xs text-accent-brand">{resendMessage}</p>}
           {resendError && <p className="text-xs text-accent-red">{resendError}</p>}
         </div>
       </AuthCard>
@@ -135,7 +135,7 @@ export function RegisterPage() {
       footer={
         <>
           Já tem conta?{" "}
-          <Link to="/login" className="font-semibold text-accent-lime hover:underline">
+          <Link to="/login" className="font-semibold text-accent-brand hover:underline">
             Entrar
           </Link>
         </>

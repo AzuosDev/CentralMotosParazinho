@@ -41,14 +41,14 @@ export function ForgotPasswordPage() {
       title="Esqueci minha senha"
       subtitle="Enviaremos as instruções por email"
       footer={
-        <Link to="/login" className="font-semibold text-accent-lime hover:underline">
+        <Link to="/login" className="font-semibold text-accent-brand hover:underline">
           Voltar para login
         </Link>
       }
     >
       {sent ? (
         <div className="flex flex-col items-center gap-3 text-center">
-          <CheckCircle2 className="h-12 w-12 text-accent-lime" />
+          <CheckCircle2 className="h-12 w-12 text-accent-brand" />
           <p className="text-sm text-text-secondary">
             Se este email estiver cadastrado, você receberá as instruções
           </p>

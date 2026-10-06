@@ -129,7 +129,7 @@ export function VincularCartaoModal({
       open={open}
       onClose={onClose}
       title="Vincular a um cartão"
-      icon={<CreditCard className="h-6 w-6 text-accent-lime" />}
+      icon={<CreditCard className="h-6 w-6 text-accent-brand" />}
       footer={
         <div className="flex gap-3">
           <button
@@ -144,7 +144,7 @@ export function VincularCartaoModal({
             type="button"
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || !canSave}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-70"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-70"
           >
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Vincular
@@ -169,14 +169,14 @@ export function VincularCartaoModal({
             {pendingsQuery.isLoading ? (
               <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
             ) : (pendingsQuery.data ?? []).length === 0 ? (
-              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
+              <p className="rounded-xl bg-accent-yellow/10 p-3 text-sm text-status-warning">
                 Você não tem nenhuma conta avulsa ou parcelada disponível pra vincular.
               </p>
             ) : (
               <select
                 value={pendingId}
                 onChange={(e) => setPendingId(e.target.value)}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
               >
                 <option value="">Selecione…</option>
                 {(pendingsQuery.data ?? []).map((p) => (
@@ -191,14 +191,14 @@ export function VincularCartaoModal({
             {cartoesQuery.isLoading ? (
               <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />
             ) : (cartoesQuery.data ?? []).length === 0 ? (
-              <p className="rounded-xl bg-yellow-500/10 p-3 text-sm text-status-warning">
+              <p className="rounded-xl bg-accent-yellow/10 p-3 text-sm text-status-warning">
                 Você ainda não tem nenhum cartão cadastrado.
               </p>
             ) : (
               <select
                 value={carteiraId}
                 onChange={(e) => setCarteiraId(e.target.value)}
-                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
+                className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
               >
                 <option value="">Selecione…</option>
                 {(cartoesQuery.data ?? []).map((c) => (
@@ -217,7 +217,7 @@ export function VincularCartaoModal({
               min={0}
               value={parcelasJaPagas}
               onChange={(e) => setParcelasJaPagas(e.target.value)}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
             />
           </label>
           <label className="block">
@@ -227,7 +227,7 @@ export function VincularCartaoModal({
               min={1}
               value={parcelasRestantes}
               onChange={(e) => setParcelasRestantes(e.target.value)}
-              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-lime"
+              className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none focus:border-accent-brand"
             />
           </label>
         </div>

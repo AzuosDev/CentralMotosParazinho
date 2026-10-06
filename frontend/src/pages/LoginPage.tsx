@@ -156,7 +156,7 @@ export function LoginPage() {
       footer={
         <>
           Não tem conta?{" "}
-          <Link to="/register" className="font-semibold text-accent-lime hover:underline">
+          <Link to="/register" className="font-semibold text-accent-brand hover:underline">
             Criar conta
           </Link>
         </>
@@ -194,7 +194,7 @@ export function LoginPage() {
         />
 
         <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-xs font-medium text-accent-lime hover:underline">
+          <Link to="/forgot-password" className="text-xs font-medium text-accent-brand hover:underline">
             Esqueci minha senha
           </Link>
         </div>
@@ -222,12 +222,12 @@ export function LoginPage() {
             type="button"
             onClick={() => handleBiometricLogin()}
             disabled={biometricLoading || isSubmitting}
-            className="flex w-full items-center justify-center gap-2 rounded-pill border border-border-strong px-4 py-3 text-sm font-medium text-text-primary transition-colors hover:bg-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-lime disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-pill border border-border-strong px-4 py-3 text-sm font-medium text-text-primary transition-colors hover:bg-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand disabled:cursor-not-allowed disabled:opacity-50"
           >
             {biometricLoading ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Aguardando biometria...</>
             ) : (
-              <><Fingerprint className="h-4 w-4 text-accent-lime" /> Entrar com biometria</>
+              <><Fingerprint className="h-4 w-4 text-accent-brand" /> Entrar com biometria</>
             )}
           </button>
 

@@ -56,13 +56,13 @@ export function VerifyEmailPage() {
     <AuthCard
       title="Verificação de email"
       footer={
-        <Link to="/login" className="font-semibold text-accent-lime hover:underline">
+        <Link to="/login" className="font-semibold text-accent-brand hover:underline">
           Ir para login
         </Link>
       }
     >
       <div className="flex flex-col items-center gap-3 text-center">
-        {state.status === "loading" && <Loader2 className="h-12 w-12 animate-spin text-accent-lime" />}
+        {state.status === "loading" && <Loader2 className="h-12 w-12 animate-spin text-accent-brand" />}
         {state.status === "error" && <XCircle className="h-12 w-12 text-accent-red" />}
         <p className="text-sm text-text-secondary">{state.message}</p>
       </div>

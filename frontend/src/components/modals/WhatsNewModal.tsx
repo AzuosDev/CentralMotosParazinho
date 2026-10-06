@@ -71,13 +71,13 @@ export function WhatsNewModal({ open, onClose }: { open: boolean; onClose: () =>
     <ModalShell
       open={open}
       title="O que há de novo"
-      icon={<Rocket className="h-5 w-5 text-accent-lime" />}
+      icon={<Rocket className="h-5 w-5 text-accent-brand" />}
       onClose={handleClose}
       footer={
         <button
           type="button"
           onClick={handleClose}
-          className="w-full rounded-xl bg-accent-lime py-2.5 text-sm font-semibold text-black transition hover:opacity-90"
+          className="w-full rounded-xl bg-accent-brand py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
         >
           Entendido!
         </button>
@@ -92,7 +92,7 @@ export function WhatsNewModal({ open, onClose }: { open: boolean; onClose: () =>
             <ul className="flex flex-col gap-1.5">
               {section.items.map((item) => (
                 <li key={item} className="flex gap-2 text-sm text-text-secondary">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-lime" />
+                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-brand" />
                   {item}
                 </li>
               ))}

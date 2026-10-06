@@ -103,7 +103,7 @@ function compressImage(file: File, maxSize = 200): Promise<string> {
 // Sub-components
 
 const inputClass =
-  "w-full rounded-xl border border-bg-overlay bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime placeholder:text-text-muted";
+  "w-full rounded-xl border border-bg-overlay bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-brand placeholder:text-text-muted";
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -350,7 +350,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
       open={open}
       onClose={handleClose}
       title="Minha Conta"
-      icon={<UserIcon className="h-6 w-6 text-accent-lime" />}
+      icon={<UserIcon className="h-6 w-6 text-accent-brand" />}
     >
       {/* ── Avatar section ── */}
       <div className="mb-5 flex flex-col items-center gap-3 pt-1">
@@ -360,18 +360,18 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={updateAvatarMutation.isPending}
-            className="relative block overflow-hidden rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-lime"
+            className="relative block overflow-hidden rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand"
             aria-label="Alterar foto de perfil"
           >
             {avatarUrl && !imgError ? (
               <img
                 src={avatarUrl}
                 alt={user?.name || email}
-                className="h-20 w-20 rounded-full object-cover ring-4 ring-accent-lime/20"
+                className="h-20 w-20 rounded-full object-cover ring-4 ring-accent-brand/20"
                 onError={() => setImgError(true)}
               />
             ) : (
-              <div className="grid h-20 w-20 place-items-center rounded-full bg-bg-muted text-3xl font-bold text-accent-lime ring-4 ring-accent-lime/20">
+              <div className="grid h-20 w-20 place-items-center rounded-full bg-bg-muted text-3xl font-bold text-accent-brand ring-4 ring-accent-brand/20">
                 {userQuery.isLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
                 ) : (
@@ -481,7 +481,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
             <button
               type="submit"
               disabled={updateNameMutation.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-70"
             >
               {updateNameMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               {nameSaved && <Check className="h-4 w-4" />}
@@ -507,8 +507,8 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
           >
             {/* Campo senha atual, oculto quando biometria confirmada */}
             {reauthedToken ? (
-              <div className="flex items-center justify-between rounded-xl bg-accent-lime/10 px-4 py-3">
-                <div className="flex items-center gap-2 text-sm text-accent-lime">
+              <div className="flex items-center justify-between rounded-xl bg-accent-brand/10 px-4 py-3">
+                <div className="flex items-center gap-2 text-sm text-accent-brand">
                   <ShieldCheck className="h-4 w-4 shrink-0" />
                   Biometria confirmada
                 </div>
@@ -545,7 +545,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
                       {biometricLoading ? (
                         <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Aguardando biometria...</>
                       ) : (
-                        <><Fingerprint className="h-3.5 w-3.5 text-accent-lime" /> Confirmar com biometria</>
+                        <><Fingerprint className="h-3.5 w-3.5 text-accent-brand" /> Confirmar com biometria</>
                       )}
                     </button>
                     {biometricError && (
@@ -584,14 +584,14 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
               )}
             </div>
             {passwordSaved && (
-              <p className="flex items-center gap-1 text-xs text-accent-lime">
+              <p className="flex items-center gap-1 text-xs text-accent-brand">
                 <Check className="h-3.5 w-3.5" /> Senha alterada com sucesso!
               </p>
             )}
             <button
               type="submit"
               disabled={changePasswordMutation.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-lime px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-70"
             >
               {changePasswordMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               <KeyRound className="h-4 w-4" />
@@ -615,7 +615,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
                     className="flex items-center justify-between rounded-xl bg-bg-overlay px-3 py-2"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <Fingerprint className="h-4 w-4 shrink-0 text-accent-lime" />
+                      <Fingerprint className="h-4 w-4 shrink-0 text-accent-brand" />
                       <div className="min-w-0">
                         <p className="truncate text-xs font-medium text-text-primary">
                           {credentialLabel(cred)}
@@ -644,7 +644,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
               type="button"
               onClick={handleRegisterBiometric}
               disabled={registerLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-accent-lime/40 px-4 py-2.5 text-sm font-medium text-accent-lime transition hover:bg-accent-lime/5 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-accent-brand/40 px-4 py-2.5 text-sm font-medium text-accent-brand transition hover:bg-accent-brand/5 disabled:opacity-50"
             >
               {registerLoading ? (
                 <>
@@ -725,7 +725,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
                     type="button"
                     onClick={() => resetDataMutation.mutate()}
                     disabled={resetDataMutation.isPending}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent-red px-3 py-2 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-70"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent-red px-3 py-2 text-xs font-bold text-white transition hover:bg-accent-red-hover disabled:opacity-70"
                   >
                     {resetDataMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     Confirmar Reset
@@ -770,7 +770,7 @@ export function UserProfileModal({ open, onClose }: { open: boolean; onClose: ()
                     type="button"
                     onClick={() => deleteAccountMutation.mutate()}
                     disabled={deleteAccountMutation.isPending}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent-red px-3 py-2 text-xs font-bold text-white transition hover:brightness-110 disabled:opacity-70"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent-red px-3 py-2 text-xs font-bold text-white transition hover:bg-accent-red-hover disabled:opacity-70"
                   >
                     {deleteAccountMutation.isPending && (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />

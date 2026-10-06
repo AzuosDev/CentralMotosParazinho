@@ -20,10 +20,10 @@ export function AuthCard({
       <div className="flex min-h-dvh flex-col px-5 py-6 sm:px-10 lg:px-14">
         <Link
           to="/landing"
-          className="flex w-fit items-center gap-2 rounded-icon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-lime"
+          className="flex w-fit items-center gap-2 rounded-icon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-brand"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-icon bg-accent-lime/10">
-            <Coins className="h-[18px] w-[18px] text-accent-lime" />
+          <span className="grid h-9 w-9 place-items-center rounded-icon bg-accent-brand/10">
+            <Coins className="h-[18px] w-[18px] text-accent-brand" />
           </span>
           <span className="font-body text-lg font-bold tracking-tight text-text-primary">
             MeuGasto

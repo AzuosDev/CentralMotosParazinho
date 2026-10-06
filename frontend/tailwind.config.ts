@@ -7,20 +7,24 @@ const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 // Acentos por papel: bg-* usa o preenchimento; text-* usa a versão "ink"
 // (legível sobre superfície neutra); border/ring/outline/stroke usam "line".
 const accentFill = {
-  lime: token("accent-lime"),
-  orange: token("accent-orange"),
+  brand: token("accent-brand"),
+  "brand-hover": token("accent-brand-hover"),
+  "brand-soft": token("accent-brand-soft"),
   red: token("accent-red"),
+  "red-hover": token("accent-red-hover"),
   yellow: token("accent-yellow"),
 };
 const accentInk = {
-  lime: token("accent-lime-ink"),
-  orange: token("accent-orange-ink"),
+  brand: token("accent-brand-ink"),
+  "brand-hover": token("accent-brand-hover"),
+  "brand-soft": token("accent-brand-soft"),
   red: token("accent-red-ink"),
+  "red-hover": token("accent-red-hover"),
   yellow: token("accent-yellow-ink"),
 };
 const accentLine = {
   ...accentInk,
-  lime: token("accent-lime-line"),
+  brand: token("accent-brand-line"),
 };
 
 export default {
@@ -59,15 +63,6 @@ export default {
           default: token("border-default"),
           strong: token("border-strong"),
         },
-        category: {
-          shopping: "#EF4444",
-          food: "#F97316",
-          groceries: "#22C55E",
-          health: "#06B6D4",
-          travel: "#8B5CF6",
-          taxi: "#3B82F6",
-          other: "#6B7280",
-        },
       },
       textColor: { accent: accentInk },
       placeholderColor: { accent: accentInk },
@@ -89,7 +84,7 @@ export default {
       fontFamily: {
         sans: ["Syne", "sans-serif"],
         body: ["DM Sans", "sans-serif"],
-        // Só a landing carrega esta fonte (public/fonts/bricolage-grotesque.css).
+        // Só as páginas públicas carregam esta fonte (public/fonts/bricolage-grotesque.css).
         display: ["Bricolage Grotesque", "DM Sans", "sans-serif"],
       },
     },

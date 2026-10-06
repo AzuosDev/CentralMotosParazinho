@@ -107,7 +107,7 @@ export function AddExpenseModal({
             type="submit"
             form="add-expense-form"
             disabled={mutation.isPending || !hasWallets}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Salvar Gasto

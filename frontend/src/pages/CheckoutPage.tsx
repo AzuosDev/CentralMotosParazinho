@@ -161,8 +161,8 @@ export function CheckoutPage() {
   if (step === "success") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg-base px-4">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent-lime/10">
-          <CheckCircle className="h-10 w-10 text-accent-lime" />
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent-brand/10">
+          <CheckCircle className="h-10 w-10 text-accent-brand" />
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-text-primary">Pagamento confirmado!</h1>
@@ -170,7 +170,7 @@ export function CheckoutPage() {
         </div>
         <button
           onClick={() => navigate("/dashboard", { replace: true })}
-          className="flex items-center gap-2 rounded-xl bg-accent-lime px-6 py-3 text-sm font-bold text-black"
+          className="flex items-center gap-2 rounded-xl bg-accent-brand px-6 py-3 text-sm font-bold text-white"
         >
           Ir para o Dashboard <ArrowRight className="h-4 w-4" />
         </button>
@@ -190,7 +190,7 @@ export function CheckoutPage() {
           </button>
 
           <div className="text-center">
-            <QrCode className="mx-auto mb-3 h-8 w-8 text-accent-lime" />
+            <QrCode className="mx-auto mb-3 h-8 w-8 text-accent-brand" />
             <h2 className="text-xl font-bold text-text-primary">Pague via PIX</h2>
             <p className="mt-1 text-sm text-text-secondary">
               Escaneie o QR Code com o app do seu banco
@@ -220,14 +220,14 @@ export function CheckoutPage() {
                 onClick={handleCopy}
                 className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border-default bg-bg-overlay px-3 py-2 text-xs font-medium text-text-primary hover:bg-bg-muted transition-colors"
               >
-                {copied ? <Check className="h-3.5 w-3.5 text-accent-lime" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-accent-brand" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? "Copiado!" : "Copiar"}
               </button>
             </div>
           </div>
 
           <div className="mt-6 flex items-center justify-center gap-2 text-sm text-text-secondary">
-            <Loader2 className="h-4 w-4 animate-spin text-accent-lime" />
+            <Loader2 className="h-4 w-4 animate-spin text-accent-brand" />
             Aguardando confirmação do pagamento…
           </div>
 
@@ -249,7 +249,7 @@ export function CheckoutPage() {
           </div>
         )}
         {isTrialActive && (
-          <div className="mb-6 rounded-xl border border-accent-lime/30 bg-accent-lime/10 px-4 py-3 text-sm text-accent-lime">
+          <div className="mb-6 rounded-xl border border-accent-brand/30 bg-accent-brand/10 px-4 py-3 text-sm text-accent-brand">
             Seu teste termina em {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}. Assine agora para não perder o acesso.
           </div>
         )}
@@ -265,7 +265,7 @@ export function CheckoutPage() {
           <ul className="space-y-2">
             {FEATURES.map((f) => (
               <li key={f} className="flex items-start gap-2 text-sm text-text-primary">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-lime" />
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
                 {f}
               </li>
             ))}
@@ -283,7 +283,7 @@ export function CheckoutPage() {
                 className={cn(
                   "rounded-xl border p-4 text-left transition-colors",
                   cycle === c
-                    ? "border-accent-lime bg-accent-lime/10"
+                    ? "border-accent-brand bg-accent-brand/10"
                     : "border-border-default bg-bg-card hover:bg-bg-overlay",
                 )}
               >
@@ -293,7 +293,7 @@ export function CheckoutPage() {
                   <span className="text-sm font-normal text-text-secondary">{PLANS[c].period}</span>
                 </p>
                 {PLANS[c].savings && (
-                  <p className="mt-1 text-xs text-accent-lime">{PLANS[c].savings}</p>
+                  <p className="mt-1 text-xs text-accent-brand">{PLANS[c].savings}</p>
                 )}
               </button>
             ))}
@@ -309,7 +309,7 @@ export function CheckoutPage() {
               className={cn(
                 "flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors",
                 method === "pix"
-                  ? "border-accent-lime bg-accent-lime/10 text-accent-lime"
+                  ? "border-accent-brand bg-accent-brand/10 text-accent-brand"
                   : "border-border-default bg-bg-card text-text-primary hover:bg-bg-overlay",
               )}
             >
@@ -320,7 +320,7 @@ export function CheckoutPage() {
               className={cn(
                 "flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors",
                 method === "stripe"
-                  ? "border-accent-lime bg-accent-lime/10 text-accent-lime"
+                  ? "border-accent-brand bg-accent-brand/10 text-accent-brand"
                   : "border-border-default bg-bg-card text-text-primary hover:bg-bg-overlay",
               )}
             >
@@ -340,7 +340,7 @@ export function CheckoutPage() {
                   placeholder="000.000.000-00"
                   value={cpfCnpj}
                   onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
-                  className="w-full rounded-xl border border-border-default bg-bg-card px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-lime focus:outline-none"
+                  className="w-full rounded-xl border border-border-default bg-bg-card px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-brand focus:outline-none"
                 />
               </div>
             </>
@@ -359,7 +359,7 @@ export function CheckoutPage() {
         <button
           onClick={handleProceed}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-lime py-4 text-sm font-bold text-black transition-all hover:brightness-110 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-brand py-4 text-sm font-bold text-white transition-all hover:bg-accent-brand-hover disabled:opacity-60"
         >
           {loading ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Processando…</>

@@ -5,6 +5,7 @@ import { formatCurrency, formatDisplayDate } from "../lib/finance";
 import { cn } from "../lib/utils";
 import type { Transaction, Category } from "../types/finance";
 import { DynamicIcon } from "./DynamicIcon";
+import { CATEGORY_NEUTRAL, INCOME_HEX } from "../lib/colors";
 
 
 export const TransactionRow = memo(function TransactionRow({
@@ -25,7 +26,7 @@ export const TransactionRow = memo(function TransactionRow({
   const category = resolvedCategory ?? {
     id: "uncategorized",
     name: transaction.type === "INCOME" ? "Ganho" : "Despesa",
-    color: transaction.type === "INCOME" ? "#A3E635" : "#6B7280",
+    color: transaction.type === "INCOME" ? INCOME_HEX : CATEGORY_NEUTRAL,
     icon: transaction.type === "INCOME" ? "TrendingUp" : "Receipt",
   };
   const isIncome = transaction.type === "INCOME";
@@ -47,7 +48,7 @@ export const TransactionRow = memo(function TransactionRow({
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-medium text-text-primary">{category.name}</p>
           {transaction.agendado && (
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-semibold text-status-info">
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-status-info/15 px-2 py-0.5 text-xs font-semibold text-status-info">
               <Calendar className="h-3 w-3" />
               Agendado
             </span>
@@ -62,7 +63,7 @@ export const TransactionRow = memo(function TransactionRow({
       <strong
         className={cn(
           "shrink-0 text-sm font-semibold",
-          isIncome ? "text-accent-lime" : "text-accent-red",
+          isIncome ? "text-semantic-income" : "text-accent-red",
         )}
       >
         {isIncome ? "+" : "-"}

@@ -35,8 +35,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-bg-base text-text-primary">
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-bg-overlay bg-bg-card p-6 md:flex">
         <div className="mb-10 flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-icon bg-accent-lime/10">
-            <Coins className="h-5 w-5 text-accent-lime" />
+          <span className="grid h-9 w-9 place-items-center rounded-icon bg-accent-brand/10">
+            <Coins className="h-5 w-5 text-accent-brand" />
           </span>
           <span className="font-sans text-lg font-bold tracking-tight">
             MeuGasto
@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className={cn(
                   "flex items-center gap-3 rounded-icon px-3 py-2.5 text-sm transition-colors",
                   active
-                    ? "bg-accent-lime text-black font-semibold"
+                    ? "bg-accent-brand text-white font-semibold"
                     : "text-text-secondary hover:bg-bg-muted hover:text-text-primary",
                 )}
               >

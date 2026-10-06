@@ -113,7 +113,7 @@ export function SettingsPage() {
       {subscription && !subscription.isLegacyFree && (
         <div className="rounded-2xl bg-bg-card p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <CreditCard className="h-5 w-5 text-accent-lime shrink-0" />
+            <CreditCard className="h-5 w-5 text-accent-brand shrink-0" />
             <div>
               <h2 className="font-semibold text-text-primary">Assinatura</h2>
               <p className="text-xs text-text-secondary">
@@ -126,7 +126,7 @@ export function SettingsPage() {
             </div>
             <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium ${
               computeHasAccess(subscription)
-                ? 'bg-accent-lime/10 text-accent-lime'
+                ? 'bg-accent-brand/10 text-accent-brand'
                 : 'bg-accent-red/10 text-accent-red'
             }`}>
               {computeHasAccess(subscription) ? 'Ativo' : 'Expirado'}
@@ -166,7 +166,7 @@ export function SettingsPage() {
       {/* Seção biometria */}
       <div className="rounded-2xl bg-bg-card p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <Fingerprint className="h-5 w-5 text-accent-lime shrink-0" />
+          <Fingerprint className="h-5 w-5 text-accent-brand shrink-0" />
           <div>
             <h2 className="font-semibold text-text-primary">Login com biometria</h2>
             <p className="text-xs text-text-secondary">
@@ -202,7 +202,7 @@ export function SettingsPage() {
                     className="flex items-center justify-between rounded-xl bg-bg-muted px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
-                      <ShieldCheck className="h-4 w-4 text-accent-lime shrink-0" />
+                      <ShieldCheck className="h-4 w-4 text-accent-brand shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-text-primary">
                           {c.deviceType === "multiDevice" ? "Passkey sincronizado" : "Dispositivo único"}
@@ -234,7 +234,7 @@ export function SettingsPage() {
                 <button
                   onClick={() => { setRegisterSuccess(false); registerMutation.mutate(); }}
                   disabled={registerMutation.isPending}
-                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-bg-muted px-4 py-2.5 text-sm text-text-secondary transition hover:border-accent-lime/50 hover:text-text-primary disabled:opacity-50"
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-bg-muted px-4 py-2.5 text-sm text-text-secondary transition hover:border-accent-brand/50 hover:text-text-primary disabled:opacity-50"
                 >
                   {registerMutation.isPending ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Aguardando biometria...</>
@@ -246,7 +246,7 @@ export function SettingsPage() {
             ) : (
               <>
                 {registerSuccess ? (
-                  <div className="flex items-center gap-2 rounded-xl bg-accent-lime/10 px-4 py-3 text-sm text-accent-lime">
+                  <div className="flex items-center gap-2 rounded-xl bg-accent-brand/10 px-4 py-3 text-sm text-accent-brand">
                     <ShieldCheck className="h-4 w-4 shrink-0" />
                     Biometria ativada com sucesso!
                   </div>
@@ -254,7 +254,7 @@ export function SettingsPage() {
                   <button
                     onClick={() => registerMutation.mutate()}
                     disabled={registerMutation.isPending}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-50"
                   >
                     {registerMutation.isPending ? (
                       <><Loader2 className="h-4 w-4 animate-spin" /> Aguardando biometria...</>

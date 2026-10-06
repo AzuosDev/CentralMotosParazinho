@@ -33,7 +33,7 @@ function todayInputValue() {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime";
+  "w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-brand";
 const labelCls = "block text-sm text-text-secondary mb-1";
 
 export function TransferModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -109,7 +109,7 @@ export function TransferModal({ open, onClose }: { open: boolean; onClose: () =>
             type="submit"
             form="transfer-form"
             disabled={mutation.isPending || !hasEnoughWallets}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Transferir
@@ -127,7 +127,7 @@ export function TransferModal({ open, onClose }: { open: boolean; onClose: () =>
           <Link
             to="/carteiras"
             onClick={onClose}
-            className="mt-3 inline-block font-bold text-accent-lime underline underline-offset-2 hover:brightness-110"
+            className="mt-3 inline-block font-bold text-accent-brand underline underline-offset-2 hover:text-text-primary"
           >
             Criar carteira agora →
           </Link>

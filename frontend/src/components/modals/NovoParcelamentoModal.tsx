@@ -96,7 +96,7 @@ export function NovoParcelamentoModal({
       open={open}
       onClose={onClose}
       title="Nova Compra Parcelada"
-      icon={<CreditCard className="h-6 w-6 text-accent-lime" />}
+      icon={<CreditCard className="h-6 w-6 text-accent-brand" />}
       footer={
         <div className="flex gap-3">
           <button
@@ -111,7 +111,7 @@ export function NovoParcelamentoModal({
             type="button"
             onClick={() => mutation.mutate(undefined)}
             disabled={mutation.isPending || !canSubmit}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-70"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-70"
           >
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Criar
@@ -127,7 +127,7 @@ export function NovoParcelamentoModal({
             onChange={(e) => setDescricao(e.target.value)}
             placeholder="Ex: Notebook, Geladeira…"
             maxLength={200}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
           />
         </label>
 
@@ -140,7 +140,7 @@ export function NovoParcelamentoModal({
 
         <label className="block">
           <span className="mb-2 block text-sm text-text-secondary">Valor total <span className="text-accent-red">*</span></span>
-          <div className="flex items-center rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 focus-within:border-accent-lime">
+          <div className="flex items-center rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 focus-within:border-accent-brand">
             <CurrencyInput
               value={valorTotal}
               onChange={setValorTotal}
@@ -157,7 +157,7 @@ export function NovoParcelamentoModal({
             max={48}
             value={totalParcelas}
             onChange={(e) => setTotalParcelas(e.target.value)}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
           />
         </label>
 
@@ -167,7 +167,7 @@ export function NovoParcelamentoModal({
             type="date"
             value={dataCompra}
             onChange={(e) => setDataCompra(e.target.value)}
-            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-lime"
+            className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
           />
           <span className="mt-1 block text-xs text-text-secondary">
             A data real da compra — é a partir dela que o app calcula em qual fatura cada parcela cai.
@@ -190,7 +190,7 @@ export function NovoParcelamentoModal({
               type="button"
               onClick={() => mutation.mutate(true)}
               disabled={mutation.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-red-hover disabled:opacity-70"
             >
               {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Confirmar mesmo assim

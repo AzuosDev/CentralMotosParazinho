@@ -229,7 +229,7 @@ export function TransactionsPage() {
               setTxOpen(true);
             }
           }}
-          className="flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition hover:brightness-110"
+          className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
         >
           <Plus className="h-4 w-4" />
           Nova
@@ -271,7 +271,7 @@ export function TransactionsPage() {
           className="flex w-full items-center justify-between gap-3 text-sm font-semibold text-text-primary"
         >
           <span className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-accent-lime" />
+            <Filter className="h-4 w-4 text-accent-brand" />
             Filtros
           </span>
           <ChevronDown className={cn("h-4 w-4 transition", filtersOpen && "rotate-180")} />
@@ -283,7 +283,7 @@ export function TransactionsPage() {
               value={categoryId}
               disabled={selectedType === "INCOME"}
               onChange={(event) => patchParams({ categoryId: event.target.value || undefined })}
-              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-brand disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Todas as categorias</option>
               {(categoriesQuery.data ?? []).map((category) => (
@@ -296,7 +296,7 @@ export function TransactionsPage() {
             <select
               value={month}
               onChange={(event) => patchParams({ month: event.target.value })}
-              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime"
+              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-brand"
             >
               {months.map((label, index) => (
                 <option key={label} value={index + 1}>
@@ -308,7 +308,7 @@ export function TransactionsPage() {
             <select
               value={year}
               onChange={(event) => patchParams({ year: event.target.value })}
-              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-lime"
+              className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-brand"
             >
               {years.map((option) => (
                 <option key={option} value={option}>
@@ -386,7 +386,7 @@ export function TransactionsPage() {
                 const targetWalletId = event.target.value;
                 if (targetWalletId) bulkWalletMutation.mutate(targetWalletId);
               }}
-              className="flex-1 rounded-xl border border-bg-muted bg-bg-muted px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent-lime disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+              className="flex-1 rounded-xl border border-bg-muted bg-bg-muted px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent-brand disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
             >
               <option value="" disabled>
                 {realWallets.length === 0 ? "Nenhuma carteira disponível" : "Mover para…"}
@@ -398,7 +398,7 @@ export function TransactionsPage() {
               ))}
             </select>
 
-            {bulkWalletMutation.isPending && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-accent-lime" />}
+            {bulkWalletMutation.isPending && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-accent-brand" />}
 
             <button
               type="button"
@@ -440,7 +440,7 @@ export function TransactionsPage() {
                 onClick={() => { setChoiceOpen(false); setSelectedTx(null); setTxTab("INCOME"); setTxOpen(true); }}
                 className="flex items-center gap-3 rounded-xl bg-bg-muted p-4 text-left hover:bg-bg-overlay"
               >
-                <TrendingUp className="h-5 w-5 text-accent-lime" />
+                <TrendingUp className="h-5 w-5 text-accent-brand" />
                 <span className="font-semibold">Adicionar Ganho</span>
               </button>
               <button
@@ -487,7 +487,7 @@ export function TransactionsPage() {
                 type="button"
                 onClick={() => deleteMutation.mutate(deleting.id)}
                 disabled={deleteMutation.isPending}
-                className="flex items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-3 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-xl bg-accent-red px-4 py-3 text-sm font-bold text-white hover:bg-accent-red-hover disabled:opacity-60"
               >
                 {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Excluir

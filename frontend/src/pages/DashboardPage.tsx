@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { Wallet as WalletType } from "../types/api";
 import { BankLogo } from "../components/ui/BankLogo";
+import { CATEGORY_NEUTRAL, EXPENSE_HEX, INCOME_HEX } from "../lib/colors";
 import {
   Area,
   AreaChart,
@@ -233,7 +234,7 @@ function normalizeDashboard(data: DashboardApiResponse): DashboardData {
             ) || "Categoria",
           color:
             readString(item.color, item.categoryColor, category.color) ||
-            "#6B7280",
+            CATEGORY_NEUTRAL,
           amount: readNumber(item.amount, item.total, item.value),
         };
       })
@@ -251,7 +252,7 @@ function normalizeDashboard(data: DashboardApiResponse): DashboardData {
             "Movimentação",
           categoryColor:
             readString(item.categoryColor, category.color) ||
-            (type === "INCOME" ? "#A3E635" : "#EF4444"),
+            (type === "INCOME" ? INCOME_HEX : EXPENSE_HEX),
           description: readString(item.description, item.notes),
           date: readString(
             item.date,
@@ -345,13 +346,13 @@ function EmptyWallet() {
       <path
         d="M86 74c0-8 6-14 14-14h40v36h-40c-8 0-14-6-14-14v-8Z"
         fill="rgb(var(--bg-card))"
-        stroke="#4B5563"
+        stroke="rgb(var(--border-strong))"
         strokeWidth="4"
       />
-      <circle cx="104" cy="78" r="5" fill="rgb(var(--accent-lime-line))" />
+      <circle cx="104" cy="78" r="5" fill="rgb(var(--accent-brand-line))" />
       <path
         d="M42 28 88 16c8-2 15 3 17 10l2 8H42v-6Z"
-        fill="rgb(var(--accent-lime-line))"
+        fill="rgb(var(--accent-brand-line))"
         opacity="0.3"
       />
     </svg>
@@ -361,9 +362,7 @@ function EmptyWallet() {
 // O traço do gráfico usa a variante "line" do acento; como texto, usa a "ink"
 // (no tema escuro as duas são idênticas; no claro a "ink" é mais escura).
 function toInkColor(color?: string) {
-  return color
-    ?.replace("--accent-lime-line", "--accent-lime-ink")
-    .replace("--accent-orange)", "--accent-orange-ink)");
+  return color?.replace("--accent-brand-line", "--accent-brand-ink");
 }
 
 function CustomTooltip({
@@ -444,7 +443,7 @@ export function DashboardPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setAddModalOpen(true)}
-            className="hidden md:flex items-center gap-2 rounded-xl bg-accent-lime px-4 py-3 text-sm font-bold text-black transition-opacity hover:brightness-110"
+            className="hidden md:flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition-opacity hover:bg-accent-brand-hover"
             aria-label="Adicionar transação"
           >
             <Plus className="h-6 w-6" /> Nova
@@ -452,7 +451,7 @@ export function DashboardPage() {
           <select
             value={month}
             onChange={(event) => setMonth(Number(event.target.value))}
-            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime"
+            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-brand"
           >
             {monthOptions.map((label, index) => (
               <option key={label} value={index + 1}>
@@ -463,7 +462,7 @@ export function DashboardPage() {
           <select
             value={year}
             onChange={(event) => setYear(Number(event.target.value))}
-            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-lime"
+            className="rounded-xl border border-bg-muted bg-bg-card px-4 py-3 text-sm text-text-primary outline-none transition focus:border-accent-brand"
           >
             {years.map((option) => (
               <option key={option} value={option}>
@@ -483,7 +482,7 @@ export function DashboardPage() {
       <div className="rounded-2xl bg-bg-card p-6">
         <p className="text-sm uppercase tracking-widest text-text-secondary">Saldo</p>
         <div className="mt-3 flex items-center gap-3">
-          <strong className={cn("font-sans text-3xl font-extrabold sm:text-5xl", dashboard.balance < 0 ? "text-accent-red" : "text-accent-lime")}>
+          <strong className={cn("font-sans text-3xl font-extrabold sm:text-5xl", dashboard.balance < 0 ? "text-accent-red" : "text-text-primary")}>
             {fmt(dashboard.balance)}
           </strong>
           <button
@@ -495,7 +494,7 @@ export function DashboardPage() {
           </button>
         </div>
         <div className="mt-5 flex flex-wrap gap-4 text-sm">
-          <span className="text-accent-lime">
+          <span className="text-semantic-income">
             Entradas: {fmt(dashboard.totalIncome)}
           </span>
           <span className="text-accent-red">
@@ -509,7 +508,7 @@ export function DashboardPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-sans text-lg font-bold">Carteiras</h2>
-            <Link to="/carteiras" className="text-sm font-semibold text-accent-lime">
+            <Link to="/carteiras" className="text-sm font-semibold text-accent-brand">
               Gerenciar
             </Link>
           </div>
@@ -522,7 +521,7 @@ export function DashboardPage() {
               >
                 <BankLogo nome={wallet.nome} icone={wallet.icone} className="h-5 w-5" />
                 <span className="max-w-[120px] truncate text-text-secondary">{wallet.nome}</span>
-                <strong className={cn("font-sans font-bold", wallet.saldo < 0 ? "text-accent-red" : "text-accent-lime")}>
+                <strong className={cn("font-sans font-bold", wallet.saldo < 0 ? "text-accent-red" : "text-text-primary")}>
                   {fmt(wallet.saldo)}
                 </strong>
               </Link>
@@ -536,11 +535,11 @@ export function DashboardPage() {
           <h2 className="font-sans text-xl font-bold">Evolução Mensal</h2>
           <div className="flex gap-4 text-xs text-text-secondary">
             <span className="flex items-center gap-2">
-              <i className="h-2.5 w-2.5 rounded-full bg-accent-lime" />{" "}
+              <i className="h-2.5 w-2.5 rounded-full bg-semantic-income" />{" "}
               Entradas
             </span>
             <span className="flex items-center gap-2">
-              <i className="h-2.5 w-2.5 rounded-full bg-accent-orange" />{" "}
+              <i className="h-2.5 w-2.5 rounded-full bg-semantic-expense" />{" "}
               Saídas
             </span>
           </div>
@@ -550,19 +549,19 @@ export function DashboardPage() {
             <AreaChart data={dashboard.monthlyEvolution}>
               <defs>
                 <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="rgb(var(--accent-lime-line))" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="rgb(var(--accent-lime-line))" stopOpacity={0} />
+                  <stop offset="5%" stopColor="rgb(var(--color-income))" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="rgb(var(--color-income))" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="rgb(var(--accent-orange))" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="rgb(var(--accent-orange))" stopOpacity={0} />
+                  <stop offset="5%" stopColor="rgb(var(--color-expense))" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="rgb(var(--color-expense))" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="month" stroke="rgb(var(--chart-axis))" tickLine={false} axisLine={false} />
               <YAxis stroke="rgb(var(--chart-axis))" tickLine={false} axisLine={false} tickFormatter={formatCompact} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" name="Entradas" dataKey="income" stroke="rgb(var(--accent-lime-line))" fill="url(#incomeGradient)" strokeWidth={2} />
-              <Area type="monotone" name="Saídas" dataKey="expense" stroke="rgb(var(--accent-orange))" fill="url(#expenseGradient)" strokeWidth={2} />
+              <Area type="monotone" name="Entradas" dataKey="income" stroke="rgb(var(--color-income))" fill="url(#incomeGradient)" strokeWidth={2} />
+              <Area type="monotone" name="Saídas" dataKey="expense" stroke="rgb(var(--color-expense))" fill="url(#expenseGradient)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -576,7 +575,7 @@ export function DashboardPage() {
           </h2>
           <button
             onClick={() => navigate("/transactions?type=EXPENSE&action=create")}
-            className="mt-5 rounded-xl bg-accent-lime px-5 py-3 text-sm font-bold text-black transition hover:brightness-110"
+            className="mt-5 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
           >
             Adicionar primeiro gasto
           </button>
@@ -588,7 +587,7 @@ export function DashboardPage() {
               icon={TrendingUp}
               label="Entradas"
               value={fmt(dashboard.totalIncome)}
-              iconClassName="text-accent-lime"
+              iconClassName="text-semantic-income"
               onClick={() => navigate("/transactions?type=INCOME")}
             />
             <SummaryCard
@@ -614,7 +613,7 @@ export function DashboardPage() {
               icon={PiggyBank}
               label="Taxa de Poupança"
               value={show ? `${dashboard.savingsRate.toFixed(1)}%` : "••••"}
-              iconClassName="text-accent-lime"
+              iconClassName="text-text-secondary"
             />
           </div>
 
@@ -625,7 +624,7 @@ export function DashboardPage() {
               </h2>
               <Link
                 to="/expenses"
-                className="text-sm font-semibold text-accent-lime"
+                className="text-sm font-semibold text-accent-brand"
               >
                 Ver todas
               </Link>
@@ -671,7 +670,7 @@ export function DashboardPage() {
               </h2>
               <Link
                 to="/transactions"
-                className="text-sm font-semibold text-accent-lime"
+                className="text-sm font-semibold text-accent-brand"
               >
                 Ver todas
               </Link>
@@ -713,7 +712,7 @@ export function DashboardPage() {
                     className={cn(
                       "text-sm",
                       transaction.type === "INCOME"
-                        ? "text-accent-lime"
+                        ? "text-semantic-income"
                         : "text-accent-red",
                     )}
                   >
