@@ -18,10 +18,14 @@ async function bootstrap() {
       .map((origin) => origin.trim().replace(/\/$/, ''))
       .filter(Boolean);
 
+    // O Vite sobe em 5174 quando a 5173 já está ocupada (duas instâncias de dev
+    // abertas). Esta lista é gêmea da de src/main.ts — mexeu aqui, mexa lá.
     const allowedOrigins = new Set([
       ...configuredOrigins,
       'http://localhost:5173',
       'http://127.0.0.1:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5174',
       'https://meugasto.vercel.app',
     ]);
 
