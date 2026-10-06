@@ -1,62 +1,44 @@
 ---
-name: MeuGasto
-description: Finanças pessoais sem conectar o banco. App escuro com acento lima; marca na mesa verde-floresta.
+name: Central Motos
+description: Sistema financeiro da Central Motos. Preto, vermelho e branco; alto contraste, estética de painel de instrumentos.
 colors:
-  bg-base: "#0a0a0a"
-  bg-card: "#141414"
-  bg-muted: "#1c1c1c"
-  bg-overlay: "#232323"
+  bg-base: "#050505"
+  bg-card: "#0d0d0d"
+  bg-muted: "#1a1a1a"
+  bg-overlay: "#262626"
   text-primary: "#ffffff"
-  text-secondary: "#9ca3af"
-  text-muted: "#80868f"
-  border-default: "#2a2a2a"
-  border-strong: "#3a3a3a"
-  accent-lime: "#a3e635"
-  accent-orange: "#f97316"
-  color-income: "#22c55e"
-  color-expense: "#ef4444"
-  color-pending: "#eab308"
-  forest: "#0e2a1e"
-  forest-deep: "#091f15"
-  forest-nav: "#0b2419"
-  forest-raised: "#163a2a"
-  brand-lime: "#bef264"
-  brand-lime-hover: "#d9f99d"
-  forest-text: "#eef5ec"
-  forest-ink-soft: "#bdd0bb"
-  floor-ink: "#a9b8a6"
-  caption-green: "#8fa68d"
-  floor-rule: "#1f2b24"
-  forest-ring: "#2f4a3c"
-  paper: "#f6f8f3"
-  paper-white: "#ffffff"
-  paper-ink: "#10231a"
-  paper-ink-body: "#34473b"
-  paper-ink-secondary: "#4b5f52"
-  paper-rule: "#dfe7da"
-  paper-track: "#e5ecdf"
-  paper-lime-tint: "#ecfccb"
-  paper-lime-ink: "#3f6212"
+  text-secondary: "#a3a3a3"
+  text-muted: "#828282"
+  border-default: "#333333"
+  border-strong: "#4a4a4a"
+  accent-brand: "#e10600"
+  accent-brand-ink: "#ff3b30"
+  accent-brand-hover: "#b80000"
+  accent-brand-soft: "#ffe5e5"
+  accent-red: "#d31109"
+  accent-red-ink: "#ff3b30"
+  accent-red-hover: "#a80d07"
+  color-income: "#2fb85c"
+  color-expense: "#ff3b30"
+  color-pending: "#f5a623"
+  status-info: "#d4d4d4"
+  cat-1: "#e66767"
+  cat-2: "#3987e5"
+  cat-3: "#d95926"
+  cat-4: "#199e70"
+  cat-5: "#9085e9"
+  cat-6: "#c98500"
+  cat-7: "#d55181"
+  cat-8: "#008300"
+  cat-neutral: "#8a8a8a"
 typography:
-  brand-display:
-    fontFamily: "Bricolage Grotesque, DM Sans, sans-serif"
-    fontSize: "clamp(2.2rem, 5vw, 4.1rem)"
+  brand-lockup:
+    fontFamily: "DM Sans, sans-serif"
+    fontSize: "0.9375rem"
     fontWeight: 800
     lineHeight: 1
-    letterSpacing: "-0.035em"
-  brand-headline:
-    fontFamily: "Bricolage Grotesque, DM Sans, sans-serif"
-    fontSize: "1.875rem"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.025em"
-  brand-figure:
-    fontFamily: "Bricolage Grotesque, DM Sans, sans-serif"
-    fontSize: "3.75rem"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "-0.04em"
-    fontFeature: "tnum"
+    letterSpacing: "0.14em"
+    textTransform: "uppercase"
   app-title:
     fontFamily: "Syne, sans-serif"
     fontSize: "1.875rem"
@@ -69,6 +51,13 @@ typography:
     fontWeight: 700
     lineHeight: 1.25
     letterSpacing: "-0.02em"
+  figure:
+    fontFamily: "DM Sans, sans-serif"
+    fontSize: "3rem"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.02em"
+    fontFeature: "tnum"
   body:
     fontFamily: "DM Sans, sans-serif"
     fontSize: "1rem"
@@ -88,9 +77,7 @@ rounded:
   icon: "12px"
   card: "16px"
   pill: "9999px"
-  brand-paper: "20px"
-  brand-plan: "24px"
-  brand-panel: "28px"
+  panel: "28px"
 spacing:
   card-sm: "16px"
   card-md: "20px"
@@ -98,14 +85,20 @@ spacing:
   gutter-mobile: "16px"
   gutter-tablet: "24px"
   gutter-desktop: "40px"
-  section: "96px"
-  section-lg: "128px"
 components:
   button-primary:
-    backgroundColor: "{colors.accent-lime}"
-    textColor: "#000000"
+    backgroundColor: "{colors.accent-brand}"
+    textColor: "{colors.text-primary}"
     typography: "{typography.body-sm}"
     rounded: "{rounded.pill}"
+    padding: "12px 20px"
+  button-primary-hover:
+    backgroundColor: "{colors.accent-brand-hover}"
+    textColor: "{colors.text-primary}"
+  button-destructive:
+    backgroundColor: "{colors.accent-red}"
+    textColor: "{colors.text-primary}"
+    rounded: "{rounded.icon}"
     padding: "12px 20px"
   input:
     backgroundColor: "{colors.bg-muted}"
@@ -126,186 +119,240 @@ components:
   nav-item-active:
     backgroundColor: "{colors.bg-muted}"
     textColor: "{colors.text-primary}"
+    iconColor: "{colors.accent-brand}"
     rounded: "{rounded.icon}"
     padding: "12px 16px"
-  brand-button-primary:
-    backgroundColor: "{colors.brand-lime}"
-    textColor: "{colors.paper-ink}"
+  chip-state:
+    backgroundColor: "{colors.accent-brand} @ 15%"
+    textColor: "{colors.accent-brand-ink}"
     rounded: "{rounded.pill}"
-    padding: "14px 28px"
-  brand-button-primary-hover:
-    backgroundColor: "{colors.brand-lime-hover}"
-    textColor: "{colors.paper-ink}"
-  brand-button-ghost:
-    textColor: "{colors.forest-text}"
-    rounded: "{rounded.pill}"
-    padding: "14px 24px"
-  brand-button-on-paper:
-    backgroundColor: "{colors.paper-ink}"
-    textColor: "{colors.brand-lime}"
-    rounded: "{rounded.pill}"
-    padding: "16px 28px"
-  brand-paper-piece:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.paper-ink}"
-    rounded: "{rounded.brand-paper}"
-    padding: "24px"
-  brand-plan-dark:
-    backgroundColor: "{colors.forest-raised}"
-    textColor: "{colors.forest-text}"
-    rounded: "{rounded.brand-plan}"
-    padding: "40px"
+    padding: "4px 10px"
+  instrument-panel:
+    backgroundColor: "{colors.bg-card}"
+    border: "1px solid rgba(255,255,255,0.10)"
+    boxShadow: "0 1.5rem 3rem -1rem rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.07)"
+    rounded: "18px"
+    padding: "20px"
 ---
 
-# Design System: MeuGasto
+# Design System: Central Motos
 
 ## Overview
 
-**Creative North Star: "A mesa verde-floresta"**
+**Creative North Star: "O painel de instrumentos"**
 
-O MeuGasto tem duas camadas visuais, e cada uma governa um território próprio. A **camada do app** (Operate: dashboard, carteiras, cartões, contas, metas, insights, configurações) é um sistema de tokens por papel em `frontend/src/styles.css` + `tailwind.config.ts`: escuro por padrão (#0a0a0a), com tema claro espelhado sob `html.light`, superfícies que sobem em degraus tonais e um único acento lima. É denso, calmo e funcional; o número que o usuário vê é o protagonista.
+A Central Motos compra, vende e financia moto. O sistema dela não imita isso com
+ilustração de moto: imita o **painel** de uma. Preto profundo, número branco
+grande e legível de relance, e um único vermelho que só acende onde há ação ou
+alerta. É um instrumento, não um folheto — quem abre quer saber quanto tem e o
+que vence, no tempo de um olhar para o velocímetro.
 
-A **camada de marca** (a landing em `/landing` e o painel `AuthShowcase` das telas de autenticação) é a mesa verde-floresta: um campo #0e2a1e iluminado por uma "lua" de luz lima no canto, sobre o qual peças do próprio app, impressas em papel claro com tinta verde-escura e sombras longas e macias, se arrumam como objetos sobre uma mesa. Essa camada é independente de tema: é idêntica no claro e no escuro, por isso suas cores vivem como valores fixos nos próprios componentes, não nos tokens de tema. As faixas #0a0a0a da landing são "o chão do app": o mesmo fundo do produto, usado como respiro entre os trechos de mesa.
+Há duas camadas, como antes, mas agora elas compartilham a mesma paleta em vez
+de se contradizerem:
 
-As duas camadas se ligam pelo lima, pela DM Sans no corpo e pelas peças: a marca não inventa ilustrações, ela mostra fragmentos fiéis da interface (saldo, cartão, fatura, contas, meta) rotulados como "Valores ilustrativos". A camada de marca recusa o hero centralizado seguido de grade de cards com ícone; a prova é o produto em cena.
+A **camada do app** (dashboard, carteiras, cartões, contas, metas, gastos,
+configurações) é um sistema de tokens por papel em `frontend/src/styles.css` +
+`tailwind.config.ts`: escuro por padrão (#050505), com tema claro espelhado sob
+`html.light`, superfícies que sobem em degraus tonais e um único acento
+vermelho. Denso, calmo, funcional; o número é o protagonista.
+
+A **camada de marca** (o painel `AuthShowcase` das telas de autenticação) é o
+mesmo mundo em registro expressivo: peças do próprio app desenhadas como
+mostradores escuros com régua de luz na borda de cima, sobre um banho de
+vermelho baixo — farol batendo no asfalto. É independente de tema (idêntica no
+claro e no escuro), por isso suas cores vivem como valores fixos no componente,
+não nos tokens.
+
+A landing pública e as sete páginas temáticas de SEO são herança do MeuGasto, o
+produto de que este sistema é um fork. Estão **ocultas** (`LANDING_VISIVEL` em
+`frontend/src/App.tsx`) e mantêm o visual e o texto antigos: não são referência
+para nada aqui.
 
 **Key Characteristics:**
-- Dois territórios: tokens de tema no app; valores fixos, independentes de tema, na marca.
-- Dois limas com papéis distintos: #a3e635 (app, com papéis fill/ink/line) e #bef264 (marca, única cor de ação sobre o verde-floresta).
-- Profundidade no app por degraus tonais; na marca, por papel com sombra longa e macia.
-- Bricolage Grotesque 700–800 só na landing; DM Sans auto-hospedada no resto.
+- Um vermelho só, #E10600, com três papéis (fill / ink / line) resolvidos por token.
+- Profundidade por degrau tonal no app; por régua de luz e sombra funda na marca.
+- Branco é "valor normal"; vermelho é ação, marca e alerta. Saldo positivo **nunca** é vermelho.
 - Números sempre tabulares.
 - Movimento com uma curva só, `cubic-bezier(0.16, 1, 0.3, 1)`, e `prefers-reduced-motion` respeitado.
 
 ## Colors
 
-Paleta de acento único em cada camada: neutros quase pretos com lima no app; verde-floresta, papel e lima claro na marca.
-
 ### Primary
-- **Lima do app** (accent-lime): preenchimento de ação no app (botão principal com texto preto, item de navegação ativo no ícone, foco de campo). No tema escuro os três papéis (`--accent-lime`, `-ink`, `-line`) têm o mesmo valor; no claro, o preenchimento vira lime-500 (#84cc16), o texto lime-700 (#4d7c0f) e o traço lime-600 (#65a30d), porque #a3e635 sobre branco dá 1,4:1.
-- **Lima de marca** (brand-lime): a única cor de ação sobre o verde-floresta: CTA "Começar teste grátis", toggle Mensal/Anual, marcadores de check, anel de foco, segunda frase de título, logo. Hover clareia para brand-lime-hover.
+- **Vermelho da marca** (accent-brand): a única cor de ação. Botão principal
+  (texto branco, 5,0:1), ícone do item de navegação ativo, anel de foco, barra
+  de progresso, link. Hover escurece para `accent-brand-hover` (#B80000 no
+  escuro, #990000 no claro) — nunca `brightness`, que lava o vermelho.
+- Três papéis, porque um valor só não serve aos dois temas:
+  `--accent-brand` preenche, `--accent-brand-ink` escreve, `--accent-brand-line`
+  traça. No escuro o ink clareia para **#FF3B30** (5,5:1 sobre o card) porque o
+  #E10600 puro dá 3,9:1 ali; no claro o ink escurece para **#B80000** (6,9:1).
 
 ### Secondary
-- **Semânticas do app** (color-income, color-expense, color-pending): entrada, saída, pendente. Só significam dinheiro; no tema claro escurecem para green-700 (#15803d), red-600 (#dc2626), yellow-700 (#a16207). accent-orange é acento secundário do app com o mesmo esquema fill/ink.
+- **Semânticas** (color-income #2FB85C, color-expense #FF3B30, color-pending
+  #F5A623): entrada, saída, pendente. Só significam dinheiro. No claro escurecem
+  para green-700, #C60B00 e yellow-700.
+- **status-info é neutro** (#D4D4D4 / #404040), nunca azul: informação não é cor
+  de marca. `status-warning` e `status-danger` derivam de pending e expense.
 
 ### Neutral
-- **Chão do app** (bg-base): fundo da página no app e das faixas de respiro da landing.
-- **Degraus do app** (bg-card, bg-muted, bg-overlay): card, campo/chip/trilho, hover/seção secundária, cada um um degrau acima.
-- **Tintas do app** (text-primary, text-secondary, text-muted): título/valor, apoio, legenda (text-muted tem 5,0:1 sobre o card).
-- **Bordas do app** (border-default, border-strong).
-- **Verde-floresta** (forest): o campo da mesa, fundo da landing, do painel de autenticação, da seção de preço e do fechamento.
-- **Floresta profunda** (forest-deep): rodapé, trilho do toggle, trilho da barra de rolagem da landing. **forest-nav** é o fundo da barra de navegação depois de rolar.
-- **Floresta elevada** (forest-raised): peças escuras sobre a mesa (pílula de aviso, plano Empresarial).
-- **Tintas sobre o verde** (forest-text, forest-ink-soft, floor-ink, caption-green): texto principal, parágrafos sobre floresta, parágrafos sobre o chão #0a0a0a, e legendas/segunda frase apagada ("Valores ilustrativos.", "Mais tempo pra decidir."). Todas têm matiz verde; nenhum cinza neutro aparece na marca.
-- **Linhas sobre o verde** (floor-rule, forest-ring): divisórias de lista no chão escuro e anel dos botões circulares.
-- **Papel** (paper, paper-white): as peças claras. **Tinta de papel** (paper-ink, paper-ink-body, paper-ink-secondary): valor, linha de lista, rótulo. **Régua e trilho de papel** (paper-rule, paper-track). **Lima sobre papel** (paper-lime-tint fundo, paper-lime-ink texto) para chips e ícones positivos dentro das peças.
+- **Chão** (bg-base #050505): fundo da página.
+- **Degraus** (bg-card #0D0D0D, bg-muted #1A1A1A, bg-overlay #262626): card,
+  campo/chip/trilho, hover/seção secundária, um degrau acima do outro.
+- **Tintas** (text-primary #FFF, text-secondary #A3A3A3 — 7,7:1, text-muted
+  #828282 — 5,1:1 sobre o card e 4,5:1 dentro de um campo, que é onde mora o
+  placeholder).
+- **Linhas** (border-default #333333, border-strong #4A4A4A).
+
+### Categórica (gráficos)
+Oito matizes em ordem fixa (`cat-1`…`cat-8`) mais um neutro, em
+`frontend/src/lib/colors.ts` e espelhados em `DEFAULT_CATEGORIES` no backend. A
+**ordem é o mecanismo de segurança para daltonismo**, não enfeite: foi escolhida
+entre as 272 permutações que passam em todas as travas do validador de paleta
+liderando pelo vermelho da marca (pior par adjacente ΔE 9,2 CVD / 19,3 visão
+normal). Transferências e saques usam `cat-neutral` — não são gasto, então
+recuam.
 
 ### Named Rules
-**The Two Limes Rule.** #a3e635 pertence ao app e passa por tokens com papéis fill/ink/line; #bef264 pertence à mesa verde-floresta e nunca entra em tela do app. Não misture os dois na mesma superfície.
+**The Role Token Rule.** No app, cor só por token (`bg-accent-brand`,
+`text-accent-brand`, `border-accent-brand`), nunca hex solto: `text-*` resolve
+para a versão ink, `border/ring/stroke` para a line. Valor fixo só é legítimo na
+camada de marca (independente de tema) e em `src/lib/colors.ts`, onde a cor
+precisa mesmo ser um literal de JavaScript.
 
-**The Role Token Rule.** No app, cor só por token (`bg-bg-card`, `text-accent-lime`, `border-accent-lime`), nunca hex solto: `text-*` resolve para a versão ink, `border/ring/stroke` para a versão line. Valores fixos só são legítimos na camada de marca, que é independente de tema.
+**The White Is Normal Rule.** Valor positivo — saldo, saldo de carteira, meta a
+alcançar — é **branco**, não vermelho. Vermelho sobre número só significa
+negativo, vencido ou destrutivo. Num app de dinheiro, pintar o saldo saudável
+com a cor da marca é dizer ao usuário que ele está no prejuízo.
 
-**The Dark-Stays-Put Rule.** Mudança no tema claro fica sob `html.light` (ou a variante `light:`) e deixa o escuro idêntico ao pixel.
+**The Red Fill Takes White Rule.** Todo preenchimento `accent-brand` leva texto
+branco. O acento anterior (lima) era claro e pedia texto preto; o vermelho é
+escuro e qualquer `text-black` sobre ele é um resto do sistema antigo.
+
+**The Dark-Stays-Put Rule.** Mudança no tema claro fica sob `html.light` (ou a
+variante `light:`) e deixa o escuro idêntico ao pixel.
 
 ## Typography
 
-**Display Font:** Bricolage Grotesque (com DM Sans, sans-serif), variável 600–800, só na landing
 **Body Font:** DM Sans (com sans-serif), auto-hospedada em `public/fonts/`
-**App heading stack:** `fontFamily.sans` = Syne, sans-serif (configurada, nunca carregada; renderiza a sans padrão do navegador)
-
-**Character:** Na marca, uma grotesca de títulos pesada e apertada, compartilhada com a Azuos Dev, contra uma DM Sans aberta e legível. No app, DM Sans carrega quase tudo e os números mandam.
+**App heading stack:** `fontFamily.sans` = Syne, sans-serif (configurada, nunca
+carregada; renderiza a sans padrão do navegador — pré-existente, não é bug)
+**Display Font:** Bricolage Grotesque existe em `public/fonts/` mas só é baixada
+nas páginas públicas, que estão ocultas. Nenhuma tela ativa depende dela.
 
 ### Hierarchy
-- **Brand display** (800, 2.2rem → 4.1rem, 0.98–1.02): títulos da landing, sempre em duas frases curtas, a segunda em bloco próprio, em brand-lime ou caption-green. `text-wrap: balance`.
-- **Brand headline** (700, 1.5rem → 1.875rem, -0.025em): subtítulos das seções da landing ("Importe o extrato.").
-- **Brand figure** (800, tabular, -0.03em a -0.04em): valores nas peças e no preço (R$ 4.182,50, R$ 29,90). A unidade ("/mês") cai para DM Sans 500 com tracking normal.
-- **App title** (700, 1.875rem, tracking-tight): título de página (`PageHeader`) e headings base, pela pilha `font-sans`.
-- **Auth title** (DM Sans 700, 1.875rem, -0.02em): títulos das telas de autenticação e dos slides do `AuthShowcase`, que não carregam a Bricolage.
-- **Body** (400, 1rem–1.125rem, 1.625): parágrafos, limite de 34–36rem na landing (`max-w-[36rem]`), `text-wrap: pretty`.
-- **Body small** (500–600, 0.875rem): botões, navegação, linhas de lista do app.
-- **Label** (500, 0.75rem): rótulo de campo (`text-text-secondary`), legendas.
+- **Brand lockup** (800, 0.9375rem, tracking 0.14em, caixa alta, em duas linhas:
+  "CENTRAL" em branco, "MOTOS" em vermelho): barra lateral, cabeçalho, painel de
+  autenticação.
+- **App title** (700, 1.875rem, tracking-tight): título de página (`PageHeader`).
+- **Auth title** (DM Sans 700, 1.875rem, -0.02em): títulos das telas de autenticação.
+- **Figure** (800, tabular, -0.02em): saldo e demais valores de destaque.
+- **Body** (400, 1rem, 1.625) · **Body small** (500–600, 0.875rem) · **Label** (500, 0.75rem).
 
 ### Named Rules
-**The Display Quarantine Rule.** A Bricolage Grotesque só é baixada na rota `/landing` (script inline do `index.html` + `useLandingChrome`). Nenhuma tela do app nem de autenticação depende dela; títulos fora da landing usam DM Sans.
-
-**The Tabular Rule.** Todo valor monetário, porcentagem e dígito de cartão usa `tabular-nums`.
+**The Tabular Rule.** Todo valor monetário, porcentagem e dígito de cartão usa
+`tabular-nums`.
 
 ## Layout
 
-App: `AppLayout` com barra lateral (itens `rounded-xl`, recolhível para só ícones com tooltip) e conteúdo em cards; padding interno de card 16/20/24px, cabeçalho de página com `mb-8`. Tema claro espelha a mesma estrutura.
-
-Landing: contêiner `max-w-7xl` (1280px) com gutters 16/24/40px (mobile/sm/lg) e grade de 12 colunas no desktop. O hero e os argumentos ocupam 5 colunas à esquerda; a mesa ocupa 7 à direita, fixa (`sticky`, altura `100svh - 4.5rem`), sangrando ~7% para a direita. Cada argumento tem `min-h-[78vh]` e o que cruza o meio da tela decide o arranjo da mesa. Seções seguintes alternam fundo floresta e chão #0a0a0a, com `py-24` / `sm:py-32` e composições assimétricas 5/7 ou 4/8, nunca centralizadas. Abaixo de `lg`, a mesa aparece uma vez sob o hero (sangrando à direita, `pt-10`) e cada argumento mostra sua peça em linha.
-
+`AppLayout` com barra lateral (itens `rounded-xl`, recolhível para só ícones com
+tooltip) e conteúdo em cards; padding interno de card 16/20/24px, cabeçalho de
+página com `mb-8`, conteúdo em `max-w-6xl`. Abaixo de `lg`: cabeçalho fixo com
+menu em gaveta e barra de navegação inferior de 5 colunas, com o botão de
+adicionar em destaque no centro. Tema claro espelha a mesma estrutura.
 Breakpoints padrão do Tailwind: sm 640, md 768, lg 1024, xl 1280.
 
 ## Elevation & Depth
 
-Híbrido, e dividido por camada. **O app é plano por degraus tonais:** base → card → muted → overlay, com bordas `border-bg-muted`/`border-default`; sombra só no que flutua (tooltip, menu, modal: `shadow-xl`/`shadow-2xl`). **A marca é papel sobre mesa:** peças claras com sombras longas, macias e de espalhamento negativo, que caem para baixo como luz de cima; a luz ambiente vem de um gradiente radial lima no canto (a "lua"), e um véu escuro na base do painel de autenticação.
+**O app é plano por degraus tonais:** base → card → muted → overlay, com bordas
+`border-default`; sombra só no que flutua (tooltip, menu, modal: `shadow-xl` /
+`shadow-2xl`). **A marca é instrumento sobre painel:** peça escura sobre fundo
+escuro não se separa por tom, então se separa por **régua de luz** —
+`inset 0 1px 0 rgba(255,255,255,0.07)` na borda de cima — mais uma sombra funda
+com deslocamento e borrão de verdade.
 
 ### Shadow Vocabulary
-- **Peça da mesa** (`box-shadow: 0 1.6em 3em -1em rgba(0,0,0,0.55)`): peças em escala `em` dentro da mesa.
-- **Papel no chão** (`box-shadow: 0 1.75rem 3.5rem -1.25rem rgba(0,0,0,0.75)`): peças de papel sobre #0a0a0a, mais escura porque o chão é mais escuro.
-- **Plano** (`box-shadow: 0 2rem 4rem -1.5rem rgba(0,0,0,0.55)`): card do plano Básico.
-- **Flutuante do app** (Tailwind `shadow-xl`): menus e tooltips do app.
+- **Mostrador** (`0 1.5rem 3rem -1rem rgba(0,0,0,0.85)` + régua de luz): peças do painel de autenticação.
+- **Mostrador em foco** (`0 2.25rem 4rem -1rem rgba(0,0,0,0.9)` + régua): a peça do slide ativo.
+- **Flutuante do app** (Tailwind `shadow-xl`): menus e tooltips.
 
 ### Named Rules
-**The Paper Casts, Screens Don't Rule.** Sombra grande é privilégio do papel na camada de marca. No app, profundidade vem do degrau tonal; sombra só em elemento flutuante.
+**The Rim Light Rule.** No escuro sobre escuro, o que descola a peça do fundo é
+a régua de luz de 1px na borda de cima, não a sombra. Sombra sozinha num fundo
+#050505 não aparece.
 
-**The Moon Rule.** A luz da marca é um único gradiente radial lima (alfa 0,12–0,16) num canto, fora da área de leitura. Um por seção de floresta, nunca atrás de texto.
+**The Headlight Rule.** A luz da marca é um único gradiente radial vermelho
+(alfa 0,07–0,22) **embaixo** do painel, fora da área de leitura — farol no
+asfalto, não halo atrás de texto. Um por superfície.
 
 ## Shapes
 
-Tudo arredondado, nada de canto vivo. App: pílula para botões e chips, 12px (`rounded-icon`/`rounded-xl`) para campos, itens de navegação e tiles de ícone, 16px (`rounded-2xl`, igual a `rounded-card`) para cards. Marca: pílula para todo botão e toggle, peças da mesa em `1.1em` (escalam com a mesa), papel solto 20px, cards de plano 24px, painel do `AuthShowcase` 28px. O cartão de crédito mantém a proporção real (1.586) com canto de 0.9em. Peças de papel na landing pousam levemente giradas (±1–2°); na mesa, a rotação faz parte de cada pose.
+Tudo arredondado, nada de canto vivo. Pílula para botões e chips, 12px
+(`rounded-icon` / `rounded-xl`) para campos, itens de navegação e tiles de
+ícone, 16px (`rounded-2xl`, igual a `rounded-card`) para cards, 18px para os
+mostradores do painel de autenticação e 28px para o painel em si. O cartão de
+crédito mantém a proporção real (1.586) com canto de 14px.
 
 ## Components
 
 ### Buttons
-Pílula e peso de verdade, nas duas camadas.
-- **Shape:** pílula (9999px).
-- **Primary do app:** accent-lime com texto preto, 14px semibold/bold, `hover:brightness-110`, `disabled:opacity-60` (`SubmitButton`).
-- **Primary de marca:** brand-lime com tinta paper-ink, bold, hover para brand-lime-hover, `active:scale-[0.98]`, 200ms; foco com anel brand-lime e offset na cor do fundo.
-- **Ghost de marca:** texto forest-text com anel `white/20`, hover `white/10`.
-- **Sobre papel:** fundo paper-ink com texto brand-lime (plano Básico), hover forest-raised.
+- **Shape:** pílula no `SubmitButton` dos formulários de autenticação; 12px nos botões de modal e de página.
+- **Primary:** `bg-accent-brand` com `text-white`, 14px semibold/bold, `hover:bg-accent-brand-hover`, `disabled:opacity-60`.
+- **Destructive:** `bg-accent-red` com `text-white`, `hover:bg-accent-red-hover`.
+  O vermelho destrutivo tem fill e ink separados pelo mesmo motivo que o da
+  marca: #D31109 aguenta texto branco (5,5:1), #FF3B30 é o que se lê como texto
+  sobre o card.
+- **Warning:** `bg-accent-yellow` com `text-black` (âmbar é claro, aqui o texto preto está certo).
+- **Ghost:** texto `text-text-secondary`, hover `bg-bg-overlay` + `text-text-primary`.
 
-### Chips
-- **Style (peças):** pílula pequena em paper-lime-tint / paper-lime-ink (positivo, "cobrada no cartão") ou #fef3c7 / #854d0e (vencimento próximo).
-- **Toggle de marca:** trilho forest-deep com anel `white/10`, indicador brand-lime que desliza 300ms na curva da casa.
+### Chips & Badges
+Pílula pequena, fundo do acento a 10–20% e texto na variante ink:
+`bg-accent-brand/10 text-accent-brand` (marca), `bg-semantic-income/10
+text-semantic-income` (pago/recebido), `bg-accent-yellow/15 text-accent-yellow`
+(parcial/vence hoje), `bg-accent-red/10 text-accent-red` (vencida),
+`bg-status-info/15 text-status-info` (agendado, recorrente, parcela — neutro).
 
 ### Cards / Containers
-- **Corner Style:** 16px no app; 20–24px no papel da marca.
-- **Background:** bg-card no app (às vezes com borda bg-muted); paper/paper-white ou forest-raised na marca.
-- **Shadow Strategy:** ver Elevation & Depth.
-- **Internal Padding:** 16–24px no app; 24–40px nos planos.
+- **Corner Style:** 16px.
+- **Background:** `bg-bg-card`, às vezes com borda `border-bg-muted`.
+- **Shadow Strategy:** nenhuma; profundidade é tonal.
+- **Internal Padding:** 16–24px.
 
 ### Inputs / Fields
-- **Style:** fundo bg-muted, sem borda visível (borda transparente), 12px, ícone em text-secondary, rótulo 12px acima.
-- **Focus:** borda accent-lime (line) + anel `accent-lime/20`.
-- **Error:** borda accent-red e mensagem 12px em accent-red.
+- **Style:** fundo `bg-bg-muted`, borda transparente, 12px, ícone em `text-text-secondary`, rótulo 12px acima.
+- **Focus:** borda `accent-brand` (line) + anel `accent-brand/20`.
+- **Error:** borda `accent-red` e mensagem 12px em `accent-red`.
 
 ### Navigation
-- **App:** barra lateral com itens 14px medium em text-secondary; hover bg-overlay; ativo bg-muted + text-primary com ícone em accent-lime.
-- **Landing:** barra fixa de 64/72px, floresta transparente que vira forest-nav com régua `white/10` após 12px de rolagem; links em forest-ink-soft → branco; "Entrar" ghost e "Teste grátis" lima.
+- **Barra lateral:** itens 14px medium em `text-text-secondary`; hover `bg-bg-overlay`; ativo `bg-bg-muted` + `text-text-primary` com o ícone em `accent-brand`. A logo recolhida é o monograma e serve de botão de expandir.
+- **Barra inferior (mobile):** ativo em `text-accent-brand`; o botão de adicionar é um disco `accent-brand` com ícone branco e sombra `shadow-accent-brand/40`.
 
-### A Mesa (signature)
-Palco `aspect-[7/6]` com `container-type: inline-size`; o tamanho de fonte é `2.5cqw` e todas as peças medem em `em`, então escalam juntas. Cada peça tem uma pose por arranjo (`LAYOUTS`: x/y em cqw, rotação, escala, z); a peça em foco vem à frente em escala 1.2–1.7 e as outras recuam para opacidade 0,32 com `blur(1.5px) saturate(0.5)`. Transição de transform/opacity/filter em 900ms `cubic-bezier(0.16,1,0.3,1)`; na chegada as peças pousam de 6cqw abaixo com atraso escalonado de 70ms; `motion-reduce:transition-none`. Sempre acompanhada de "Valores ilustrativos." em caption-green.
+### Browser surfaces
+Seleção, cursor de texto, `accent-color` dos controles nativos, barra de
+rolagem e anel de foco vêm da paleta nos **dois** temas (`@layer base` em
+`styles.css`). O azul padrão do sistema não aparece em lugar nenhum.
 
-### AuthShowcase
-O mesmo mundo em painel: floresta 28px dentro das telas de autenticação (a partir de `lg`), três peças que sobem 700ms conforme o slide, pontos de paginação pílula brand-lime, rotação automática de 3,5s pausada em hover/foco e desligada com `prefers-reduced-motion`.
+### AuthShowcase (signature)
+Painel 28px dentro das telas de autenticação (a partir de `lg`): emblema da
+Central Motos no topo, três mostradores (cartão, fatura, meta como ponteiro de
+conta-giros em arco de 240°, conta a vencer), banho de vermelho embaixo,
+ranhura diagonal fina como textura. Rotação automática de 3,5s pausada em
+hover/foco e desligada com `prefers-reduced-motion`; pontos de paginação pílula
+em `#e10600`.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** usar tokens por papel no app (`bg-bg-card`, `text-accent-lime`, `border-accent-lime`) e deixar o Tailwind resolver ink/line.
-- **Do** escopar qualquer ajuste do tema claro em `html.light`/`light:` e conferir que o escuro não mudou.
-- **Do** construir a ilustração de marca com peças fiéis do app, rotuladas "Valores ilustrativos.".
-- **Do** escrever títulos de marca como duas frases curtas, a segunda em brand-lime ou caption-green.
-- **Do** usar `tabular-nums` em todo número e a curva `cubic-bezier(0.16,1,0.3,1)` em todo movimento, com fallback para `prefers-reduced-motion`.
-- **Do** usar texto com matiz verde (forest-ink-soft, floor-ink, caption-green) sobre o verde e sobre o chão da landing.
+- **Do** usar tokens por papel (`bg-accent-brand`, `text-accent-brand`, `border-accent-brand`) e deixar o Tailwind resolver ink/line.
+- **Do** pôr `text-white` em cima de todo preenchimento vermelho.
+- **Do** deixar valor positivo em branco e reservar o vermelho para negativo, vencido, destrutivo e ação.
+- **Do** escopar ajuste de tema claro em `html.light`/`light:` e conferir que o escuro não mudou.
+- **Do** usar `tabular-nums` em todo número e a curva `cubic-bezier(0.16,1,0.3,1)` em todo movimento.
+- **Do** tirar cor de série nova da paleta categórica, na ordem, e rodar o validador se mexer nela.
 
 ### Don't:
-- **Don't** usar #bef264, o verde-floresta ou a Bricolage Grotesque dentro das telas do app.
-- **Don't** escrever hex solto em componente do app; valor fixo só na camada de marca.
-- **Don't** usar #a3e635 como texto sobre fundo claro (1,4:1); use accent-lime-ink.
-- **Don't** apresentar recursos na marca como grade de cards idênticos com ícone nem hero centralizado; a peça do app é a ilustração.
-- **Don't** inventar prova social (depoimentos, número de usuários, imprensa).
-- **Don't** pôr sombra grande em card do app; a profundidade dele é tonal.
+- **Don't** usar azul, roxo ou verde como cor decorativa; verde só significa entrada/concluído, âmbar só pendente, e informação é neutra.
+- **Don't** escrever hex solto em componente do app; valor fixo só na camada de marca e em `src/lib/colors.ts`.
+- **Don't** usar `hover:brightness-110` num preenchimento vermelho — ele lava a cor; o hover escurece para `accent-brand-hover`.
+- **Don't** usar #E10600 como texto sobre superfície escura (3,9:1); use `text-accent-brand`, que resolve para a variante ink.
+- **Don't** confiar em sombra para separar peça escura de fundo escuro; é a régua de luz que faz isso.
+- **Don't** tomar a landing ou as páginas públicas como referência: estão ocultas e ainda são do MeuGasto.

@@ -33,8 +33,10 @@ Uso em celular e desktop, frequentemente como PWA instalado. Rituais típicos: l
 
 ## Brand Commitments
 
-- Nome: MeuGasto. Produto assinado pela Azuos Dev ("Desenvolvido pela Azuos Dev", https://azuos-dev.vercel.app/).
-- Identidade do produto: tema escuro com acento verde-limão, tokens de cor por papel compartilhados entre app e landing, corpo em DM Sans auto-hospedada.
+- Nome: Central Motos (Parazinho, Granja - CE). Este sistema é o plano Empresarial do MeuGasto, personalizado para ela; segue assinado "Desenvolvido pela Azuos Dev" (https://azuos-dev.vercel.app/), como todo produto da casa.
+- Identidade do produto: automotiva, alto contraste. Preto #050505 de fundo, vermelho #E10600 como única cor de ação e de marca, branco nos títulos e valores, cinzas no apoio. Tema claro espelhado. Corpo em DM Sans auto-hospedada.
+- O emblema circular da Central Motos aparece inteiro nas telas de autenticação; na barra lateral e no cabeçalho entra o monograma reduzido mais o lockup "CENTRAL MOTOS".
+- A landing pública e as sete páginas temáticas de SEO são herança do MeuGasto e estão ocultas (ver LANDING_VISIVEL em frontend/src/App.tsx): o texto, os preços e o <head> delas ainda são do produto original.
 - Voz: pt-BR, direta, próxima, sem jargão financeiro desnecessário.
 - Contato: udawgs.org@gmail.com e WhatsApp (88) 9 9678-4110.
 
