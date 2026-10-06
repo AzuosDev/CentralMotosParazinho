@@ -256,7 +256,7 @@ export function CheckoutPage() {
 
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-text-primary">Plano Básico</h1>
-          <p className="mt-2 text-text-secondary">Acesso completo ao MeuGasto</p>
+          <p className="mt-2 text-text-secondary">Acesso completo ao sistema da Central Motos</p>
         </div>
 
         {/* Features */}

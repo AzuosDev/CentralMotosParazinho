@@ -163,7 +163,7 @@ export class BillingService {
         billingType: 'PIX',
         value,
         dueDate: dueDateStr,
-        description: `MeuGasto - Plano Básico ${dto.cycle === 'annual' ? 'Anual' : 'Mensal'}`,
+        description: `Central Motos - Plano Básico ${dto.cycle === 'annual' ? 'Anual' : 'Mensal'}`,
         externalReference,
       }),
     });

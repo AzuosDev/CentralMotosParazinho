@@ -228,7 +228,7 @@ function SupportMessagesTab() {
                 {openTicket.status === "lido" ? "Reabrir" : "Marcar como lida"}
               </button>
               <a
-                href={`mailto:${openTicket.userEmail}?subject=${encodeURIComponent("Re: sua mensagem no MeuGasto")}`}
+                href={`mailto:${openTicket.userEmail}?subject=${encodeURIComponent("Re: sua mensagem no sistema da Central Motos")}`}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-brand hover:opacity-80"
               >
                 <Mail className="h-3.5 w-3.5" /> Responder por email

@@ -5,7 +5,6 @@ import {
   BarChart2,
   ChevronLeft,
   Clock,
-  Coins,
   CreditCard,
   HelpCircle,
   Home,
@@ -41,6 +40,7 @@ import { WebAuthnSuggestionModal } from "../modals/WebAuthnSuggestionModal";
 import { useWebAuthnSuggestion } from "../../hooks/useWebAuthnSuggestion";
 import { hasSeenWhatsNew } from "../modals/WhatsNewModal";
 import { ADMIN_EMAIL } from "../../lib/brand";
+import { BrandLockup, BrandSymbol } from "../BrandMark";
 const TransactionModal = lazy(() =>
   import("../modals/TransactionModal").then((m) => ({ default: m.TransactionModal }))
 );
@@ -92,7 +92,7 @@ const pageTitles: Record<string, string> = {
   "/admin/suporte": "Painel Admin",
 };
 
-const fallbackEmail = "usuario@meugasto.app";
+const fallbackEmail = "usuario@centralmotos.app";
 
 function isEmail(value: unknown): value is string {
   return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -206,19 +206,15 @@ function SidebarContent({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="shrink-0 text-accent-brand transition hover:opacity-75"
+              className="shrink-0 rounded-icon transition hover:opacity-75"
               aria-label={collapsed ? "Expandir menu lateral" : "Comprimir menu lateral"}
               title={collapsed ? "Expandir menu" : "Comprimir menu"}
             >
-              <Coins className="h-7 w-7" />
+              <BrandSymbol className="h-8 w-8" />
             </button>
             {!collapsed && (
-              <Link
-                to="/dashboard"
-                onClick={onNavigate}
-                className="truncate font-sans text-xl font-bold text-text-primary"
-              >
-                MeuGasto
+              <Link to="/dashboard" onClick={onNavigate} className="min-w-0">
+                <BrandLockup symbolClassName="hidden" />
               </Link>
             )}
           </>
@@ -226,14 +222,10 @@ function SidebarContent({
           <Link
             to="/dashboard"
             onClick={onNavigate}
-            className={cn(
-              "flex min-w-0 items-center gap-3 font-sans text-xl font-bold text-text-primary",
-              collapsed && "justify-center",
-            )}
-            title={collapsed ? "MeuGasto" : undefined}
+            className={cn("min-w-0", collapsed && "flex justify-center")}
+            title={collapsed ? "Central Motos" : undefined}
           >
-            <Coins className="h-7 w-7 shrink-0 text-accent-brand" />
-            {!collapsed && <span className="truncate">MeuGasto</span>}
+            <BrandLockup showName={!collapsed} />
           </Link>
         )}
 
@@ -455,7 +447,7 @@ export function AppLayout() {
 
   const currentPath = location.pathname;
   const currentUrl = `${location.pathname}${location.search}`;
-  const title = pageTitles[currentPath] ?? "MeuGasto";
+  const title = pageTitles[currentPath] ?? "Central Motos";
 
   useEffect(() => {
     setMobileSidebarOpen(false);

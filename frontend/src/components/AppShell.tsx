@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Coins className="h-5 w-5 text-accent-brand" />
           </span>
           <span className="font-sans text-lg font-bold tracking-tight">
-            MeuGasto
+            Central Motos
           </span>
         </div>
 

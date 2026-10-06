@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 
-// Conta que loga no próprio MeuGasto com este email — distinto de BRAND.supportEmail,
+// Conta que loga no próprio sistema com este email — distinto de BRAND.supportEmail,
 // que é o contato de suporte mostrado aos usuários no rodapé dos emails. Espelhado em
 // frontend/src/lib/brand.ts (só decide se o link/rota aparece na UI; a checagem real é esta).
 export const ADMIN_EMAIL = 'azuos.org@gmail.com';

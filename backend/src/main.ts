@@ -65,8 +65,8 @@ async function bootstrap() {
   if (process.env.NODE_ENV !== "production") {
     const { SwaggerModule, DocumentBuilder } = await import("@nestjs/swagger");
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('MeuGasto API')
-      .setDescription('MeuGasto backend API')
+      .setTitle('Central Motos API')
+      .setDescription('Central Motos backend API')
       .setVersion('1.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'Authorization')
       .build();

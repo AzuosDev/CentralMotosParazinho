@@ -4,7 +4,7 @@
     <meta name="google-site-verification" content="fG5QCaoInVjyY9J3wa_ltbAq3V2tFIKWxEr8qsuph9Q" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0A0A0A" />
+    <meta name="theme-color" content="#050505" />
 
     <!-- meugasto-seo:head -->
     <!--
@@ -21,27 +21,27 @@
       renomeie os marcadores — o build quebra de propósito se eles não
       estiverem aqui.
     -->
-    <title>MeuGasto | Controle Financeiro Pessoal e de Gastos</title>
-    <meta name="description" content="Controle seus gastos, contas, cartões, parcelas e metas em um só lugar. Conheça o MeuGasto, seu aplicativo de controle financeiro pessoal sem conexão com o banco." />
+    <title>Central Motos | Sistema Financeiro</title>
+    <meta name="description" content="Sistema financeiro da Central Motos: gastos, contas, cartões, parcelas e metas em um só lugar." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="__SITE_URL__/" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="MeuGasto" />
+    <meta property="og:site_name" content="Central Motos" />
     <meta property="og:locale" content="pt_BR" />
     <meta property="og:url" content="__SITE_URL__/" />
-    <meta property="og:title" content="MeuGasto | Controle Financeiro Pessoal e de Gastos" />
-    <meta property="og:description" content="Controle seus gastos, contas, cartões, parcelas e metas em um só lugar. Conheça o MeuGasto, seu aplicativo de controle financeiro pessoal sem conexão com o banco." />
+    <meta property="og:title" content="Central Motos | Sistema Financeiro" />
+    <meta property="og:description" content="Sistema financeiro da Central Motos: gastos, contas, cartões, parcelas e metas em um só lugar." />
     <!-- Ícone quadrado do PWA: é a única imagem de marca que existe hoje. Por
          isso o card do X é "summary" (quadrado), e não "summary_large_image". -->
     <meta property="og:image" content="__SITE_URL__/pwa-512x512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
-    <meta property="og:image:alt" content="MeuGasto" />
+    <meta property="og:image:alt" content="Central Motos" />
 
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="MeuGasto | Controle Financeiro Pessoal e de Gastos" />
-    <meta name="twitter:description" content="Controle seus gastos, contas, cartões, parcelas e metas em um só lugar. Conheça o MeuGasto, seu aplicativo de controle financeiro pessoal sem conexão com o banco." />
+    <meta name="twitter:title" content="Central Motos | Sistema Financeiro" />
+    <meta name="twitter:description" content="Sistema financeiro da Central Motos: gastos, contas, cartões, parcelas e metas em um só lugar." />
     <meta name="twitter:image" content="__SITE_URL__/pwa-512x512.png" />
     <!-- /meugasto-seo:head -->
     <link rel="manifest" href="/manifest.json" />
@@ -50,7 +50,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="MeuGasto" />
+    <meta name="apple-mobile-web-app-title" content="Central Motos" />
     <meta name="mobile-web-app-capable" content="yes" />
 
     <!-- DM Sans self-hosted: pesos usados acima da dobra (landing) priorizados via preload -->
@@ -76,7 +76,7 @@
           if (meta) {
             meta.setAttribute(
               "content",
-              theme === "light" ? "#f3f3f0" : "#0a0a0a",
+              theme === "light" ? "#f5f5f5" : "#050505",
             );
           }
         } catch (error) {
@@ -116,14 +116,13 @@
 
     <!-- meugasto-seo:jsonld -->
     <!--
-      Structured data de "/". Só descreve o que a landing realmente mostra: o
-      produto, os preços do plano Básico e as perguntas da seção "Dúvidas". Se
-      as perguntas de src/pages/LandingPage.tsx mudarem, atualize este bloco — o
-      markup precisa bater com o texto visível na página.
-
-      As páginas temáticas não mostram preço nem lista de perguntas, então elas
-      não levam este bloco: o plugin meugasto-seo troca o trecho marcado pelo
-      JSON-LD da rota (WebPage + BreadcrumbList), montado em pageJsonLd().
+      Structured data de "/". Enquanto a landing estiver oculta (ver App.tsx),
+      "/" leva o visitante deslogado direto para /login, então aqui fica só o
+      mínimo verdadeiro: quem é a organização e quem construiu o sistema. Nada
+      de preço nem de FAQ — isso descrevia a landing do MeuGasto e não existe
+      mais nesta rota. Não remova nem renomeie os marcadores: o plugin
+      meugasto-seo troca este trecho em cada página pré-renderizada e o build
+      quebra de propósito se eles sumirem.
     -->
     <script type="application/ld+json">
       {
@@ -132,130 +131,23 @@
           {
             "@type": "WebSite",
             "@id": "__SITE_URL__/#website",
-            "name": "MeuGasto",
-            "alternateName": "MeuGasto - Controle Financeiro",
+            "name": "Central Motos",
             "url": "__SITE_URL__/",
             "inLanguage": "pt-BR",
-            "publisher": {
-              "@id": "__SITE_URL__/#azuos"
-            }
+            "publisher": { "@id": "__SITE_URL__/#azuos" }
+          },
+          {
+            "@type": "Organization",
+            "@id": "__SITE_URL__/#central-motos",
+            "name": "Central Motos",
+            "url": "__SITE_URL__/",
+            "areaServed": "Parazinho, Granja - CE, Brasil"
           },
           {
             "@type": "Organization",
             "@id": "__SITE_URL__/#azuos",
             "name": "Azuos Dev",
             "url": "https://azuos-dev.vercel.app/"
-          },
-          {
-            "@type": [
-              "SoftwareApplication",
-              "WebApplication"
-            ],
-            "@id": "__SITE_URL__/#app",
-            "name": "MeuGasto",
-            "url": "__SITE_URL__/",
-            "applicationCategory": "FinanceApplication",
-            "applicationSubCategory": "Controle financeiro pessoal",
-            "operatingSystem": "Web",
-            "browserRequirements": "Requer JavaScript",
-            "inLanguage": "pt-BR",
-            "image": "__SITE_URL__/pwa-512x512.png",
-            "description": "Aplicativo de controle financeiro pessoal para acompanhar contas, carteiras, cartão de crédito, gastos, parcelas e metas em um só lugar, sem conectar diretamente ao banco. Os lançamentos são feitos manualmente ou por importação de extrato OFX.",
-            "featureList": [
-              "Saldo consolidado de contas e carteiras",
-              "Controle de cartão de crédito com faturas e parcelamentos",
-              "Pagamentos parciais e estornos",
-              "Categorias de gastos",
-              "Importação de extrato bancário em OFX",
-              "Contas a pagar e contas a receber",
-              "Lançamentos recorrentes e lembretes",
-              "Metas financeiras",
-              "Login biométrico"
-            ],
-            "publisher": {
-              "@id": "__SITE_URL__/#azuos"
-            },
-            "offers": [
-              {
-                "@type": "Offer",
-                "name": "Básico mensal",
-                "price": "29.90",
-                "priceCurrency": "BRL",
-                "category": "subscription",
-                "url": "__SITE_URL__/#precos"
-              },
-              {
-                "@type": "Offer",
-                "name": "Básico anual",
-                "price": "299.90",
-                "priceCurrency": "BRL",
-                "category": "subscription",
-                "url": "__SITE_URL__/#precos"
-              }
-            ]
-          },
-          {
-            "@type": "FAQPage",
-            "@id": "__SITE_URL__/#duvidas",
-            "inLanguage": "pt-BR",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "Como funciona o teste grátis de 15 dias?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Você cria sua conta e usa o app completo por 15 dias sem pagar nada. Só pedimos pagamento se você decidir continuar."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Preciso conectar minha conta bancária?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Não. Você cadastra suas transações manualmente ou importa o extrato do seu banco via arquivo OFX. O MeuGasto não acessa sua conta bancária diretamente."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Como cancelo?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "A qualquer momento, direto nas configurações da sua conta, sem precisar ligar ou mandar e-mail."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Meus dados financeiros estão seguros?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Toda comunicação é criptografada (HTTPS) e o login biométrico não expõe sua senha na rede. Veja mais na seção de Segurança acima."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Qual a diferença entre o plano Básico e o Empresarial?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "O Básico dá acesso completo ao MeuGasto para uso pessoal, com assinatura direta pelo app. O Empresarial é uma versão personalizada para o seu negócio, com manutenções corretivas prioritárias e atualizações dedicadas. O valor final e o escopo são definidos em conversa com nosso time."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Posso trocar entre mensal e anual depois de assinar?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Sim. No plano Básico, você troca entre mensal e anual quando quiser, direto nas configurações da conta, e a mudança vale a partir do próximo ciclo de cobrança. No Empresarial, qualquer ajuste é combinado direto com nosso time."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "O teste grátis de 15 dias vale para qual plano?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Só para o plano Básico. O Empresarial funciona por consulta comercial, fale com a gente pra montar a melhor proposta pro seu negócio."
-                }
-              }
-            ]
           }
         ]
       }
