@@ -1,4 +1,5 @@
-import { Rocket } from "lucide-react";
+import { CreditCard, Link2, Plus, Rocket, Undo2, Wallet } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { ModalShell } from "./ModalShell";
 
 // Altere esta constante a cada novo deploy para exibir o modal novamente
@@ -13,9 +14,12 @@ export function markWhatsNewAsSeen() {
   localStorage.setItem(STORAGE_KEY, WHATS_NEW_VERSION);
 }
 
-const sections = [
+// Ícones desenhados, da mesma família do resto do app. Emoji aqui trazia azul,
+// roxo e verde do sistema operacional para dentro de uma interface preta e
+// vermelha, e não acompanha o tema nem o peso dos outros ícones.
+const sections: { icon: LucideIcon; title: string; items: string[] }[] = [
   {
-    emoji: "💳",
+    icon: CreditCard,
     title: "Faturas mais confiáveis",
     items: [
       "A fatura do mês atual agora abre selecionada por padrão ao entrar no cartão",
@@ -24,7 +28,7 @@ const sections = [
     ],
   },
   {
-    emoji: "🔗",
+    icon: Link2,
     title: "Vincular contas ao cartão",
     items: [
       "Contas recorrentes (assinaturas como Netflix) podem ser vinculadas a um cartão — a cobrança entra sozinha na fatura",
@@ -33,7 +37,7 @@ const sections = [
     ],
   },
   {
-    emoji: "➕",
+    icon: Plus,
     title: "Lançar compra no cartão, mais fácil",
     items: [
       "O botão '+ Nova Compra' virou um menu: à vista, parcelada, vincular recorrente ou vincular conta parcelada",
@@ -42,7 +46,7 @@ const sections = [
     ],
   },
   {
-    emoji: "↩️",
+    icon: Undo2,
     title: "Corrigir com segurança",
     items: [
       "Novo botão 'Desfazer pagamento' numa fatura já paga por engano",
@@ -51,7 +55,7 @@ const sections = [
     ],
   },
   {
-    emoji: "📊",
+    icon: Wallet,
     title: "Saldo e Dashboard sempre batendo",
     items: [
       "O Saldo do Dashboard sempre bate com a soma da tela 'Carteiras'",
@@ -77,7 +81,7 @@ export function WhatsNewModal({ open, onClose }: { open: boolean; onClose: () =>
         <button
           type="button"
           onClick={handleClose}
-          className="w-full rounded-xl bg-accent-brand py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+          className="w-full rounded-xl bg-accent-brand py-2.5 text-sm font-semibold text-white transition hover:bg-accent-brand-hover"
         >
           Entendido!
         </button>
@@ -86,8 +90,9 @@ export function WhatsNewModal({ open, onClose }: { open: boolean; onClose: () =>
       <div className="flex flex-col gap-5 pb-1">
         {sections.map((section) => (
           <div key={section.title}>
-            <p className="mb-2 text-sm font-bold text-text-primary">
-              {section.emoji} {section.title}
+            <p className="mb-2 flex items-center gap-2 text-sm font-bold text-text-primary">
+              <section.icon className="h-4 w-4 shrink-0 text-accent-brand" />
+              {section.title}
             </p>
             <ul className="flex flex-col gap-1.5">
               {section.items.map((item) => (
