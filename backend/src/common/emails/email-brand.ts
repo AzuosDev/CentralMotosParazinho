@@ -3,8 +3,8 @@
  * Espelha os design tokens do app (frontend/tailwind.config.ts).
  */
 export const BRAND = {
-  product: 'MeuGasto',
-  productTagline: 'Controle de gastos, orçamentos e metas.',
+  product: 'Central Motos',
+  productTagline: 'Gastos, contas, cartões e metas em um só lugar.',
   company: 'Azuos Dev',
   companyTagline: 'Desenvolvimento de software e produtos digitais.',
   instagramUrl: 'https://instagram.com/azuos.dev',
@@ -14,18 +14,26 @@ export const BRAND = {
   supportWhatsappDisplay: '(88) 9 9678-4110',
 } as const;
 
-/** Design tokens (dark finance) aplicados inline no HTML dos emails. */
+/**
+ * Design tokens da Central Motos aplicados inline no HTML dos emails.
+ * Espelham frontend/src/styles.css (tema escuro) — se mudar lá, mude aqui.
+ *
+ * accentBrand é preenchimento (sempre com texto branco por cima: 5,0:1);
+ * accentBrandInk é o vermelho que serve de TEXTO sobre o card escuro, porque
+ * o #E10600 puro dá só 3,9:1 ali e sumiria num link.
+ */
 export const COLORS = {
-  bgBase: '#0A0A0A',
-  bgCard: '#141414',
-  bgMuted: '#1C1C1C',
-  bgOverlay: '#232323',
-  accentLime: '#A3E635',
-  accentLimeSoft: '#1B2410',
+  bgBase: '#050505',
+  bgCard: '#0D0D0D',
+  bgMuted: '#1A1A1A',
+  bgOverlay: '#262626',
+  accentBrand: '#E10600',
+  accentBrandInk: '#FF3B30',
+  accentBrandSoft: '#2A0A08',
   textPrimary: '#FFFFFF',
-  textSecondary: '#9CA3AF',
-  textMuted: '#6B7280',
-  border: '#232323',
+  textSecondary: '#A3A3A3',
+  textMuted: '#7A7A7A',
+  border: '#333333',
 } as const;
 
 export const FONT_STACK =

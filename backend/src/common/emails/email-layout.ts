@@ -93,7 +93,7 @@ export function renderEmailLayout(options: EmailLayoutOptions) {
     body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
     table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; border-collapse:collapse !important; }
     img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
-    a { color:${COLORS.accentLime}; }
+    a { color:${COLORS.accentBrandInk}; }
     a[x-apple-data-detectors] { color:inherit !important; text-decoration:none !important; font-size:inherit !important; font-family:inherit !important; font-weight:inherit !important; line-height:inherit !important; }
 
     @media only screen and (max-width:620px) {
@@ -149,11 +149,11 @@ export function renderEmailLayout(options: EmailLayoutOptions) {
         <!-- Card principal -->
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="${CONTAINER_WIDTH}" class="sm-full brand-card" bgcolor="${COLORS.bgCard}" style="width:${CONTAINER_WIDTH}px;max-width:${CONTAINER_WIDTH}px;background-color:${COLORS.bgCard};border:1px solid ${COLORS.border};border-radius:16px;">
           <tr>
-            <td style="height:4px;line-height:4px;font-size:0;background-color:${COLORS.accentLime};border-radius:16px 16px 0 0;">&nbsp;</td>
+            <td style="height:4px;line-height:4px;font-size:0;background-color:${COLORS.accentBrand};border-radius:16px 16px 0 0;">&nbsp;</td>
           </tr>
           <tr>
             <td class="sm-px sm-py" style="padding:40px 40px 8px;">
-              <p style="margin:0 0 10px;font-family:${FONT_STACK};font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${COLORS.accentLime};">
+              <p style="margin:0 0 10px;font-family:${FONT_STACK};font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${COLORS.accentBrandInk};">
                 ${escapeHtml(eyebrow)}
               </p>
               <h1 class="sm-h1 brand-title" style="margin:0 0 18px;font-family:${DISPLAY_FONT_STACK};font-size:30px;line-height:38px;font-weight:700;letter-spacing:-0.6px;color:${COLORS.textPrimary};">
@@ -169,13 +169,13 @@ export function renderEmailLayout(options: EmailLayoutOptions) {
           <tr>
             <td class="sm-px" align="left" style="padding:14px 40px 0;">
               <!--[if mso]>
-              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeCtaUrl}" style="height:52px;v-text-anchor:middle;width:300px;" arcsize="24%" stroke="f" fillcolor="${COLORS.accentLime}">
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeCtaUrl}" style="height:52px;v-text-anchor:middle;width:300px;" arcsize="24%" stroke="f" fillcolor="${COLORS.accentBrand}">
                 <w:anchorlock/>
-                <center style="color:${COLORS.bgBase};font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">${escapeHtml(ctaLabel)}</center>
+                <center style="color:${COLORS.textPrimary};font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">${escapeHtml(ctaLabel)}</center>
               </v:roundrect>
               <![endif]-->
               <!--[if !mso]><!-->
-              <a href="${safeCtaUrl}" class="sm-btn" style="display:inline-block;padding:16px 32px;background-color:${COLORS.accentLime};color:${COLORS.bgBase};font-family:${FONT_STACK};font-size:16px;font-weight:700;line-height:20px;text-decoration:none;border-radius:12px;">
+              <a href="${safeCtaUrl}" class="sm-btn" style="display:inline-block;padding:16px 32px;background-color:${COLORS.accentBrand};color:${COLORS.textPrimary};font-family:${FONT_STACK};font-size:16px;font-weight:700;line-height:20px;text-decoration:none;border-radius:12px;">
                 ${escapeHtml(ctaLabel)}
               </a>
               <!--<![endif]-->
@@ -191,7 +191,7 @@ export function renderEmailLayout(options: EmailLayoutOptions) {
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="${COLORS.bgMuted}" style="background-color:${COLORS.bgMuted};border:1px solid ${COLORS.bgOverlay};border-radius:12px;">
                 <tr>
                   <td style="padding:14px 16px;font-family:${FONT_STACK};font-size:13px;line-height:20px;word-break:break-all;">
-                    <a href="${safeCtaUrl}" style="color:${COLORS.accentLime};text-decoration:none;word-break:break-all;">${safeCtaUrl}</a>
+                    <a href="${safeCtaUrl}" style="color:${COLORS.accentBrandInk};text-decoration:none;word-break:break-all;">${safeCtaUrl}</a>
                   </td>
                 </tr>
               </table>
@@ -201,9 +201,9 @@ export function renderEmailLayout(options: EmailLayoutOptions) {
           <!-- Aviso de segurança -->
           <tr>
             <td class="sm-px" style="padding:24px 40px 40px;">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="${COLORS.accentLimeSoft}" style="background-color:${COLORS.accentLimeSoft};border-radius:12px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="${COLORS.accentBrandSoft}" style="background-color:${COLORS.accentBrandSoft};border-radius:12px;">
                 <tr>
-                  <td width="4" bgcolor="${COLORS.accentLime}" style="width:4px;background-color:${COLORS.accentLime};font-size:0;line-height:0;border-radius:12px 0 0 12px;">&nbsp;</td>
+                  <td width="4" bgcolor="${COLORS.accentBrand}" style="width:4px;background-color:${COLORS.accentBrand};font-size:0;line-height:0;border-radius:12px 0 0 12px;">&nbsp;</td>
                   <td style="padding:16px 18px;">
                     <p class="brand-title" style="margin:0 0 6px;font-family:${FONT_STACK};font-size:14px;font-weight:700;color:${COLORS.textPrimary};">
                       ${escapeHtml(notice.title)}
@@ -250,7 +250,7 @@ function renderFooter(baseUrl: string, year: number) {
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="right">
                       <tr>
                         <td bgcolor="${COLORS.bgMuted}" style="background-color:${COLORS.bgMuted};border:1px solid ${COLORS.bgOverlay};border-radius:999px;">
-                          <a href="${BRAND.instagramUrl}" style="display:inline-block;padding:10px 18px;font-family:${FONT_STACK};font-size:13px;font-weight:600;color:${COLORS.accentLime};text-decoration:none;white-space:nowrap;">
+                          <a href="${BRAND.instagramUrl}" style="display:inline-block;padding:10px 18px;font-family:${FONT_STACK};font-size:13px;font-weight:600;color:${COLORS.accentBrandInk};text-decoration:none;white-space:nowrap;">
                             Instagram · ${BRAND.instagramHandle}
                           </a>
                         </td>
@@ -270,9 +270,9 @@ function renderFooter(baseUrl: string, year: number) {
             <td align="left" style="padding:18px 8px 0;">
               <p style="margin:0 0 10px;font-family:${FONT_STACK};font-size:13px;line-height:22px;color:${COLORS.textSecondary};">
                 Precisa de ajuda?
-                <a href="mailto:${BRAND.supportEmail}" style="color:${COLORS.accentLime};text-decoration:none;">${BRAND.supportEmail}</a>
+                <a href="mailto:${BRAND.supportEmail}" style="color:${COLORS.accentBrandInk};text-decoration:none;">${BRAND.supportEmail}</a>
                 &nbsp;·&nbsp;
-                <a href="${whatsappUrl}" style="color:${COLORS.accentLime};text-decoration:none;white-space:nowrap;">WhatsApp ${BRAND.supportWhatsappDisplay}</a>
+                <a href="${whatsappUrl}" style="color:${COLORS.accentBrandInk};text-decoration:none;white-space:nowrap;">WhatsApp ${BRAND.supportWhatsappDisplay}</a>
               </p>
               <p style="margin:0 0 10px;font-family:${FONT_STACK};font-size:12px;line-height:20px;color:${COLORS.textMuted};">
                 Este é um email automático de segurança da sua conta ${BRAND.product}. Não é necessário responder.
