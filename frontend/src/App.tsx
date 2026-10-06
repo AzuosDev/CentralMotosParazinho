@@ -88,15 +88,26 @@ function resolveAuthRedirect(hasToken: string | null, isLocked: boolean): string
   return null;
 }
 
+/*
+ * A landing e as sete páginas públicas temáticas são herança do MeuGasto, o
+ * produto de que este sistema é um fork. Ficam ocultas durante o
+ * desenvolvimento da Central Motos: "/" manda o visitante deslogado direto
+ * para o login e nenhuma tela linka para elas.
+ *
+ * O código, o pré-render e os rewrites do vercel.json continuam no lugar de
+ * propósito — é esta constante, sozinha, que liga tudo de volta. Se ela voltar
+ * a ser true, reescreva antes o conteúdo dessas páginas: o texto, os preços e
+ * o <head> ainda são os do MeuGasto.
+ */
+const LANDING_VISIVEL = false;
+
 function RootRoute() {
   const { isLocked } = useAuth();
   const redirect = resolveAuthRedirect(getAccessToken(), isLocked);
 
-  // Visitante deslogado vê a landing na própria "/", sem redirect: "/" é a URL
-  // que os buscadores indexam e que o canonical aponta, e um <Navigate> deixava
-  // ela sem conteúdo nenhum pro robô. "/landing" continua valendo para links
-  // antigos, renderizando a mesma página.
-  if (!redirect) return <LandingPage />;
+  if (!redirect) {
+    return LANDING_VISIVEL ? <LandingPage /> : <Navigate to="/login" replace />;
+  }
 
   return <Navigate to={redirect} replace />;
 }
@@ -169,7 +180,6 @@ export default function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<RootRoute />} />
-              <Route path="/landing" element={<LandingPage />} />
 
               {/*
                 Páginas públicas temáticas: ficam fora do PrivateRoute e do
@@ -177,11 +187,24 @@ export default function App() {
                 visitante deslogado e o robô de busca precisam alcançar. Cada
                 uma tem HTML pré-renderizado próprio no build, com title,
                 canonical e JSON-LD seus (ver src/entry-prerender.tsx); aqui é
-                a versão que o React monta depois.
+                a versão que o React monta depois. Com LANDING_VISIVEL em false
+                todas elas caem no login, junto com a própria "/landing".
               */}
-              {PUBLIC_PAGES.map((page) => (
-                <Route key={page.id} path={page.path} element={<PublicRoute />} />
-              ))}
+              {LANDING_VISIVEL ? (
+                <>
+                  <Route path="/landing" element={<LandingPage />} />
+                  {PUBLIC_PAGES.map((page) => (
+                    <Route key={page.id} path={page.path} element={<PublicRoute />} />
+                  ))}
+                </>
+              ) : (
+                <>
+                  <Route path="/landing" element={<Navigate to="/login" replace />} />
+                  {PUBLIC_PAGES.map((page) => (
+                    <Route key={page.id} path={page.path} element={<Navigate to="/login" replace />} />
+                  ))}
+                </>
+              )}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
