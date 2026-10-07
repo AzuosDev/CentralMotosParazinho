@@ -9,7 +9,7 @@ export const BRAND = {
   companyTagline: 'Desenvolvimento de software e produtos digitais.',
   instagramUrl: 'https://instagram.com/azuos.dev',
   instagramHandle: '@azuos.dev',
-  supportEmail: 'udawgs.org@gmail.com',
+  supportEmail: 'azuos.org@gmail.com',
   supportWhatsappNumber: '5588996784110',
   supportWhatsappDisplay: '(88) 9 9678-4110',
 } as const;

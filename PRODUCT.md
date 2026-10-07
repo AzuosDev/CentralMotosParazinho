@@ -38,7 +38,7 @@ Uso em celular e desktop, frequentemente como PWA instalado. Rituais típicos: l
 - O emblema circular da Central Motos aparece inteiro nas telas de autenticação; na barra lateral e no cabeçalho entra o monograma reduzido mais o lockup "CENTRAL MOTOS".
 - A landing pública e as sete páginas temáticas de SEO são herança do MeuGasto e estão ocultas (ver LANDING_VISIVEL em frontend/src/App.tsx): o texto, os preços e o <head> delas ainda são do produto original.
 - Voz: pt-BR, direta, próxima, sem jargão financeiro desnecessário.
-- Contato: udawgs.org@gmail.com e WhatsApp (88) 9 9678-4110.
+- Contato: azuos.org@gmail.com e WhatsApp (88) 9 9678-4110.
 
 ## Evidence on Hand
 

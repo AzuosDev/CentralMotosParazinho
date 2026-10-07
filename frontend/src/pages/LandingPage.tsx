@@ -31,7 +31,7 @@ import {
  * nos tokens de tema, como em AuthShowcase. Todos os valores das peças são exemplos.
  */
 
-const CONTACT_EMAIL = "udawgs.org@gmail.com";
+const CONTACT_EMAIL = "azuos.org@gmail.com";
 const SALES_WHATSAPP_NUMBER = "5588996784110";
 const SALES_WHATSAPP_MESSAGE = "Olá! Tenho interesse no plano Empresarial do MeuGasto.";
 const CONTACT_WHATSAPP_MESSAGE = "Olá! Tenho uma dúvida sobre o MeuGasto.";

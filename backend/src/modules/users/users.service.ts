@@ -30,6 +30,13 @@ export class UsersService {
       emailVerificationToken,
       subscriptionStatus: 'trial',
       trialEndsAt,
+      // Enquanto não houver preço definido para a Central Motos, o trial de 15 dias
+      // trancaria todo mundo fora ao vencer: computeHasAccess passa a retornar false
+      // e o SubscriptionGate redireciona para /checkout, uma tela que não tem como
+      // concluir sem price id no Stripe. isLegacyFree curto-circuita essa checagem.
+      // Quando o preço existir, remova esta linha — quem já se cadastrou mantém a
+      // flag e fica grandfathered, que é exatamente o que 'legacy free' significa.
+      isLegacyFree: true,
     });
     const obj = created.toObject() as Record<string, unknown>;
     delete obj['password'];
