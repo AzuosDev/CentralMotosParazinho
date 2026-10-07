@@ -67,7 +67,28 @@ async function bootstrap() {
   return server;
 }
 
+// TEMPORARIO — diagnostico do FUNCTION_INVOCATION_FAILED.
+// Sem isto a excecao do bootstrap sobe sem tratamento e a Vercel a substitui por um
+// 500 generico, sem nome nem mensagem. Remover assim que a causa for identificada.
+// A connection string e redigida: erros do Mongoose costumam embutir a URI inteira,
+// senha inclusa, e isto responde numa rota publica.
+const CREDENTIALS_IN_URI = new RegExp('://[^@/]+@', 'g');
+const redact = (value: string) => value.replace(CREDENTIALS_IN_URI, '://***:***@');
+
 export default async (req: any, res: any) => {
-  const srv = await bootstrap();
-  srv(req, res);
+  try {
+    const srv = await bootstrap();
+    srv(req, res);
+  } catch (err: any) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        boot_error: err?.name ?? 'UnknownError',
+        message: redact(String(err?.message ?? err)),
+        code: err?.code ?? null,
+        reason: err?.reason ? redact(String(err.reason)) : null,
+      }),
+    );
+  }
 };
