@@ -1,8 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeftRight,
   BarChart2,
+  CalendarCheck,
+  ChevronDown,
   ChevronLeft,
   Clock,
   CreditCard,
@@ -21,6 +23,7 @@ import {
   Target,
   TrendingDown,
   TrendingUp,
+  Wallet,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -50,30 +53,85 @@ const WhatsNewModal = lazy(() =>
 
 type NavItem = {
   to: string;
+  /** Compara contra pathname+search, para links com query string. */
   match?: string;
   label: string;
   icon: LucideIcon;
 };
 
-const navigation: NavItem[] = [
+type NavGroup = {
+  label: string;
+  icon: LucideIcon;
+  items: NavItem[];
+};
+
+type NavEntry = NavItem | NavGroup;
+
+function isGroup(entry: NavEntry): entry is NavGroup {
+  return "items" in entry;
+}
+
+// Dashboard fica solto; o resto vive dentro de grupos recolhíveis para encurtar o menu.
+const navigation: NavEntry[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/expenses", label: "Gastos", icon: TrendingDown },
   {
-    to: "/transactions?type=INCOME",
-    match: "/transactions?type=INCOME",
-    label: "Ganhos",
-    icon: TrendingUp,
+    label: "Movimentações",
+    icon: ArrowLeftRight,
+    items: [
+      { to: "/expenses", label: "Gastos", icon: TrendingDown },
+      {
+        to: "/transactions?type=INCOME",
+        match: "/transactions?type=INCOME",
+        label: "Ganhos",
+        icon: TrendingUp,
+      },
+      { to: "/transactions", label: "Transações", icon: List },
+    ],
   },
-  { to: "/transactions", label: "Transações", icon: List },
-  { to: "/carteiras", label: "Carteiras", icon: Landmark },
-  { to: "/cartoes", label: "Cartões", icon: CreditCard },
-  { to: "/contas", label: "Contas", icon: Clock },
-  { to: "/goals", label: "Metas Financeiras", icon: Target },
-] as const;
+  {
+    label: "Carteiras e Cartões",
+    icon: Wallet,
+    items: [
+      { to: "/carteiras", label: "Carteiras", icon: Landmark },
+      { to: "/cartoes", label: "Cartões", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Planejamento",
+    icon: CalendarCheck,
+    items: [
+      { to: "/contas", label: "Contas", icon: Clock },
+      { to: "/goals", label: "Metas Financeiras", icon: Target },
+    ],
+  },
+];
+
+/** Lista plana de todos os destinos, usada no modo comprimido (só ícones). */
+const flatNavigation: NavItem[] = navigation.flatMap((entry) =>
+  isGroup(entry) ? entry.items : [entry],
+);
+
+function isNavItemActive(item: NavItem, currentPath: string, currentUrl: string) {
+  if (item.match) {
+    // Comparação exata incluindo ?query.
+    return currentUrl === item.match;
+  }
+
+  if (item.to === "/transactions") {
+    // "Transações" não acende quando o filtro de Ganhos está ativo.
+    return currentPath === "/transactions" && currentUrl !== "/transactions?type=INCOME";
+  }
+
+  return (
+    currentPath === item.to ||
+    // Rotas filhas (/carteiras/:id, /cartoes/fatura/:id) mantêm o pai aceso.
+    currentPath.startsWith(`${item.to}/`)
+  );
+}
 
 const mobileNavigation = [
   { to: "/dashboard", label: "Início", icon: Home },
-  { to: "/expenses", label: "Resumo", icon: BarChart2 },
+  { to: "/expenses", label: "Gastos", icon: BarChart2 },
   { to: "/contas", label: "Contas", icon: Clock },
   { to: "/goals", label: "Metas", icon: Target },
 ] as const;
@@ -91,6 +149,21 @@ const pageTitles: Record<string, string> = {
   "/faq": "Perguntas Frequentes",
   "/admin/suporte": "Painel Admin",
 };
+
+/** Título exato ou, em rota filha (/carteiras/:id, /cartoes/fatura/:id), o título do pai. */
+function resolvePageTitle(currentPath: string) {
+  const exact = pageTitles[currentPath];
+
+  if (exact) {
+    return exact;
+  }
+
+  const parent = Object.keys(pageTitles).find((path) =>
+    currentPath.startsWith(`${path}/`),
+  );
+
+  return parent ? pageTitles[parent] : "Central Motos";
+}
 
 const fallbackEmail = "usuario@centralmotos.app";
 
@@ -163,6 +236,148 @@ function ThemeToggleButton({ collapsed = false }: { collapsed?: boolean }) {
         </span>
       )}
     </button>
+  );
+}
+
+type NavItemLinkProps = {
+  item: NavItem;
+  active: boolean;
+  collapsed?: boolean;
+  nested?: boolean;
+  onNavigate?: () => void;
+};
+
+function NavItemLink({
+  item,
+  active,
+  collapsed = false,
+  nested = false,
+  onNavigate,
+}: NavItemLinkProps) {
+  const { to, label, icon: Icon } = item;
+
+  return (
+    <Link
+      to={to}
+      onClick={onNavigate}
+      title={collapsed ? label : undefined}
+      className={cn(
+        "group relative flex items-center rounded-xl text-sm font-medium transition",
+        collapsed ? "justify-center px-3 py-3" : "gap-3 px-4",
+        nested ? "py-2" : "py-3",
+        active
+          ? "bg-bg-muted text-text-primary"
+          : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+      )}
+    >
+      <Icon className={cn("h-5 w-5 shrink-0", active && "text-accent-brand")} />
+      {!collapsed && <span className="truncate">{label}</span>}
+
+      {/* Tooltip só no modo comprimido. */}
+      {collapsed && (
+        <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
+          {label}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+type NavGroupBlockProps = {
+  group: NavGroup;
+  currentPath: string;
+  currentUrl: string;
+  onNavigate?: () => void;
+};
+
+function NavGroupBlock({
+  group,
+  currentPath,
+  currentUrl,
+  onNavigate,
+}: NavGroupBlockProps) {
+  const { label, icon: Icon, items } = group;
+  const hasActiveChild = items.some((child) =>
+    isNavItemActive(child, currentPath, currentUrl),
+  );
+  // Nasce aberto quando a rota atual é de um dos filhos (deep link, refresh, atalho do PWA).
+  const [open, setOpen] = useState(hasActiveChild);
+  const contentId = `${useId()}-subitens`;
+
+  // Reabre quando a navegação vem de fora da sidebar (menu inferior, link em outra tela).
+  useEffect(() => {
+    if (hasActiveChild) {
+      setOpen(true);
+    }
+  }, [hasActiveChild]);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-controls={contentId}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition",
+          // Fechado com filho ativo fica destacado; aberto, quem acende é o subitem.
+          hasActiveChild && !open
+            ? "text-text-primary"
+            : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+        )}
+      >
+        <Icon className={cn("h-5 w-5 shrink-0", hasActiveChild && "text-accent-brand")} />
+        <span className="flex-1 truncate text-left">{label}</span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div
+          id={contentId}
+          role="group"
+          className="ml-5 mt-1 flex flex-col gap-1 border-l border-border-default pl-2"
+        >
+          {items.map((child) => (
+            <NavItemLink
+              key={`${child.to}-${child.label}`}
+              item={child}
+              active={isNavItemActive(child, currentPath, currentUrl)}
+              nested
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Item da barra inferior do mobile: lista plana, sem hierarquia nem tooltip. */
+function MobileNavLink({
+  item,
+  active,
+}: {
+  item: NavItem;
+  active: boolean;
+}) {
+  const { to, label, icon: Icon } = item;
+
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "flex flex-col items-center gap-1 text-xs",
+        active ? "text-accent-brand" : "text-text-muted",
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      {label}
+    </Link>
   );
 }
 
@@ -247,40 +462,38 @@ function SidebarContent({
           collapsed ? "px-3" : "px-4",
         )}
       >
-        {navigation.map(({ to, match, label, icon: Icon }) => {
-          const active = match
-            ? currentUrl === match
-            : currentPath === to ||
-              (to === "/carteiras" && currentPath.startsWith("/carteiras")) ||
-              (to === "/cartoes" && currentPath.startsWith("/cartoes"));
-
-          return (
-            <Link
-              key={`${to}-${label}`}
-              to={to}
-              onClick={onNavigate}
-              title={collapsed ? label : undefined}
-              className={cn(
-                "group relative flex items-center rounded-xl py-3 text-sm font-medium transition",
-                collapsed ? "justify-center px-3" : "gap-3 px-4",
-                active
-                  ? "bg-bg-muted text-text-primary"
-                  : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
-              )}
-            >
-              <Icon className={cn("h-5 w-5", active && "text-accent-brand")} />
-              {!collapsed && <span>{label}</span>}
-              {collapsed && (
-                <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border-default bg-bg-card px-3 py-2 text-xs font-semibold text-text-primary opacity-0 shadow-xl transition group-hover:opacity-100">
-                  {label}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+        {/* Comprimida não há espaço para hierarquia: mostra tudo como ícone. */}
+        {collapsed
+          ? flatNavigation.map((item) => (
+              <NavItemLink
+                key={`${item.to}-${item.label}`}
+                item={item}
+                active={isNavItemActive(item, currentPath, currentUrl)}
+                collapsed
+                onNavigate={onNavigate}
+              />
+            ))
+          : navigation.map((entry) =>
+              isGroup(entry) ? (
+                <NavGroupBlock
+                  key={entry.label}
+                  group={entry}
+                  currentPath={currentPath}
+                  currentUrl={currentUrl}
+                  onNavigate={onNavigate}
+                />
+              ) : (
+                <NavItemLink
+                  key={`${entry.to}-${entry.label}`}
+                  item={entry}
+                  active={isNavItemActive(entry, currentPath, currentUrl)}
+                  onNavigate={onNavigate}
+                />
+              ),
+            )}
       </nav>
 
-      <div className={cn("flex flex-col gap-1 px-4 pb-1", collapsed && "px-3")}>
+      <div className={cn("flex flex-col gap-1 pb-1", collapsed ? "px-3" : "px-4")}>
         {email === ADMIN_EMAIL && (
           <Link
             to="/admin/suporte"
@@ -328,8 +541,8 @@ function SidebarContent({
 
       <div
         className={cn(
-          "border-t border-border-default p-4",
-          collapsed && "px-3",
+          "border-t border-border-default py-4",
+          collapsed ? "px-3" : "px-4",
         )}
       >
         <div className="relative">
@@ -447,7 +660,7 @@ export function AppLayout() {
 
   const currentPath = location.pathname;
   const currentUrl = `${location.pathname}${location.search}`;
-  const title = pageTitles[currentPath] ?? "Central Motos";
+  const title = resolvePageTitle(currentPath);
 
   useEffect(() => {
     setMobileSidebarOpen(false);
@@ -592,23 +805,15 @@ export function AppLayout() {
         </div>
       </main>
 
+      {/* Barra inferior: lista plana própria, com o FAB ocupando a célula central. */}
       <nav className="fixed bottom-0 left-0 z-40 grid w-full grid-cols-5 border-t border-border-default bg-bg-card px-3 pb-3 pt-2 lg:hidden">
-        {mobileNavigation.slice(0, 2).map(({ to, label, icon: Icon }) => {
-          const active = currentPath === to;
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={cn(
-                "flex flex-col items-center gap-1 text-xs",
-                active ? "text-accent-brand" : "text-text-muted",
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {label}
-            </Link>
-          );
-        })}
+        {mobileNavigation.slice(0, 2).map((item) => (
+          <MobileNavLink
+            key={item.to}
+            item={item}
+            active={isNavItemActive(item, currentPath, currentUrl)}
+          />
+        ))}
 
         <button
           onClick={() => setAddModalOpen(true)}
@@ -618,22 +823,13 @@ export function AppLayout() {
           <Plus className="h-6 w-6" />
         </button>
 
-        {mobileNavigation.slice(2).map(({ to, label, icon: Icon }) => {
-          const active = currentPath === to;
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={cn(
-                "flex flex-col items-center gap-1 text-xs",
-                active ? "text-accent-brand" : "text-text-muted",
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {label}
-            </Link>
-          );
-        })}
+        {mobileNavigation.slice(2).map((item) => (
+          <MobileNavLink
+            key={item.to}
+            item={item}
+            active={isNavItemActive(item, currentPath, currentUrl)}
+          />
+        ))}
       </nav>
 
       {addModalOpen && (
