@@ -1,13 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import express from 'express';
 import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
 
 const server = express();
-let app: any;
+let app: INestApplication | undefined;
 
 async function bootstrap() {
   if (!app) {
