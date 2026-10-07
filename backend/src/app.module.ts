@@ -32,7 +32,11 @@ import { AdminModule } from './modules/admin/admin.module';
         const uri = configService.get<string>('MONGODB_URI');
 
         if (uri && uri.trim()) {
-          return { uri };
+          // O default de 30s do driver e maior que o limite de execucao da funcao na
+          // Vercel: a funcao e morta antes de o Mongoose rejeitar, entao a falha de
+          // conexao nunca vira excecao — some num FUNCTION_INVOCATION_FAILED generico,
+          // sem mensagem. Desistir antes disso faz o erro real aparecer.
+          return { uri, serverSelectionTimeoutMS: 8000 };
         }
 
         if (process.env.NODE_ENV === 'production') {
