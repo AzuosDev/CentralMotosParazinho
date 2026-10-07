@@ -4,15 +4,18 @@ import {
   ArrowLeftRight,
   BarChart2,
   CalendarCheck,
+  CalendarRange,
   ChevronDown,
   ChevronLeft,
   Clock,
   CreditCard,
+  Gauge,
   HelpCircle,
   Home,
   Landmark,
   LayoutDashboard,
   LifeBuoy,
+  Lightbulb,
   List,
   LogOut,
   Menu,
@@ -74,6 +77,15 @@ function isGroup(entry: NavEntry): entry is NavGroup {
 // Dashboard fica solto; o resto vive dentro de grupos recolhíveis para encurtar o menu.
 const navigation: NavEntry[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  {
+    label: "Relatórios",
+    icon: BarChart2,
+    items: [
+      { to: "/relatorios", label: "Visão Geral", icon: Gauge },
+      { to: "/resumo", label: "Resumo", icon: CalendarRange },
+      { to: "/insights", label: "Insights", icon: Lightbulb },
+    ],
+  },
   {
     label: "Movimentações",
     icon: ArrowLeftRight,
@@ -138,6 +150,9 @@ const mobileNavigation = [
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/relatorios": "Visão Geral",
+  "/resumo": "Resumo",
+  "/insights": "Insights",
   "/expenses": "Gastos",
   "/transactions": "Transações",
   "/carteiras": "Carteiras",

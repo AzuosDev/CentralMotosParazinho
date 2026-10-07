@@ -17,6 +17,9 @@ import type { User } from "./types/api";
 const BudgetPage = lazy(() => import("./pages/BudgetPage").then((m) => ({ default: m.BudgetPage })));
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage").then((m) => ({ default: m.ExpensesPage })));
+const RelatoriosPage = lazy(() => import("./pages/RelatoriosPage").then((m) => ({ default: m.RelatoriosPage })));
+const ResumoPage = lazy(() => import("./pages/ResumoPage").then((m) => ({ default: m.ResumoPage })));
+const InsightsPage = lazy(() => import("./pages/InsightsPage").then((m) => ({ default: m.InsightsPage })));
 const GoalsPage = lazy(() => import("./pages/GoalsPage").then((m) => ({ default: m.GoalsPage })));
 const ContasPage = lazy(() => import("./pages/ContasPage").then((m) => ({ default: m.ContasPage })));
 const TransactionsPage = lazy(() => import("./pages/TransactionsPage").then((m) => ({ default: m.TransactionsPage })));
@@ -217,6 +220,9 @@ export default function App() {
                 <Route element={<SubscriptionGate />}>
                   <Route element={<AppLayout />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/relatorios" element={<RelatoriosPage />} />
+                    <Route path="/resumo" element={<ResumoPage />} />
+                    <Route path="/insights" element={<InsightsPage />} />
                     <Route path="/expenses" element={<ExpensesPage />} />
                     <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/budget" element={<BudgetPage />} />
