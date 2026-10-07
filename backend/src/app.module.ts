@@ -39,8 +39,14 @@ import { AdminModule } from './modules/admin/admin.module';
           return { uri, serverSelectionTimeoutMS: 8000 };
         }
 
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('MONGODB_URI is required in production');
+        // mongodb-memory-server baixa um binario de ~100MB em runtime: numa funcao
+        // serverless isso trava ate a plataforma matar o processo, sem lancar nada —
+        // o boot nunca settla e a falha vira um 500 opaco. VERCEL entra na guarda
+        // porque NODE_ENV nem sempre chega como "production" no runtime da funcao.
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error(
+            `MONGODB_URI ausente no ambiente (NODE_ENV=${process.env.NODE_ENV ?? "undefined"}, VERCEL=${process.env.VERCEL ?? "undefined"})`,
+          );
         }
 
         const { MongoMemoryServer } = await import('mongodb-memory-server');
