@@ -251,3 +251,14 @@ export function buildTransactionPayload(values: {
     categoryId: values.categoryId || undefined,
   };
 }
+
+/** Eixo Y dos gráficos: 12500 vira "12,5K" para não comer a largura útil. */
+export function formatCompactValue(value: number) {
+  if (Math.abs(value) >= 1000) {
+    return `${(value / 1000).toLocaleString("pt-BR", {
+      maximumFractionDigits: 1,
+    })}K`;
+  }
+
+  return value.toLocaleString("pt-BR");
+}
