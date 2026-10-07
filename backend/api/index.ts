@@ -1,3 +1,9 @@
+// Gemeo de src/main.ts:1-2. O resolvedor padrao do ambiente nem sempre responde as
+// consultas SRV/TXT exigidas por uma URI mongodb+srv://, e sem elas o driver nunca
+// chega a abrir socket — falha como timeout longo, nao como erro de DNS.
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
