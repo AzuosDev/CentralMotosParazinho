@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, Pencil, Plus } from "lucide-react";
+import { BarChart2, Bike, Pencil, Plus } from "lucide-react";
 
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
@@ -95,14 +95,23 @@ export function MotosPage() {
           <p className="text-sm text-text-secondary">Seu estoque</p>
           <h1 className="font-sans text-3xl font-bold">Motos</h1>
         </div>
-        <button
-          type="button"
-          onClick={abrirCadastro}
-          className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
-        >
-          <Plus className="h-4 w-4" />
-          Nova moto
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/motos/relatorio"
+            className="flex items-center gap-2 rounded-xl border border-bg-muted px-4 py-3 text-sm font-semibold text-text-primary transition hover:bg-bg-muted"
+          >
+            <BarChart2 className="h-4 w-4" />
+            Relatório do mês
+          </Link>
+          <button
+            type="button"
+            onClick={abrirCadastro}
+            className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
+          >
+            <Plus className="h-4 w-4" />
+            Nova moto
+          </button>
+        </div>
       </div>
 
       <div className="flex w-fit gap-1 rounded-xl bg-bg-muted p-1">

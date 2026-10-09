@@ -287,19 +287,6 @@ export function FaturaPreviewHint({ cartaoId, data }: { cartaoId?: string; data?
   );
 }
 
-// Motos do estoque para o seletor de vínculo de um gasto. Traz vendidas também: uma moto
-// já vendida ainda recebe gasto depois (documentação, garantia) e o custo dela continua
-// contando no lucro — esconder as vendidas obrigaria a "desvender" a moto pra lançar.
-export function useMotos() {
-  return useQuery<Moto[]>({
-    queryKey: ["motos"],
-    queryFn: async () => {
-      const { data } = await api.get<Moto[]>("/api/motos");
-      return Array.isArray(data) ? data : [];
-    },
-  });
-}
-
 export function MotoField({
   motos,
   value,
@@ -318,12 +305,16 @@ export function MotoField({
   hintTone?: "muted" | "warning";
 }) {
   if (loading) return <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />;
-  // Sem moto cadastrada o campo não aparece: a maior parte dos gastos da loja não é de
-  // uma moto específica, e um seletor vazio só ocuparia espaço no formulário.
-  if (motos.length === 0) return null;
 
   const emEstoque = motos.filter((m) => m.status === "em_estoque");
-  const vendidas = motos.filter((m) => m.status === "vendida");
+  // A lista é o pátio: um gasto novo é quase sempre de uma moto que ainda está lá. A
+  // exceção é a moto já vinculada a esta transação — se ela foi vendida depois do
+  // lançamento, tirar a opção faria a edição desvincular o gasto sem ninguém pedir.
+  const vendidaVinculada = motos.filter((m) => m.status === "vendida" && m._id === value);
+
+  // Nada para escolher (nenhuma moto em estoque e nenhum vínculo a preservar): o campo
+  // não aparece, em vez de ocupar espaço com um seletor só de "Nenhuma moto".
+  if (emEstoque.length === 0 && vendidaVinculada.length === 0) return null;
 
   return (
     <div>
@@ -343,9 +334,9 @@ export function MotoField({
             ))}
           </optgroup>
         )}
-        {vendidas.length > 0 && (
-          <optgroup label="Vendidas">
-            {vendidas.map((m) => (
+        {vendidaVinculada.length > 0 && (
+          <optgroup label="Já vendida">
+            {vendidaVinculada.map((m) => (
               <option key={m._id} value={m._id}>{m.modelo} · {m.placa}</option>
             ))}
           </optgroup>
@@ -410,20 +401,22 @@ export function WalletField({
   );
 }
 
-export function DateAndDescriptionFields({
+export function DateAndDescriptionFields<TFieldValues extends FieldValues>({
   register,
   watch,
   errors,
   descriptionPlaceholder = "Observação opcional",
   disabledDate,
 }: {
-  register: UseFormRegister<any>;
-  watch: UseFormWatch<any>;
-  errors: any;
+  register: UseFormRegister<TFieldValues>;
+  watch: UseFormWatch<TFieldValues>;
+  errors: FieldErrors<TFieldValues>;
   descriptionPlaceholder?: string;
   disabledDate?: boolean;
 }) {
-  const description = watch("description") ?? "";
+  // Os nomes são fixos ("date"/"description"), mas o formulário é genérico — mesmo
+  // casting de Path que AmountField já usa aqui.
+  const description = String(watch("description" as Path<TFieldValues>) ?? "");
   const count = useMemo(() => description.length, [description]);
 
   return (
@@ -434,10 +427,10 @@ export function DateAndDescriptionFields({
           type="date"
           disabled={disabledDate}
           className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand disabled:opacity-60"
-          {...register("date")}
+          {...register("date" as Path<TFieldValues>)}
         />
         {errors.date && (
-          <p className="mt-2 text-xs text-accent-red">{errors.date.message}</p>
+          <p className="mt-2 text-xs text-accent-red">{String(errors.date.message)}</p>
         )}
       </label>
 
@@ -451,10 +444,10 @@ export function DateAndDescriptionFields({
           maxLength={500}
           className="w-full resize-none rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus:border-accent-brand"
           placeholder={descriptionPlaceholder}
-          {...register("description")}
+          {...register("description" as Path<TFieldValues>)}
         />
         {errors.description && (
-          <p className="mt-2 text-xs text-accent-red">{errors.description.message}</p>
+          <p className="mt-2 text-xs text-accent-red">{String(errors.description.message)}</p>
         )}
       </label>
     </div>

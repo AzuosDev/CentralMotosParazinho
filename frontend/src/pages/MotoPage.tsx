@@ -405,7 +405,7 @@ export function MotoPage() {
         ) : (
           <div className="divide-y divide-bg-muted">
             {transacoes.map((tx) => (
-              <TxRow key={tx.id} tx={tx} onEdit={editarTransacao} />
+              <TxRow key={tx.id} tx={tx} onEdit={editarTransacao} showMotoBadge={false} />
             ))}
           </div>
         )}

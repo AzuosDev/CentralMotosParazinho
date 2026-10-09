@@ -23,10 +23,10 @@ import {
   WalletField,
   useCategories,
   useIncomeCategories,
-  useMotos,
   useWallets,
   useWalletsWithCartoes,
 } from "./TransactionFormFields";
+import { useMotos } from "../motos/useMotos";
 import { ModalShell } from "./ModalShell";
 import { cn } from "../../lib/utils";
 

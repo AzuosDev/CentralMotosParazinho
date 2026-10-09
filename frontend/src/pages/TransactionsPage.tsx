@@ -6,6 +6,7 @@ import { ArrowLeftRight, ChevronDown, Filter, Loader2, Plus, TrendingDown, Trend
 import { TxRow } from "../components/TxRow";
 import { TransactionModal } from "../components/modals/TransactionModal";
 import { useCategories } from "../components/modals/TransactionFormFields";
+import { useMotos } from "../components/motos/useMotos";
 import { useToast } from "../components/ui/Toast";
 import { api } from "../lib/api";
 import { normalizeTransactionsResponse, readString } from "../lib/finance";
@@ -62,7 +63,14 @@ export function TransactionsPage() {
   const today = new Date();
   const currentYear = today.getFullYear();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Começa aberto se a URL já traz filtro (link da ficha de uma moto, por exemplo): uma
+  // lista recortada com o painel fechado não tem nada na tela explicando o recorte.
+  const [filtersOpen, setFiltersOpen] = useState(
+    () =>
+      searchParams.has("categoryId") ||
+      searchParams.has("motoId") ||
+      searchParams.get("semCategoria") === "true",
+  );
   const [choiceOpen, setChoiceOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
   const [txTab, setTxTab] = useState<TransactionType>("EXPENSE");
@@ -84,6 +92,7 @@ export function TransactionsPage() {
     type === "EXPENSE" || type === "INCOME" ? type : "ALL";
   const categoryId = searchParams.get("categoryId") ?? "";
   const semCategoria = searchParams.get("semCategoria") === "true";
+  const motoId = searchParams.get("motoId") ?? "";
   const month = Number(searchParams.get("month") ?? today.getMonth() + 1);
   const year = Number(searchParams.get("year") ?? currentYear);
   const years = useMemo(
@@ -92,9 +101,13 @@ export function TransactionsPage() {
   );
 
   const categoriesQuery = useCategories();
+  const motosQuery = useMotos();
+  const motos = motosQuery.data ?? [];
+  const motosEmEstoque = motos.filter((moto) => moto.status === "em_estoque");
+  const motosVendidas = motos.filter((moto) => moto.status === "vendida");
 
   const transactionsQuery = useInfiniteQuery({
-    queryKey: ["transactions", selectedType, categoryId, semCategoria, month, year],
+    queryKey: ["transactions", selectedType, categoryId, semCategoria, motoId, month, year],
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
       const { data } = await api.get<TransactionsResponse>("/api/transactions", {
@@ -104,6 +117,7 @@ export function TransactionsPage() {
           type: selectedType === "ALL" ? undefined : selectedType,
           categoryId: semCategoria ? undefined : (categoryId || undefined),
           semCategoria: semCategoria || undefined,
+          motoId: motoId || undefined,
           month,
           year,
         },
@@ -123,13 +137,14 @@ export function TransactionsPage() {
         const matchesCategory = semCategoria
           ? !transaction.categoryId
           : (!categoryId || transaction.categoryId === categoryId);
+        const matchesMoto = !motoId || transaction.motoId === motoId;
         // Usar UTC para evitar deslocamento de ±1 dia em fusos UTC-N (datas ISO são UTC midnight).
         const matchesPeriod =
           !Number.isNaN(date.getTime()) &&
           date.getUTCMonth() + 1 === month &&
           date.getUTCFullYear() === year;
 
-        return matchesCategory && matchesPeriod;
+        return matchesCategory && matchesMoto && matchesPeriod;
       }) ?? [];
 
   const groupedTransactions = useMemo(() => {
@@ -248,6 +263,9 @@ export function TransactionsPage() {
                 patchParams({
                   type: tab.value === "ALL" ? undefined : tab.value,
                   categoryId: tab.value === "INCOME" ? undefined : categoryId,
+                  // Vínculo com moto só existe em despesa: na aba Ganhos o filtro sai,
+                  // igual ao de categoria, em vez de devolver uma lista sempre vazia.
+                  motoId: tab.value === "INCOME" ? undefined : motoId,
                   action: undefined,
                 })
               }
@@ -292,6 +310,36 @@ export function TransactionsPage() {
                 </option>
               ))}
             </select>
+
+            {motos.length > 0 && (
+              <select
+                value={motoId}
+                disabled={selectedType === "INCOME"}
+                onChange={(event) => patchParams({ motoId: event.target.value || undefined })}
+                className="rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-sm text-text-primary outline-none focus:border-accent-brand disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Filtrar por moto"
+              >
+                <option value="">Todas as motos</option>
+                {motosEmEstoque.length > 0 && (
+                  <optgroup label="Em estoque">
+                    {motosEmEstoque.map((moto) => (
+                      <option key={moto._id} value={moto._id}>
+                        {moto.modelo} · {moto.placa}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {motosVendidas.length > 0 && (
+                  <optgroup label="Vendidas">
+                    {motosVendidas.map((moto) => (
+                      <option key={moto._id} value={moto._id}>
+                        {moto.modelo} · {moto.placa}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            )}
 
             <select
               value={month}

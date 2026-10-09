@@ -347,6 +347,42 @@ export type MotoResumo = {
   lucroPercentual: number | null;
 };
 
+/** Uma linha de GET /api/motos/relatorio: a moto no recorte do mês pedido. */
+export type MotoRelatorioLinha = {
+  _id: ApiId;
+  modelo: string;
+  placa: string;
+  status: MotoStatus;
+  valorCompra: number;
+  valorVenda: number | null;
+  dataVenda: ApiDate | null;
+  /** Vendida dentro do mês consultado — é o que faz a linha entrar no lucro do mês. */
+  vendidaNoMes: boolean;
+  /** Só os gastos com data dentro do mês; o custoTotal ao lado é de sempre. */
+  gastosNoMes: number;
+  custoTotal: number;
+  /** Preenchido apenas quando vendidaNoMes: o lucro realizado naquele mês. */
+  lucro: number | null;
+};
+
+/**
+ * GET /api/motos/relatorio?mes=AAAA-MM. A lista não é o estoque inteiro: traz o que está
+ * em estoque, o que foi vendido no mês e o que consumiu dinheiro no mês mesmo já vendido
+ * antes (MotosService#relatorio), e é por isso que a coluna de gastos fecha com
+ * totais.gastosDoMes.
+ */
+export type MotoRelatorio = {
+  mes: string;
+  motos: MotoRelatorioLinha[];
+  totais: {
+    /** Compra + gastos de tudo que ainda não foi vendido: dinheiro parado no pátio. */
+    capitalEmEstoque: number;
+    gastosDoMes: number;
+    lucroDoMes: number;
+    quantidadeVendida: number;
+  };
+};
+
 export type ApiValidationError = {
   statusCode?: number;
   error?: string;

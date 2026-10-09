@@ -44,7 +44,7 @@ export function EditTransactionModal({
     message: "Escolha uma categoria.",
     path: ["categoryId"],
   });
-  const form = useForm<any>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       amount: 0,
@@ -68,7 +68,7 @@ export function EditTransactionModal({
   }, [form, transaction]);
 
   const mutation = useMutation({
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: FormValues) => {
       if (!transaction) {
         return;
       }
