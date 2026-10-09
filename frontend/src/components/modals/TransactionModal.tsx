@@ -18,10 +18,12 @@ import {
   CategoryField,
   DateAndDescriptionFields,
   FaturaPreviewHint,
+  MotoField,
   PaymentMethodField,
   WalletField,
   useCategories,
   useIncomeCategories,
+  useMotos,
   useWallets,
   useWalletsWithCartoes,
 } from "./TransactionFormFields";
@@ -44,6 +46,7 @@ const defaultValues = {
   carteiraDestinoId: "",
   date: todayInputValue(),
   description: "",
+  motoId: "",
   parcelas: "1",
   confirmarMesmoAssim: false,
 };
@@ -56,6 +59,7 @@ const incomeSchema = z.object({
   description: z.string().max(500).optional(),
   carteiraOrigemId: z.string().optional().default(""),
   carteiraDestinoId: z.string().optional().default(""),
+  motoId: z.string().optional().default(""),
   parcelas: z.string().optional().default("1"),
   confirmarMesmoAssim: z.boolean().optional().default(false),
 });
@@ -68,6 +72,7 @@ const expenseSchema = z.object({
   description: z.string().max(500).optional(),
   carteiraOrigemId: z.string().optional().default(""),
   carteiraDestinoId: z.string().optional().default(""),
+  motoId: z.string().optional().default(""),
   parcelas: z.string().optional().default("1"),
   confirmarMesmoAssim: z.boolean().optional().default(false),
 });
@@ -81,6 +86,7 @@ const transferSchema = z
     carteiraDestinoId: z.string().min(1, "Selecione a carteira de destino."),
     date: z.string().min(1, "Informe a data."),
     description: z.string().max(500).optional(),
+    motoId: z.string().optional().default(""),
     parcelas: z.string().optional().default("1"),
     confirmarMesmoAssim: z.boolean().optional().default(false),
   })
@@ -124,6 +130,7 @@ export function TransactionModal({
   onClose,
   defaultTab = "EXPENSE",
   defaultWalletId,
+  defaultMotoId,
   transaction,
 }: {
   open: boolean;
@@ -133,6 +140,9 @@ export function TransactionModal({
   // pra abrir já com o próprio cartão marcado, já que "Forma de pagamento" fica dentro de um
   // <select> combinado (carteiras + cartões) que não é óbvio de achar vindo da tela do cartão.
   defaultWalletId?: string;
+  // Pré-seleciona a moto do gasto — usado pela ficha da moto (MotoPage), de onde o gasto
+  // só pode ser dela mesma.
+  defaultMotoId?: string;
   transaction?: Transaction | null;
 }) {
   const isEditing = Boolean(transaction);
@@ -151,6 +161,7 @@ export function TransactionModal({
   // restritos a carteiras — pagar/transferir de um cartão não faz sentido aqui.
   const paymentMethodsQuery = useWalletsWithCartoes();
   const paymentMethods = paymentMethodsQuery.data ?? [];
+  const motosQuery = useMotos();
   const hasWallets = activeTab === "EXPENSE" ? paymentMethods.length > 0 : wallets.length > 0;
   const [limitBlock, setLimitBlock] = useState<LimitBlock | null>(null);
 
@@ -190,6 +201,7 @@ export function TransactionModal({
         carteiraDestinoId: tab === "TRANSFER" ? (transaction.carteiraDestinoId ?? "") : "",
         date: dateInputValue(transaction.date),
         description: transaction.description ?? "",
+        motoId: transaction.motoId ?? "",
         parcelas: transaction.numeroParcela && transaction.totalParcelas ? String(transaction.totalParcelas) : "1",
         confirmarMesmoAssim: false,
       });
@@ -198,9 +210,10 @@ export function TransactionModal({
       form.reset({
         ...defaultValues,
         carteiraId: defaultTab === "EXPENSE" ? (defaultWalletId ?? "") : "",
+        motoId: defaultTab === "EXPENSE" ? (defaultMotoId ?? "") : "",
       });
     }
-  }, [open, defaultTab, defaultWalletId, transaction, form]);
+  }, [open, defaultTab, defaultWalletId, defaultMotoId, transaction, form]);
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
@@ -227,11 +240,16 @@ export function TransactionModal({
           await api.patch(`/api/transactions/${transaction.id}`, {
             description: values.description || undefined,
             categoryId: values.categoryId || undefined,
+            // String vazia desvincula a moto; o backend libera motoId até em transação de
+            // cartão (é classificação, não participa da resolução da fatura).
+            motoId: values.motoId,
           });
         } else {
           await api.patch(`/api/transactions/${transaction.id}`, {
             ...buildTransactionPayload({ ...values, type: tab }),
             carteiraId: values.carteiraId || undefined,
+            // Só em gasto: ganho/transferência não entram no custo de nenhuma moto.
+            motoId: tab === "EXPENSE" ? values.motoId : "",
           });
         }
         return null;
@@ -270,6 +288,7 @@ export function TransactionModal({
       const { data } = await api.post("/api/transactions", {
         ...buildTransactionPayload({ ...values, type: tab }),
         carteiraId: values.carteiraId,
+        motoId: tab === "EXPENSE" ? values.motoId || undefined : undefined,
         confirmarMesmoAssim: isCard ? values.confirmarMesmoAssim || undefined : undefined,
       });
       return (data as { avisoLimite?: AvisoLimite })?.avisoLimite ?? null;
@@ -280,6 +299,9 @@ export function TransactionModal({
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-expenses"] });
+      // Custo total, preço sugerido e desconto máximo de cada moto são derivados das
+      // despesas vinculadas — recalculados a cada leitura, então basta refazer a busca.
+      queryClient.invalidateQueries({ queryKey: ["motos"] });
       if (activeTabRef.current === "EXPENSE") {
         queryClient.invalidateQueries({ queryKey: ["goals"] });
       }
@@ -315,6 +337,7 @@ export function TransactionModal({
         "carteiraDestinoId",
         "date",
         "description",
+        "motoId",
       ]);
     },
   });
@@ -345,6 +368,11 @@ export function TransactionModal({
   const watchedDate = form.watch("date");
   const selectedPaymentWallet = paymentMethods.find((w) => w._id === watchedCarteiraId);
   const isCardSelected = activeTab === "EXPENSE" && !isEditing && selectedPaymentWallet?.tipo === "credito";
+  // POST /api/cartoes/parcelamentos não aceita motoId (cada parcela nasce dentro do
+  // parcelamento, não como transação avulsa), então o vínculo escolhido aqui seria
+  // descartado em silêncio — avisa em vez de perder o dado.
+  const motoVinculoIgnorado =
+    isCardSelected && Number(form.watch("parcelas")) > 1 && Boolean(form.watch("motoId"));
 
   const cfg = tabConfig[activeTab];
   const submitLabel = isEditing ? "Salvar Alterações" : cfg.submitLabel;
@@ -506,6 +534,29 @@ export function TransactionModal({
                   />
                 )}
               />
+
+              {/* Só em gasto: ganho não entra no custo de moto nenhuma. */}
+              {activeTab === "EXPENSE" && (
+                <Controller
+                  control={form.control}
+                  name="motoId"
+                  render={({ field, fieldState }) => (
+                    <MotoField
+                      motos={motosQuery.data ?? []}
+                      value={field.value}
+                      onChange={field.onChange}
+                      error={fieldState.error?.message}
+                      loading={motosQuery.isLoading}
+                      hint={
+                        motoVinculoIgnorado
+                          ? "Compra parcelada não guarda o vínculo com a moto. Para o gasto entrar no custo dela, lance como compra à vista (1 parcela)."
+                          : "Vincule quando o gasto for desta moto — ele entra no custo total e no preço sugerido dela."
+                      }
+                      hintTone={motoVinculoIgnorado ? "warning" : "muted"}
+                    />
+                  )}
+                />
+              )}
             </>
           )}
 

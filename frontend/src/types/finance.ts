@@ -30,6 +30,7 @@ export type Transaction = {
   carteiraDestinoId?: string;
   agendado?: boolean;
   carteira?: VirtualWallet;
+  motoId?: string;
   // Presentes só em transações de cartão de crédito.
   faturaId?: string;
   numeroParcela?: number;

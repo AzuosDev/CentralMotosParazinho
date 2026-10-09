@@ -10,7 +10,7 @@ import { DynamicIcon } from "../DynamicIcon";
 import { api } from "../../lib/api";
 import { asArray, normalizeCategory } from "../../lib/finance";
 import { cn } from "../../lib/utils";
-import type { Category as ApiCategory, PreviewFatura, Wallet } from "../../types/api";
+import type { Category as ApiCategory, Moto, PreviewFatura, Wallet } from "../../types/api";
 import type { Category } from "../../types/finance";
 
 export type TransactionFormValues = {
@@ -283,6 +283,85 @@ export function FaturaPreviewHint({ cartaoId, data }: { cartaoId?: string; data?
     <div className="flex items-center gap-2 rounded-xl bg-bg-muted px-3 py-2 text-xs text-text-secondary">
       <CreditCard className="h-3.5 w-3.5 shrink-0 text-accent-brand" />
       Essa compra vai cair na fatura de <span className="font-semibold text-text-primary">{label}</span>.
+    </div>
+  );
+}
+
+// Motos do estoque para o seletor de vínculo de um gasto. Traz vendidas também: uma moto
+// já vendida ainda recebe gasto depois (documentação, garantia) e o custo dela continua
+// contando no lucro — esconder as vendidas obrigaria a "desvender" a moto pra lançar.
+export function useMotos() {
+  return useQuery<Moto[]>({
+    queryKey: ["motos"],
+    queryFn: async () => {
+      const { data } = await api.get<Moto[]>("/api/motos");
+      return Array.isArray(data) ? data : [];
+    },
+  });
+}
+
+export function MotoField({
+  motos,
+  value,
+  onChange,
+  error,
+  loading,
+  hint,
+  hintTone = "muted",
+}: {
+  motos: Moto[];
+  value?: string;
+  onChange: (id: string) => void;
+  error?: string;
+  loading: boolean;
+  hint?: string;
+  hintTone?: "muted" | "warning";
+}) {
+  if (loading) return <div className="h-12 animate-pulse rounded-xl bg-bg-muted" />;
+  // Sem moto cadastrada o campo não aparece: a maior parte dos gastos da loja não é de
+  // uma moto específica, e um seletor vazio só ocuparia espaço no formulário.
+  if (motos.length === 0) return null;
+
+  const emEstoque = motos.filter((m) => m.status === "em_estoque");
+  const vendidas = motos.filter((m) => m.status === "vendida");
+
+  return (
+    <div>
+      <span className="mb-2 block text-sm text-text-secondary">
+        Moto <span className="text-text-muted">(opcional)</span>
+      </span>
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-bg-muted bg-bg-muted px-4 py-3 text-text-primary outline-none transition focus:border-accent-brand"
+      >
+        <option value="">Nenhuma moto</option>
+        {emEstoque.length > 0 && (
+          <optgroup label="Em estoque">
+            {emEstoque.map((m) => (
+              <option key={m._id} value={m._id}>{m.modelo} · {m.placa}</option>
+            ))}
+          </optgroup>
+        )}
+        {vendidas.length > 0 && (
+          <optgroup label="Vendidas">
+            {vendidas.map((m) => (
+              <option key={m._id} value={m._id}>{m.modelo} · {m.placa}</option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+      {hint && (
+        <p
+          className={cn(
+            "mt-2 text-xs",
+            hintTone === "warning" ? "text-status-warning" : "text-text-muted",
+          )}
+        >
+          {hint}
+        </p>
+      )}
+      {error && <p className="mt-2 text-xs text-accent-red">{error}</p>}
     </div>
   );
 }

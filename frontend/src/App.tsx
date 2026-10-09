@@ -16,6 +16,8 @@ import type { User } from "./types/api";
 
 const BudgetPage = lazy(() => import("./pages/BudgetPage").then((m) => ({ default: m.BudgetPage })));
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const MotosPage = lazy(() => import("./pages/MotosPage").then((m) => ({ default: m.MotosPage })));
+const MotoPage = lazy(() => import("./pages/MotoPage").then((m) => ({ default: m.MotoPage })));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage").then((m) => ({ default: m.ExpensesPage })));
 const RelatoriosPage = lazy(() => import("./pages/RelatoriosPage").then((m) => ({ default: m.RelatoriosPage })));
 const ResumoPage = lazy(() => import("./pages/ResumoPage").then((m) => ({ default: m.ResumoPage })));
@@ -220,6 +222,8 @@ export default function App() {
                 <Route element={<SubscriptionGate />}>
                   <Route element={<AppLayout />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/motos" element={<MotosPage />} />
+                    <Route path="/motos/:id" element={<MotoPage />} />
                     <Route path="/relatorios" element={<RelatoriosPage />} />
                     <Route path="/resumo" element={<ResumoPage />} />
                     <Route path="/insights" element={<InsightsPage />} />

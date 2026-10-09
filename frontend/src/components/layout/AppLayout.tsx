@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeftRight,
   BarChart2,
+  Bike,
   CalendarCheck,
   CalendarRange,
   ChevronDown,
@@ -74,9 +75,11 @@ function isGroup(entry: NavEntry): entry is NavGroup {
   return "items" in entry;
 }
 
-// Dashboard fica solto; o resto vive dentro de grupos recolhíveis para encurtar o menu.
+// Dashboard e Motos ficam soltos (são as duas telas do dia a dia da loja); o resto vive
+// dentro de grupos recolhíveis para encurtar o menu.
 const navigation: NavEntry[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/motos", label: "Motos", icon: Bike },
   {
     label: "Relatórios",
     icon: BarChart2,
@@ -150,6 +153,7 @@ const mobileNavigation = [
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/motos": "Motos",
   "/relatorios": "Visão Geral",
   "/resumo": "Resumo",
   "/insights": "Insights",

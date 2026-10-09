@@ -103,6 +103,7 @@ export function normalizeTransaction(
     ),
     carteiraId: readString(item.carteiraId) || undefined,
     carteiraDestinoId: readString(item.carteiraDestinoId) || undefined,
+    motoId: readString(item.motoId) || undefined,
     agendado: Boolean(item.agendado),
     carteira,
     faturaId: readString(item.faturaId) || undefined,

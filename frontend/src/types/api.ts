@@ -56,6 +56,8 @@ export type Transaction = MongoDocument & {
   carteiraDestinoId?: ApiId;
   agendado?: boolean;
   carteira?: VirtualWallet;
+  // Vincula o gasto a uma moto do estoque — é o que alimenta o custo total da ficha.
+  motoId?: ApiId;
   // Presentes só em transações de cartão de crédito.
   faturaId?: ApiId;
   parcelamentoId?: ApiId;
@@ -277,6 +279,72 @@ export type DashboardResponse = {
     totalPending: number;
   };
   goalsSummary: Goal[];
+};
+
+export type MotoStatus = "em_estoque" | "vendida";
+
+/**
+ * GET /api/motos e /api/motos/:id — o documento mais os campos que o backend calcula a
+ * cada leitura (MotosService#comCamposCalculados). custoGastos, custoTotal, precoSugerido
+ * e lucro não existem na coleção: são derivados de valorCompra, margemDesejada e das
+ * despesas vinculadas, então nunca são enviados de volta num POST/PATCH.
+ */
+export type Moto = MongoDocument & {
+  userId: ApiId;
+  modelo: string;
+  ano: number;
+  placa: string;
+  chassi: string;
+  cor: string;
+  km: number;
+  valorCompra: number;
+  dataCompra: ApiDate;
+  /** Percentual sobre o custo total (compra + gastos), não sobre o valor de compra. */
+  margemDesejada: number;
+  precoAnunciado?: number;
+  status: MotoStatus;
+  // Preenchidos juntos, só quando status === "vendida".
+  valorVenda?: number;
+  dataVenda?: ApiDate;
+  // Calculados (ver acima).
+  custoGastos: number;
+  custoTotal: number;
+  precoSugerido: number;
+  lucro: number | null;
+};
+
+export type MotoGastoPorCategoria = {
+  categoryId: ApiId | null;
+  /** "Sem categoria" quando a despesa não tem categoria (ex: importação de OFX). */
+  categoria: string;
+  total: number;
+};
+
+/** GET /api/motos/:id/resumo — a ficha financeira da moto. */
+export type MotoResumo = {
+  moto: {
+    _id: ApiId;
+    modelo: string;
+    placa: string;
+    ano: number;
+    status: MotoStatus;
+    valorCompra: number;
+    margemDesejada: number;
+    precoAnunciado: number | null;
+    valorVenda: number | null;
+    dataVenda: ApiDate | null;
+  };
+  custoGastos: number;
+  custoTotal: number;
+  gastosPorCategoria: MotoGastoPorCategoria[];
+  precoSugerido: number;
+  /**
+   * Quanto se pode abater do preço anunciado (ou do sugerido, quando ainda não houve
+   * anúncio) antes de a venda virar prejuízo.
+   */
+  descontoMaximo: number;
+  lucro: number | null;
+  lucroPercentual: number | null;
 };
 
 export type ApiValidationError = {
