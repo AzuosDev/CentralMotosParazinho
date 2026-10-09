@@ -8,6 +8,8 @@ import { Model, Types } from 'mongoose';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Wallet } from '../wallets/schemas/wallet.schema';
 import { Transaction, TransactionType } from './schemas/transaction.schema';
+import { Moto } from '../motos/schemas/moto.schema';
+import { Category } from '../categories/schemas/category.schema';
 
 const FAKE_USER_ID = new Types.ObjectId().toString();
 
@@ -205,5 +207,134 @@ describe('TransactionsController (e2e)', () => {
       .post('/api/transactions')
       .send({ type: 'INCOME', value: 50, date: '2026-03-10', carteiraId: carteira._id.toString() })
       .expect(400);
+  });
+
+  describe('vínculo com uma moto (motoId)', () => {
+    let motoModel: Model<Moto>;
+    let categoryId: Types.ObjectId;
+
+    const corpoDespesa = (extra: Record<string, unknown> = {}) => ({
+      type: 'EXPENSE',
+      value: 350,
+      date: '2026-04-10',
+      categoryId: categoryId.toString(),
+      ...extra,
+    });
+
+    beforeAll(async () => {
+      motoModel = app.get<Model<Moto>>(getModelToken(Moto.name));
+      const categoryModel = app.get<Model<Category>>(getModelToken(Category.name));
+      const categoria = await categoryModel.create({
+        userId: new Types.ObjectId(FAKE_USER_ID),
+        name: 'Peças de moto',
+        slug: 'pecas-de-moto',
+      });
+      categoryId = categoria._id as Types.ObjectId;
+    });
+
+    const criarMoto = (userId = FAKE_USER_ID, placa = `M${Date.now().toString().slice(-6)}`) =>
+      motoModel.create({
+        userId: new Types.ObjectId(userId),
+        modelo: 'Honda CG 160',
+        ano: 2022,
+        placa,
+        chassi: `9C2KC2200NR${placa}`,
+        cor: 'Preta',
+        km: 10000,
+        valorCompra: 14000,
+        dataCompra: new Date('2026-01-10'),
+        margemDesejada: 20,
+      });
+
+    it('POST aceita motoId e grava o vínculo', async () => {
+      const moto = await criarMoto(FAKE_USER_ID, 'VIN0001');
+
+      const res = await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ motoId: moto._id.toString(), description: 'Troca de pneu' }))
+        .expect(201);
+
+      expect(res.body.motoId).toBe(moto._id.toString());
+
+      const salva = await transactionModel.findById(res.body._id).exec();
+      expect(salva!.motoId?.toString()).toBe(moto._id.toString());
+    });
+
+    // Vínculo silenciosamente descartado seria pior que o 400: o gasto existiria e nunca
+    // apareceria em nenhum relatório da moto, sem o usuário ter como perceber.
+    it('POST recusa motoId de outro usuário', async () => {
+      const deOutro = await criarMoto(new Types.ObjectId().toString(), 'VIN0002');
+
+      await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ motoId: deOutro._id.toString() }))
+        .expect(400);
+    });
+
+    it('POST recusa motoId inexistente ou malformado', async () => {
+      await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ motoId: new Types.ObjectId().toString() }))
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ motoId: 'nao-e-objectid' }))
+        .expect(400);
+    });
+
+    it('GET ?motoId= devolve só as transações daquela moto', async () => {
+      const moto = await criarMoto(FAKE_USER_ID, 'VIN0003');
+      await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ motoId: moto._id.toString(), description: 'Revisão da VIN0003' }))
+        .expect(201);
+      await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ description: 'Gasto sem moto' }))
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/api/transactions?motoId=${moto._id.toString()}`)
+        .expect(200);
+
+      expect(res.body.total).toBe(1);
+      expect(res.body.data[0].description).toBe('Revisão da VIN0003');
+    });
+
+    it('PATCH :id desvincula com string vazia e revincula com um id', async () => {
+      const moto = await criarMoto(FAKE_USER_ID, 'VIN0004');
+      const criada = await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ motoId: moto._id.toString() }))
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/api/transactions/${criada.body._id}`)
+        .send({ motoId: '' })
+        .expect(200);
+      expect((await transactionModel.findById(criada.body._id).exec())!.motoId).toBeUndefined();
+
+      await request(app.getHttpServer())
+        .patch(`/api/transactions/${criada.body._id}`)
+        .send({ motoId: moto._id.toString() })
+        .expect(200);
+      expect((await transactionModel.findById(criada.body._id).exec())!.motoId?.toString()).toBe(
+        moto._id.toString(),
+      );
+    });
+
+    it('PATCH :id recusa revincular para a moto de outro usuário', async () => {
+      const deOutro = await criarMoto(new Types.ObjectId().toString(), 'VIN0005');
+      const criada = await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa())
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/api/transactions/${criada.body._id}`)
+        .send({ motoId: deOutro._id.toString() })
+        .expect(400);
+    });
   });
 });

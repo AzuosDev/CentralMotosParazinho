@@ -21,6 +21,12 @@ export class CreateTransactionDto {
   @IsString()
   carteiraId?: string;
 
+  // Vincula o lançamento a uma moto do estoque. A posse é checada no service (a moto tem
+  // que ser do usuário autenticado), não aqui — o DTO só garante o formato.
+  @IsOptional()
+  @IsString()
+  motoId?: string;
+
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? sanitizeHtml(value, { allowedTags: [], allowedAttributes: {} }) : value))
   @IsString()

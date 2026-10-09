@@ -82,6 +82,12 @@ export class Transaction {
   // (sem isso não havia como saber se uma compra já tinha sido estornada).
   @Prop({ type: Types.ObjectId, ref: 'Transaction' })
   estornoDeTransacaoId?: Types.ObjectId;
+
+  // Vincula a transação a uma moto do estoque (módulo motos): é o que permite somar os
+  // gastos de uma moto em MotosService#resumo/#relatorio e o que faz MotosService#remove
+  // recusar a exclusão de uma moto que já tem histórico financeiro.
+  @Prop({ type: Types.ObjectId, ref: 'Moto' })
+  motoId?: Types.ObjectId;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
@@ -91,3 +97,4 @@ TransactionSchema.index({ importBatchId: 1 }, { sparse: true });
 TransactionSchema.index({ faturaId: 1 }, { sparse: true });
 TransactionSchema.index({ parcelamentoId: 1 }, { sparse: true });
 TransactionSchema.index({ estornoDeTransacaoId: 1 }, { sparse: true });
+TransactionSchema.index({ userId: 1, motoId: 1 }, { sparse: true });

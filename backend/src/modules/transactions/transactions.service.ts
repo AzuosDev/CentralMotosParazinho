@@ -5,6 +5,7 @@ import { Transaction, TransactionDocument, TransactionType } from './schemas/tra
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
 import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
+import { Moto, MotoDocument } from '../motos/schemas/moto.schema';
 import { CartoesService } from '../cartoes/cartoes.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -16,6 +17,7 @@ export class TransactionsService {
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
     @InjectModel(Goal.name) private goalModel: Model<GoalDocument>,
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    @InjectModel(Moto.name) private motoModel: Model<MotoDocument>,
     private cartoesService: CartoesService,
   ) {}
 
@@ -38,6 +40,18 @@ export class TransactionsService {
       throw new BadRequestException(`${fieldName} must be a valid ObjectId`);
     }
     return new Types.ObjectId(value);
+  }
+
+  // Diferente de carteiraId logo abaixo, um motoId inválido/de outro usuário é erro, não é
+  // silenciosamente ignorado: deixar passar gravaria um vínculo que nunca aparece em
+  // nenhum relatório de moto, e o usuário não teria como perceber.
+  private async resolverMoto(userObjectId: Types.ObjectId, motoId: string) {
+    const motoObjectId = this.toObjectId(motoId, 'motoId');
+    const moto = await this.motoModel.exists({ _id: motoObjectId, userId: userObjectId });
+    if (!moto) {
+      throw new BadRequestException('Moto não encontrada para este usuário');
+    }
+    return motoObjectId;
   }
 
   async create(userId: string, dto: CreateTransactionDto) {
@@ -64,6 +78,8 @@ export class TransactionsService {
       dto.carteiraId && Types.ObjectId.isValid(dto.carteiraId)
         ? new Types.ObjectId(dto.carteiraId)
         : undefined;
+
+    const motoObjectId = dto.motoId ? await this.resolverMoto(userObjectId, dto.motoId) : undefined;
 
     const isScheduled = dto.date > new Date().toISOString().slice(0, 10);
 
@@ -108,6 +124,7 @@ export class TransactionsService {
       agendado: isScheduled,
       fitId: dto.fitId ?? undefined,
       faturaId,
+      motoId: motoObjectId,
     });
 
     if (!isScheduled) {
@@ -162,6 +179,7 @@ export class TransactionsService {
     year?: number,
     carteiraId?: string,
     semCategoria?: boolean,
+    motoId?: string,
   ) {
     const filter: FilterQuery<TransactionDocument> = { userId: new Types.ObjectId(userId) };
     if (type) {
@@ -183,6 +201,10 @@ export class TransactionsService {
     if (carteiraId && Types.ObjectId.isValid(carteiraId)) {
       const walletOid = new Types.ObjectId(carteiraId);
       filter.$or = [{ carteiraId: walletOid }, { carteiraDestinoId: walletOid }];
+    }
+
+    if (motoId) {
+      filter.motoId = this.toObjectId(motoId, 'motoId');
     }
 
     const [docs, total] = await Promise.all([
@@ -230,6 +252,11 @@ export class TransactionsService {
 
       if (typeof dto.description !== 'undefined') transaction.description = dto.description;
       if (dto.categoryId) transaction.categoryId = this.toObjectId(dto.categoryId, 'categoryId');
+      // motoId é liberado aqui de propósito: ele não participa da resolução da fatura, só
+      // diz a que moto o gasto pertence — é informação de classificação, como a categoria.
+      if (typeof dto.motoId !== 'undefined') {
+        transaction.motoId = dto.motoId ? await this.resolverMoto(userObjectId, dto.motoId) : undefined;
+      }
       await transaction.save();
       return transaction;
     }
@@ -246,6 +273,10 @@ export class TransactionsService {
     if (dto.date) {
       transaction.date = new Date(dto.date);
       transaction.agendado = dto.date > new Date().toISOString().slice(0, 10);
+    }
+    // String vazia desvincula a moto; um id revincula (depois de checar a posse).
+    if (typeof dto.motoId !== 'undefined') {
+      transaction.motoId = dto.motoId ? await this.resolverMoto(userObjectId, dto.motoId) : undefined;
     }
     if (typeof dto.carteiraDestinoId !== 'undefined') {
       transaction.carteiraDestinoId =

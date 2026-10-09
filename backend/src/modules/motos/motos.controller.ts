@@ -8,6 +8,7 @@ import { CreateMotoDto } from './dto/create-moto.dto';
 import { UpdateMotoDto } from './dto/update-moto.dto';
 import { VenderMotoDto } from './dto/vender-moto.dto';
 import { GetMotosDto } from './dto/get-motos.dto';
+import { GetRelatorioMotosDto } from './dto/get-relatorio-motos.dto';
 
 @ApiTags('Motos')
 @ApiBearerAuth()
@@ -27,10 +28,24 @@ export class MotosController {
     return this.motosService.findAll(user._id.toString(), query);
   }
 
+  // Declarada antes de @Get(':id') de propósito: na ordem inversa, 'relatorio' casaria com
+  // o parâmetro :id e a rota nunca seria alcançada.
+  @UseGuards(JwtAuthGuard)
+  @Get('relatorio')
+  relatorio(@CurrentUser() user: ICurrentUser, @Query() query: GetRelatorioMotosDto) {
+    return this.motosService.relatorio(user._id.toString(), query);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
     return this.motosService.findOne(user._id.toString(), id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/resumo')
+  resumo(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
+    return this.motosService.resumo(user._id.toString(), id);
   }
 
   @UseGuards(JwtAuthGuard)
