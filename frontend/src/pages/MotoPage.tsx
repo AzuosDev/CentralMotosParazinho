@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, HandCoins, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  HandCoins,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  Undo2,
+  Wallet,
+} from "lucide-react";
 
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
@@ -12,6 +22,7 @@ import { MotoStatusBadge } from "../components/motos/MotoStatusBadge";
 import { ModalShell } from "../components/modals/ModalShell";
 import { MotoModal } from "../components/modals/MotoModal";
 import { VenderMotoModal } from "../components/modals/VenderMotoModal";
+import type { ModoVenda } from "../components/modals/VenderMotoModal";
 import { TransactionModal } from "../components/modals/TransactionModal";
 import { useToast } from "../components/ui/Toast";
 import { TxRow } from "../components/TxRow";
@@ -83,6 +94,56 @@ function DescontoMaximoCard({ resumo }: { resumo: MotoResumo }) {
   );
 }
 
+/**
+ * Numa moto vendida o desconto máximo não tem mais uso (não há o que negociar), e a
+ * pergunta passa a ser quanto a loja ganhou — então o lucro assume o lugar de destaque.
+ */
+function LucroCard({ resumo }: { resumo: MotoResumo }) {
+  const { lucro, lucroPercentual, custoTotal } = resumo;
+  const valorVenda = resumo.moto.valorVenda ?? 0;
+  const prejuizo = (lucro ?? 0) < 0;
+
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border p-6",
+        prejuizo
+          ? "border-accent-red/40 bg-accent-red/10"
+          : "border-semantic-income/40 bg-semantic-income/10",
+      )}
+    >
+      <p className="text-xs font-semibold uppercase tracking-widest text-text-secondary">
+        {prejuizo ? "Prejuízo na venda" : "Lucro na venda"}
+      </p>
+      <p
+        className={cn(
+          "mt-2 font-sans text-4xl font-extrabold",
+          prejuizo ? "text-accent-red" : "text-semantic-income",
+        )}
+      >
+        {formatCurrency(Math.abs(lucro ?? 0))}
+      </p>
+      <p className="mt-3 text-sm text-text-secondary">
+        <span className="font-semibold text-text-primary">{formatCurrency(valorVenda)}</span> de
+        venda −{" "}
+        <span className="font-semibold text-text-primary">{formatCurrency(custoTotal)}</span> de
+        custo total
+        {lucroPercentual !== null && (
+          <>
+            {" "}
+            ·{" "}
+            <span className="font-semibold text-text-primary">
+              {lucroPercentual.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
+            </span>{" "}
+            sobre o custo
+          </>
+        )}
+        .
+      </p>
+    </div>
+  );
+}
+
 export function MotoPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -91,6 +152,10 @@ export function MotoPage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [venderOpen, setVenderOpen] = useState(false);
+  // "registrar" vende a moto; "editar" corrige a venda ou lança na carteira a venda que
+  // ficou sem receita (moto marcada como vendida antes desta feature).
+  const [venderModo, setVenderModo] = useState<ModoVenda>("registrar");
+  const [desfazerOpen, setDesfazerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
   const [txSelecionada, setTxSelecionada] = useState<Transaction | null>(null);
@@ -130,6 +195,8 @@ export function MotoPage() {
 
   const transacoes = txQuery.data?.pages.flatMap((p) => p.data.map(normalizeTransaction)) ?? [];
 
+  // Excluir a moto também apaga os lançamentos que a ficha gerou (compra e venda), com o
+  // saldo da carteira sendo devolvido — por isso invalida carteiras e extrato também.
   const deleteMutation = useMutation({
     mutationFn: async () => {
       await api.delete(`/api/motos/${id}`);
@@ -137,6 +204,9 @@ export function MotoPage() {
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ["motos", id] });
       queryClient.invalidateQueries({ queryKey: ["motos"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       addToast("Moto excluída.", "success");
       navigate("/motos");
     },
@@ -145,6 +215,29 @@ export function MotoPage() {
       setDeleteOpen(false);
     },
   });
+
+  const desfazerVendaMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/api/motos/${id}/venda`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["motos"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      addToast("Venda desfeita. A moto voltou para o estoque.", "success");
+      setDesfazerOpen(false);
+    },
+    onError: (error) => {
+      addToast(getApiErrorMessages(error, "Não foi possível desfazer a venda.")[0], "error");
+      setDesfazerOpen(false);
+    },
+  });
+
+  function abrirVenda(modo: ModoVenda) {
+    setVenderModo(modo);
+    setVenderOpen(true);
+  }
 
   function abrirNovoGasto() {
     setTxSelecionada(null);
@@ -204,15 +297,36 @@ export function MotoPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {!vendida && (
+          {!vendida ? (
             <button
               type="button"
-              onClick={() => setVenderOpen(true)}
+              onClick={() => abrirVenda("registrar")}
               className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
             >
               <HandCoins className="h-4 w-4" />
               Registrar venda
             </button>
+          ) : (
+            <>
+              {resumo?.lancamentoVenda && (
+                <button
+                  type="button"
+                  onClick={() => abrirVenda("editar")}
+                  className="flex items-center gap-2 rounded-xl border border-bg-muted px-4 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-bg-muted"
+                >
+                  <HandCoins className="h-4 w-4" />
+                  Editar venda
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setDesfazerOpen(true)}
+                className="flex items-center gap-2 rounded-xl border border-bg-muted px-4 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-bg-muted"
+              >
+                <Undo2 className="h-4 w-4" />
+                Desfazer venda
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -233,12 +347,39 @@ export function MotoPage() {
         </div>
       </div>
 
+      {vendida && resumo && !resumo.lancamentoVenda && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-status-warning/40 bg-status-warning/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-status-warning" />
+            <div>
+              <p className="text-sm font-semibold text-text-primary">
+                Esta venda não está lançada em nenhuma carteira
+              </p>
+              <p className="text-xs text-text-secondary">
+                A moto está marcada como vendida, mas o dinheiro não entrou em nenhum saldo. O
+                lucro acima já considera a venda; o caixa, não.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => abrirVenda("editar")}
+            className="flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover"
+          >
+            <Wallet className="h-4 w-4" />
+            Lançar venda na carteira
+          </button>
+        </div>
+      )}
+
       {/* Destaques */}
       {resumoQuery.isLoading || !resumo ? (
         <div className="h-44 animate-pulse rounded-2xl bg-bg-muted" />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <DescontoMaximoCard resumo={resumo} />
+          {/* Vendida: o desconto máximo não serve mais (não há negociação em aberto) e o
+              lucro assume o destaque. */}
+          {vendida ? <LucroCard resumo={resumo} /> : <DescontoMaximoCard resumo={resumo} />}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <StatTile
@@ -251,48 +392,40 @@ export function MotoPage() {
                 </span>
               }
             />
-            <StatTile
-              label="Preço sugerido"
-              value={formatCurrency(resumo.precoSugerido)}
-              footer={
-                <span className="text-xs text-text-secondary">
-                  Margem de {moto.margemDesejada.toLocaleString("pt-BR")}% sobre o custo total
-                </span>
-              }
-            />
-            {vendida && resumo.lucro !== null ? (
+            {vendida ? (
               <StatTile
-                label={resumo.lucro < 0 ? "Prejuízo na venda" : "Lucro na venda"}
-                value={formatCurrency(Math.abs(resumo.lucro))}
-                tone={resumo.lucro < 0 ? "expense" : "income"}
+                label="Valor da venda"
+                value={formatCurrency(resumo.moto.valorVenda ?? 0)}
                 footer={
                   <span className="text-xs text-text-secondary">
-                    {formatCurrency(resumo.moto.valorVenda ?? 0)} de venda
-                    {resumo.lucroPercentual !== null && (
-                      <>
-                        {" "}
-                        · {resumo.lucroPercentual.toLocaleString("pt-BR", {
-                          maximumFractionDigits: 1,
-                        })}
-                        % sobre o custo
-                      </>
-                    )}
+                    {resumo.moto.dataVenda
+                      ? `Vendida em ${formatDisplayDate(resumo.moto.dataVenda)}`
+                      : "Sem data de venda"}
                   </span>
                 }
               />
             ) : (
               <StatTile
-                label="Gastos vinculados"
-                value={formatCurrency(resumo.custoGastos)}
+                label="Preço sugerido"
+                value={formatCurrency(resumo.precoSugerido)}
                 footer={
                   <span className="text-xs text-text-secondary">
-                    {resumo.custoGastos > 0
-                      ? "Soma das despesas lançadas nesta moto"
-                      : "Nenhum gasto lançado nesta moto ainda"}
+                    Margem de {moto.margemDesejada.toLocaleString("pt-BR")}% sobre o custo total
                   </span>
                 }
               />
             )}
+            <StatTile
+              label="Gastos vinculados"
+              value={formatCurrency(resumo.custoGastos)}
+              footer={
+                <span className="text-xs text-text-secondary">
+                  {resumo.custoGastos > 0
+                    ? "Soma das despesas lançadas nesta moto"
+                    : "Nenhum gasto lançado nesta moto ainda"}
+                </span>
+              }
+            />
           </div>
         </div>
       )}
@@ -424,7 +557,13 @@ export function MotoPage() {
       </div>
 
       <MotoModal open={editOpen} onClose={() => setEditOpen(false)} moto={moto} />
-      <VenderMotoModal open={venderOpen} onClose={() => setVenderOpen(false)} moto={moto} />
+      <VenderMotoModal
+        open={venderOpen}
+        onClose={() => setVenderOpen(false)}
+        moto={moto}
+        modo={venderModo}
+        lancamentoVenda={resumo?.lancamentoVenda ?? null}
+      />
       <TransactionModal
         open={txOpen}
         onClose={() => {
@@ -435,6 +574,43 @@ export function MotoPage() {
         defaultMotoId={moto._id}
         transaction={txSelecionada}
       />
+
+      <ModalShell
+        open={desfazerOpen}
+        onClose={() => setDesfazerOpen(false)}
+        title="Desfazer venda"
+        icon={<Undo2 className="h-6 w-6 text-accent-brand" />}
+        containerClassName="max-w-sm"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDesfazerOpen(false)}
+              disabled={desfazerVendaMutation.isPending}
+              className="flex-1 rounded-xl border border-bg-muted bg-transparent px-5 py-3 text-sm font-bold text-text-primary transition hover:bg-bg-overlay disabled:opacity-70"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => desfazerVendaMutation.mutate()}
+              disabled={desfazerVendaMutation.isPending}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-70"
+            >
+              {desfazerVendaMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Desfazer venda
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-text-secondary">
+          A moto volta para o estoque e o valor e a data da venda são apagados.
+          {resumo?.lancamentoVenda
+            ? " A receita da venda é excluída e o saldo da carteira volta ao que era."
+            : " Não há receita lançada para excluir."}{" "}
+          Os gastos lançados nela continuam vinculados.
+        </p>
+      </ModalShell>
 
       <ModalShell
         open={deleteOpen}
@@ -469,8 +645,9 @@ export function MotoPage() {
           <span className="font-semibold text-text-primary">
             {moto.modelo} ({moto.placa})
           </span>
-          ? Esta ação não pode ser desfeita. Uma moto com gasto vinculado não pode ser
-          excluída — desvincule ou apague as transações antes.
+          ? Esta ação não pode ser desfeita. Os lançamentos de compra e venda gerados por esta
+          ficha são excluídos junto (o saldo das carteiras volta ao que era), mas uma moto com
+          gasto lançado à mão não pode ser excluída — desvincule ou apague esses gastos antes.
         </p>
       </ModalShell>
     </section>

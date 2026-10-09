@@ -64,6 +64,7 @@ export function normalizeCategory(value: unknown, fallbackIndex = 0): Category {
     color: readString(item.color, item.categoryColor) || CATEGORY_NEUTRAL,
     icon: readString(item.icon, item.iconName, item.categoryIcon) || "Receipt",
     isDefault: item.isDefault === true,
+    slug: readString(item.slug) || undefined,
   };
 }
 
@@ -104,6 +105,7 @@ export function normalizeTransaction(
     carteiraId: readString(item.carteiraId) || undefined,
     carteiraDestinoId: readString(item.carteiraDestinoId) || undefined,
     motoId: readString(item.motoId) || undefined,
+    origem: readString(item.origem) || undefined,
     agendado: Boolean(item.agendado),
     carteira,
     faturaId: readString(item.faturaId) || undefined,

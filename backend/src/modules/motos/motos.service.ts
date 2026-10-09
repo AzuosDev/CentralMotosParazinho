@@ -2,11 +2,20 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { Moto, MotoDocument } from './schemas/moto.schema';
-import { Transaction, TransactionDocument, TransactionType } from '../transactions/schemas/transaction.schema';
+import {
+  Transaction,
+  TransactionDocument,
+  TransactionOrigem,
+  TransactionType,
+} from '../transactions/schemas/transaction.schema';
 import { SIGNED_VALUE_EXPR } from '../transactions/transaction-aggregation.util';
+import { Category, CategoryDocument } from '../categories/schemas/category.schema';
+import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
+import { TransactionsService } from '../transactions/transactions.service';
 import { CreateMotoDto } from './dto/create-moto.dto';
 import { UpdateMotoDto } from './dto/update-moto.dto';
 import { VenderMotoDto } from './dto/vender-moto.dto';
+import { EditarVendaMotoDto } from './dto/editar-venda-moto.dto';
 import { GetMotosDto } from './dto/get-motos.dto';
 import { GetRelatorioMotosDto } from './dto/get-relatorio-motos.dto';
 
@@ -30,12 +39,92 @@ export interface LinhaRelatorio {
   lucro: number | null;
 }
 
+// Categorias de sistema usadas pelos lançamentos que a ficha gera (ver
+// default-categories.ts). Resolvidas por slug e criadas por upsert se faltarem, para o
+// fluxo não depender do seed já ter rodado nesta base.
+const CATEGORIA_COMPRA = {
+  slug: 'compra-de-moto',
+  name: 'Compra de Moto',
+  icon: 'Bike',
+  color: '#D95926',
+  isIncome: false,
+};
+const CATEGORIA_VENDA = {
+  slug: 'venda-de-moto',
+  name: 'Venda de Moto',
+  icon: 'Bike',
+  color: '#008300',
+  isIncome: true,
+};
+
 @Injectable()
 export class MotosService {
   constructor(
     @InjectModel(Moto.name) private motoModel: Model<MotoDocument>,
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
+    @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
+    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    // Os lançamentos passam por TransactionsService, não pelo model: é ele que mexe em
+    // Wallet.saldo, nas metas e na fatura. Escrever a Transaction aqui criaria um segundo
+    // caminho de criação e a venda não apareceria no saldo.
+    private transactionsService: TransactionsService,
   ) {}
+
+  // O projeto não usa replica set (em teste o Mongo é standalone via
+  // mongodb-memory-server), então não há sessão/transação do Mongo disponível: cada
+  // operação que mexe em moto + lançamento faz rollback manual do que já gravou. Ver
+  // #vender, #create e #desfazerVenda.
+
+  /** AAAA-MM-DD, o formato que CreateTransactionDto.date espera. */
+  private dataISO(valor: Date) {
+    return valor.toISOString().slice(0, 10);
+  }
+
+  private async categoriaDeSistema(definicao: typeof CATEGORIA_VENDA) {
+    const { slug, ...resto } = definicao;
+    const categoria = await this.categoryModel
+      .findOneAndUpdate(
+        { slug, isDefault: true },
+        { $setOnInsert: { ...resto, slug, isDefault: true } },
+        { upsert: true, new: true },
+      )
+      .exec();
+
+    return categoria._id as Types.ObjectId;
+  }
+
+  /**
+   * A carteira que recebe a venda (ou paga a compra) tem que ser uma conta de verdade:
+   * cartão de crédito é dívida, não caixa — receber uma venda nele não faz sentido e o
+   * lançamento sairia do saldo por causa do faturaId.
+   */
+  private async garantirCarteiraDeCaixa(userObjectId: Types.ObjectId, carteiraId: string) {
+    const carteiraObjectId = this.toObjectId(carteiraId, 'carteiraId');
+    const carteira = await this.walletModel
+      .findOne({ _id: carteiraObjectId, userId: userObjectId })
+      .exec();
+
+    if (!carteira) throw new BadRequestException('Carteira não encontrada para este usuário.');
+    if (carteira.tipo === 'credito') {
+      throw new BadRequestException(
+        'Escolha uma carteira de caixa (conta ou dinheiro): cartão de crédito não recebe venda nem paga a compra de uma moto.',
+      );
+    }
+    if (carteira.arquivadaEm) {
+      throw new BadRequestException('Esta carteira está arquivada e não aceita novos lançamentos.');
+    }
+
+    return carteiraObjectId;
+  }
+
+  /** O lançamento gerado pela ficha, quando existe (compra ou venda). */
+  private async lancamentoDaMoto(
+    userObjectId: Types.ObjectId,
+    motoObjectId: Types.ObjectId,
+    origem: TransactionOrigem,
+  ) {
+    return this.transactionModel.findOne({ userId: userObjectId, motoId: motoObjectId, origem }).exec();
+  }
 
   private toObjectId(value: string, field: string) {
     if (!Types.ObjectId.isValid(value)) throw new BadRequestException(`${field} must be a valid ObjectId`);
@@ -64,6 +153,12 @@ export class MotosService {
   // `agendado: { $ne: true }` segue o resto do projeto — despesa com data futura ainda não
   // mexeu em saldo nenhum, então também não entra no custo da moto até a data chegar.
   // Estorno é descontado via SIGNED_VALUE_EXPR em vez de somado como gasto cheio.
+  // Os lançamentos que a própria ficha gera (origem compra_moto/venda_moto) ficam fora de
+  // todo somatório de gasto: a compra já é contada como valorCompra e a venda como
+  // valorVenda, então somá-los aqui contaria o mesmo dinheiro duas vezes — a moto
+  // apareceria custando o dobro da compra.
+  private static readonly SEM_LANCAMENTO_DA_FICHA = { origem: { $exists: false } };
+
   private async custoGastosPorMoto(userObjectId: Types.ObjectId, motoIds: Types.ObjectId[]) {
     const mapa = new Map<string, number>();
     if (motoIds.length === 0) return mapa;
@@ -76,6 +171,7 @@ export class MotosService {
             motoId: { $in: motoIds },
             type: TransactionType.EXPENSE,
             agendado: { $ne: true },
+            ...MotosService.SEM_LANCAMENTO_DA_FICHA,
           },
         },
         { $group: { _id: '$motoId', total: { $sum: SIGNED_VALUE_EXPR } } },
@@ -132,6 +228,19 @@ export class MotosService {
 
     await this.garantirPlacaLivre(userObjectId, placa);
 
+    // Carteira validada antes de criar a moto: se ela não presta, nada é gravado e não há
+    // o que desfazer.
+    let carteiraCompraId: Types.ObjectId | undefined;
+    if (dto.lancarCompra) {
+      if (!dto.carteiraCompraId) {
+        throw new BadRequestException('Escolha a carteira que pagou a compra para lançá-la no caixa.');
+      }
+      if (dto.valorCompra <= 0) {
+        throw new BadRequestException('Não é possível lançar uma compra de R$ 0,00 na carteira.');
+      }
+      carteiraCompraId = await this.garantirCarteiraDeCaixa(userObjectId, dto.carteiraCompraId);
+    }
+
     const moto = await this.motoModel.create({
       userId: userObjectId,
       modelo: dto.modelo,
@@ -147,7 +256,32 @@ export class MotosService {
       status: 'em_estoque',
     });
 
-    // Moto recém-criada não tem gasto vinculado: custoGastos é 0 sem precisar consultar.
+    if (carteiraCompraId) {
+      // Rollback manual (não há transação do Mongo): se a despesa falhar — carteira
+      // arquivada entre a validação e aqui, por exemplo — a moto recém-criada é apagada,
+      // em vez de ficar cadastrada sem o lançamento que o usuário pediu.
+      try {
+        await this.transactionsService.create(
+          userId,
+          {
+            type: TransactionType.EXPENSE,
+            value: dto.valorCompra,
+            date: dto.dataCompra.slice(0, 10),
+            categoryId: (await this.categoriaDeSistema(CATEGORIA_COMPRA)).toString(),
+            carteiraId: carteiraCompraId.toString(),
+            motoId: (moto._id as Types.ObjectId).toString(),
+            description: `Compra da moto ${moto.modelo} (${moto.placa})`,
+          },
+          { origem: 'compra_moto' },
+        );
+      } catch (erro) {
+        await this.motoModel.deleteOne({ _id: moto._id, userId: userObjectId }).exec();
+        throw erro;
+      }
+    }
+
+    // O lançamento da compra não entra em custoGastos (ver SEM_LANCAMENTO_DA_FICHA): o
+    // valorCompra já responde por ele. Moto nova não tem outro gasto vinculado, então 0.
     return this.comCamposCalculados(moto, 0);
   }
 
@@ -197,9 +331,33 @@ export class MotosService {
     if (typeof dto.precoAnunciado !== 'undefined') moto.precoAnunciado = dto.precoAnunciado;
 
     await moto.save();
+
+    // Valor ou data da compra mudaram: a despesa gerada no cadastro acompanha, senão a
+    // ficha passa a dizer um valor de compra e a carteira outro.
+    const compra = await this.lancamentoDaMoto(userObjectId, motoObjectId, 'compra_moto');
+    if (compra && (typeof dto.valorCompra !== 'undefined' || typeof dto.dataCompra !== 'undefined')) {
+      await this.transactionsService.update(
+        userId,
+        (compra._id as Types.ObjectId).toString(),
+        {
+          ...(typeof dto.valorCompra !== 'undefined' ? { value: moto.valorCompra } : {}),
+          ...(typeof dto.dataCompra !== 'undefined' ? { date: this.dataISO(moto.dataCompra) } : {}),
+        },
+        { permitirOrigem: true },
+      );
+    }
+
     return this.umaMotoCalculada(moto, userObjectId);
   }
 
+  /**
+   * Marca a moto como vendida e lança a receita na carteira que recebeu o dinheiro — as
+   * duas coisas juntas, porque uma moto que sai do estoque sem receita não aparece em
+   * saldo, dashboard nem extrato, que era o furo desta tela.
+   *
+   * Para corrigir uma venda já registrada, ver #editarVenda; para cancelá-la,
+   * #desfazerVenda.
+   */
   async vender(userId: string, id: string, dto: VenderMotoDto) {
     const userObjectId = this.toObjectId(userId, 'userId');
     const moto = await this.motoModel.findOne({ _id: this.toObjectId(id, 'id'), userId: userObjectId }).exec();
@@ -211,12 +369,172 @@ export class MotosService {
     if (dataVenda < moto.dataCompra) {
       throw new BadRequestException('A data da venda não pode ser anterior à data da compra.');
     }
+    // Transaction.value exige valor positivo: sem isso a receita falharia no meio do
+    // caminho, depois de a moto já ter sido marcada como vendida.
+    if (dto.valorVenda <= 0) {
+      throw new BadRequestException('O valor da venda precisa ser maior que zero.');
+    }
+
+    const carteiraObjectId = await this.garantirCarteiraDeCaixa(userObjectId, dto.carteiraId);
 
     moto.status = 'vendida';
     moto.valorVenda = dto.valorVenda;
     moto.dataVenda = dataVenda;
+    await moto.save();
+
+    // Rollback manual: a moto volta a em_estoque se a receita não entrar, para não existir
+    // moto vendida sem dinheiro entrando em carteira nenhuma.
+    try {
+      await this.lancarReceitaVenda(userId, userObjectId, moto, carteiraObjectId, dto.categoryId);
+    } catch (erro) {
+      await this.motoModel
+        .updateOne(
+          { _id: moto._id, userId: userObjectId },
+          { $set: { status: 'em_estoque' }, $unset: { valorVenda: '', dataVenda: '' } },
+        )
+        .exec();
+      throw erro;
+    }
+
+    return this.umaMotoCalculada(moto, userObjectId);
+  }
+
+  private async lancarReceitaVenda(
+    userId: string,
+    userObjectId: Types.ObjectId,
+    moto: MotoDocument,
+    carteiraObjectId: Types.ObjectId,
+    categoryId?: string,
+  ) {
+    // Moto antiga pode ter sido marcada como vendida sem valor gravado: um 400 explicando
+    // é melhor que o erro de validação do Mongo no meio do lançamento.
+    if (typeof moto.valorVenda !== 'number' || moto.valorVenda <= 0) {
+      throw new BadRequestException(
+        'Informe o valor da venda para lançá-la na carteira.',
+      );
+    }
+
+    const categoria = categoryId
+      ? this.toObjectId(categoryId, 'categoryId')
+      : await this.categoriaDeSistema(CATEGORIA_VENDA);
+
+    return this.transactionsService.create(
+      userId,
+      {
+        type: TransactionType.INCOME,
+        value: moto.valorVenda as number,
+        date: this.dataISO(moto.dataVenda as Date),
+        categoryId: categoria.toString(),
+        carteiraId: carteiraObjectId.toString(),
+        motoId: (moto._id as Types.ObjectId).toString(),
+        description: `Venda da moto ${moto.modelo} (${moto.placa})`,
+      },
+      { origem: 'venda_moto' },
+    );
+  }
+
+  /**
+   * Corrige uma venda já registrada e mantém a receita vinculada em sincronia. Também
+   * atende a moto antiga, marcada como vendida antes de a venda gerar lançamento: mandar
+   * carteiraId cria a receita que faltava ("Lançar venda na carteira" na ficha). Sem
+   * carteiraId e sem lançamento existente, nada é criado — moto antiga não ganha
+   * lançamento sozinha, só quando o usuário escolhe a carteira.
+   */
+  async editarVenda(userId: string, id: string, dto: EditarVendaMotoDto) {
+    const motoObjectId = this.toObjectId(id, 'id');
+    const userObjectId = this.toObjectId(userId, 'userId');
+
+    const moto = await this.motoModel.findOne({ _id: motoObjectId, userId: userObjectId }).exec();
+    if (!moto) throw new NotFoundException('Moto não encontrada');
+    if (moto.status !== 'vendida') {
+      throw new BadRequestException('Esta moto não está vendida. Use "Registrar venda" para vendê-la.');
+    }
+
+    const anterior = { valorVenda: moto.valorVenda, dataVenda: moto.dataVenda };
+
+    if (typeof dto.valorVenda !== 'undefined') {
+      if (dto.valorVenda <= 0) throw new BadRequestException('O valor da venda precisa ser maior que zero.');
+      moto.valorVenda = dto.valorVenda;
+    }
+    if (dto.dataVenda) {
+      const dataVenda = new Date(dto.dataVenda);
+      if (dataVenda < moto.dataCompra) {
+        throw new BadRequestException('A data da venda não pode ser anterior à data da compra.');
+      }
+      moto.dataVenda = dataVenda;
+    }
+
+    const carteiraObjectId = dto.carteiraId
+      ? await this.garantirCarteiraDeCaixa(userObjectId, dto.carteiraId)
+      : undefined;
 
     await moto.save();
+
+    try {
+      const lancamento = await this.lancamentoDaMoto(userObjectId, motoObjectId, 'venda_moto');
+
+      if (!lancamento) {
+        // Só cria quando a carteira foi escolhida agora: é o caminho do botão "Lançar
+        // venda na carteira" das motos vendidas antes desta feature existir.
+        if (carteiraObjectId) {
+          await this.lancarReceitaVenda(userId, userObjectId, moto, carteiraObjectId, dto.categoryId);
+        }
+      } else {
+        // A atualização passa por TransactionsService para o ajuste de Wallet.saldo ser o
+        // mesmo de qualquer edição de transação (inclusive troca de carteira).
+        await this.transactionsService.update(
+          userId,
+          (lancamento._id as Types.ObjectId).toString(),
+          {
+            value: moto.valorVenda,
+            date: this.dataISO(moto.dataVenda as Date),
+            ...(carteiraObjectId ? { carteiraId: carteiraObjectId.toString() } : {}),
+            ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
+          },
+          { permitirOrigem: true },
+        );
+      }
+    } catch (erro) {
+      // Rollback manual: a moto volta aos valores anteriores se o lançamento não
+      // acompanhar, senão ficha e extrato passam a mostrar valores diferentes.
+      moto.valorVenda = anterior.valorVenda;
+      moto.dataVenda = anterior.dataVenda;
+      await moto.save();
+      throw erro;
+    }
+
+    return this.umaMotoCalculada(moto, userObjectId);
+  }
+
+  /**
+   * Cancela a venda: a moto volta ao estoque, os campos de venda são limpos e a receita
+   * gerada é excluída (devolvendo o saldo da carteira, via TransactionsService#remove).
+   * Os gastos lançados à mão na moto continuam vinculados — ela voltou para o pátio, o
+   * histórico de custo dela não mudou.
+   */
+  async desfazerVenda(userId: string, id: string) {
+    const motoObjectId = this.toObjectId(id, 'id');
+    const userObjectId = this.toObjectId(userId, 'userId');
+
+    const moto = await this.motoModel.findOne({ _id: motoObjectId, userId: userObjectId }).exec();
+    if (!moto) throw new NotFoundException('Moto não encontrada');
+    if (moto.status !== 'vendida') throw new BadRequestException('Esta moto não está marcada como vendida.');
+
+    // A receita sai primeiro: se a limpeza da moto falhar depois, sobra uma moto vendida
+    // sem lançamento — estado que a ficha sabe mostrar e refazer. Na ordem inversa
+    // sobraria uma receita órfã no extrato, que ninguém mais acha.
+    const lancamento = await this.lancamentoDaMoto(userObjectId, motoObjectId, 'venda_moto');
+    if (lancamento) {
+      await this.transactionsService.remove(userId, (lancamento._id as Types.ObjectId).toString(), {
+        permitirOrigem: true,
+      });
+    }
+
+    moto.status = 'em_estoque';
+    moto.valorVenda = undefined;
+    moto.dataVenda = undefined;
+    await moto.save();
+
     return this.umaMotoCalculada(moto, userObjectId);
   }
 
@@ -224,16 +542,36 @@ export class MotosService {
     const motoObjectId = this.toObjectId(id, 'id');
     const userObjectId = this.toObjectId(userId, 'userId');
 
+    const moto = await this.motoModel.findOne({ _id: motoObjectId, userId: userObjectId }).exec();
+    if (!moto) throw new NotFoundException('Moto não encontrada');
+
     // Mesmo contrato de WalletsService#remove: uma moto com histórico financeiro não é
     // excluída, porque apagá-la deixaria as transações apontando para um documento que não
     // existe mais. Desvincule ou exclua as transações antes.
-    const vinculada = await this.transactionModel.exists({ userId: userObjectId, motoId: motoObjectId });
-    if (vinculada) {
+    //
+    // A exceção são os lançamentos que a própria ficha gerou (compra e venda): eles só
+    // existem por causa desta moto e não são alcançáveis de nenhum outro lugar, então vão
+    // junto — com o saldo da carteira sendo devolvido por TransactionsService#remove.
+    const lancadasAMao = await this.transactionModel.exists({
+      userId: userObjectId,
+      motoId: motoObjectId,
+      ...MotosService.SEM_LANCAMENTO_DA_FICHA,
+    });
+    if (lancadasAMao) {
       throw new BadRequestException('Não é possível excluir uma moto que possui transações vinculadas.');
     }
 
-    const moto = await this.motoModel.findOneAndDelete({ _id: motoObjectId, userId: userObjectId }).exec();
-    if (!moto) throw new NotFoundException('Moto não encontrada');
+    const geradas = await this.transactionModel
+      .find({ userId: userObjectId, motoId: motoObjectId, origem: { $exists: true } })
+      .exec();
+
+    for (const lancamento of geradas) {
+      await this.transactionsService.remove(userId, (lancamento._id as Types.ObjectId).toString(), {
+        permitirOrigem: true,
+      });
+    }
+
+    await this.motoModel.deleteOne({ _id: motoObjectId, userId: userObjectId }).exec();
 
     return { deleted: true };
   }
@@ -253,6 +591,7 @@ export class MotosService {
             motoId: motoObjectId,
             type: TransactionType.EXPENSE,
             agendado: { $ne: true },
+            ...MotosService.SEM_LANCAMENTO_DA_FICHA,
           },
         },
         { $group: { _id: '$categoryId', total: { $sum: SIGNED_VALUE_EXPR } } },
@@ -290,7 +629,21 @@ export class MotosService {
     // percentual não existe, em vez de virar Infinity.
     const lucroPercentual = lucro !== null && custoTotal > 0 ? this.arredondar((lucro / custoTotal) * 100) : null;
 
+    // A ficha precisa saber se a venda já virou receita: é o que decide entre "Editar
+    // venda" e "Lançar venda na carteira" (moto vendida antes desta feature existir).
+    const lancamento =
+      moto.status === 'vendida'
+        ? await this.lancamentoDaMoto(userObjectId, motoObjectId, 'venda_moto')
+        : null;
+
     return {
+      lancamentoVenda: lancamento
+        ? {
+            _id: lancamento._id,
+            carteiraId: lancamento.carteiraId ?? null,
+            categoryId: lancamento.categoryId ?? null,
+          }
+        : null,
       moto: {
         _id: moto._id,
         modelo: moto.modelo,
@@ -334,6 +687,7 @@ export class MotosService {
                   userId: userObjectId,
                   type: TransactionType.EXPENSE,
                   agendado: { $ne: true },
+                  ...MotosService.SEM_LANCAMENTO_DA_FICHA,
                 },
               },
               {

@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
-import { Transaction, TransactionDocument, TransactionType } from './schemas/transaction.schema';
+import {
+  Transaction,
+  TransactionDocument,
+  TransactionOrigem,
+  TransactionType,
+} from './schemas/transaction.schema';
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
 import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
 import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
@@ -54,7 +59,17 @@ export class TransactionsService {
     return motoObjectId;
   }
 
-  async create(userId: string, dto: CreateTransactionDto) {
+  // Mensagem única para edição e exclusão, para a tela de transações orientar o usuário
+  // sempre do mesmo jeito.
+  private static readonly ORIGEM_BLOQUEADA =
+    'Este lançamento foi criado pela ficha da moto (compra ou venda). Edite ou remova pela ficha da moto.';
+
+  /**
+   * `opts.origem` só é usado por MotosService — não existe no DTO de propósito: se o
+   * usuário pudesse enviá-lo, marcaria um gasto comum como lançamento de moto e ele sairia
+   * do custo da moto, além de virar intocável pela tela de transações.
+   */
+  async create(userId: string, dto: CreateTransactionDto, opts: { origem?: TransactionOrigem } = {}) {
     // fitId indica transação importada via OFX — categoria opcional nesses casos
     if (dto.type === TransactionType.EXPENSE && !dto.categoryId && !dto.fitId) {
       throw new BadRequestException('categoryId is required for expense transactions');
@@ -125,6 +140,7 @@ export class TransactionsService {
       fitId: dto.fitId ?? undefined,
       faturaId,
       motoId: motoObjectId,
+      origem: opts.origem,
     });
 
     if (!isScheduled) {
@@ -228,7 +244,17 @@ export class TransactionsService {
     return transaction;
   }
 
-  async update(userId: string, id: string, dto: UpdateTransactionDto) {
+  /**
+   * `opts.permitirOrigem` é a porta de serviço de MotosService: a venda e a compra geradas
+   * pela ficha passam por aqui para a sincronização reaproveitar o mesmo ajuste de saldo de
+   * qualquer edição, em vez de recalcular Wallet.saldo à mão num segundo lugar.
+   */
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateTransactionDto,
+    opts: { permitirOrigem?: boolean } = {},
+  ) {
     const userObjectId = this.toObjectId(userId, 'userId');
     const transaction = await this.transactionModel.findOne({
       _id: this.toObjectId(id, 'id'),
@@ -236,6 +262,10 @@ export class TransactionsService {
     }).exec();
     if (!transaction) {
       throw new NotFoundException('Transaction not found');
+    }
+
+    if (transaction.origem && !opts.permitirOrigem) {
+      throw new BadRequestException(TransactionsService.ORIGEM_BLOQUEADA);
     }
 
     // Transação de cartão de crédito: valor/data não são editáveis (reatribuiria a fatura
@@ -339,7 +369,8 @@ export class TransactionsService {
     return !!doc;
   }
 
-  async remove(userId: string, id: string) {
+  /** Ver update(): permitirOrigem é usado por MotosService (desfazer venda, excluir moto). */
+  async remove(userId: string, id: string, opts: { permitirOrigem?: boolean } = {}) {
     const userObjectId = this.toObjectId(userId, 'userId');
     const transaction = await this.transactionModel.findOne({
       _id: this.toObjectId(id, 'id'),
@@ -347,6 +378,10 @@ export class TransactionsService {
     }).exec();
     if (!transaction) {
       throw new NotFoundException('Transaction not found');
+    }
+
+    if (transaction.origem && !opts.permitirOrigem) {
+      throw new BadRequestException(TransactionsService.ORIGEM_BLOQUEADA);
     }
 
     const faturaId = transaction.faturaId as Types.ObjectId | undefined;

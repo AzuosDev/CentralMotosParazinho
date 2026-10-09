@@ -8,6 +8,7 @@ import { formatCurrency, localDateString, utcDateStr } from "../../lib/finance";
 import { CurrencyInput } from "../ui/CurrencyInput";
 import { useToast } from "../ui/Toast";
 import { ModalShell } from "./ModalShell";
+import { WalletField, useWallets } from "./TransactionFormFields";
 import type { Moto } from "../../types/api";
 
 const inputCls =
@@ -58,6 +59,10 @@ function fromMoto(moto: Moto): MotoFormState {
  * Cadastro e edição de moto. Status e dados da venda não aparecem aqui de propósito: a
  * venda entra por PATCH /api/motos/:id/vender (ver VenderMotoModal), o único lugar onde
  * valor e data de venda são gravados juntos.
+ *
+ * No cadastro é possível lançar a compra como despesa na carteira que pagou. É opcional
+ * porque nem toda moto sai do caixa da loja (consignação, troca, pagamento por fora), e o
+ * custo da moto não depende disso — ele vem de valorCompra.
  */
 export function MotoModal({
   open,
@@ -70,12 +75,20 @@ export function MotoModal({
 }) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const walletsQuery = useWallets();
   const [form, setForm] = useState<MotoFormState>(emptyForm);
+  // Só no cadastro: numa moto já cadastrada o lançamento da compra (se existe) é
+  // sincronizado pelo backend quando valor ou data mudam, e criar um depois exigiria
+  // decidir o que fazer com o histórico já lançado.
+  const [lancarCompra, setLancarCompra] = useState(false);
+  const [carteiraCompraId, setCarteiraCompraId] = useState("");
   const isEditing = Boolean(moto);
 
   useEffect(() => {
     if (!open) return;
     setForm(moto ? fromMoto(moto) : emptyForm);
+    setLancarCompra(false);
+    setCarteiraCompraId("");
   }, [open, moto]);
 
   function set<K extends keyof MotoFormState>(key: K, value: MotoFormState[K]) {
@@ -85,6 +98,10 @@ export function MotoModal({
   const ano = Number(form.ano);
   const km = Number(form.km);
   const margem = Number(form.margemDesejada.replace(",", "."));
+
+  // Lançar a compra só faz sentido com valor: o backend recusa despesa de R$ 0,00 e a
+  // caixa de marcação ficaria prometendo um lançamento que não acontece.
+  const lancarCompraAtivo = !isEditing && lancarCompra && form.valorCompra > 0;
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -109,17 +126,25 @@ export function MotoModal({
       if (moto) {
         await api.patch(`/api/motos/${moto._id}`, payload);
       } else {
-        await api.post("/api/motos", payload);
+        await api.post("/api/motos", {
+          ...payload,
+          ...(lancarCompraAtivo ? { lancarCompra: true, carteiraCompraId } : {}),
+        });
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["motos"] });
+      // A compra lançada (ou corrigida) mexe no saldo da carteira e no extrato.
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       addToast(isEditing ? "Moto atualizada." : "Moto cadastrada no estoque.", "success");
       onClose();
     },
   });
 
   const canSave =
+    (!lancarCompraAtivo || carteiraCompraId.length > 0) &&
     form.modelo.trim().length > 0 &&
     Number.isInteger(ano) &&
     ano >= 1900 &&
@@ -300,6 +325,44 @@ export function MotoModal({
             referência do desconto máximo.
           </span>
         </label>
+
+        {!isEditing && (
+          <div className="rounded-xl bg-bg-muted p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={lancarCompra}
+                onChange={(e) => setLancarCompra(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-bg-muted bg-bg-overlay accent-accent-brand"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-text-primary">
+                  Lançar compra na carteira
+                </span>
+                <span className="block text-xs text-text-secondary">
+                  Cria a despesa da compra na carteira que pagou, com a data da compra. O custo
+                  da moto não muda — ele já conta o valor da compra.
+                </span>
+              </span>
+            </label>
+
+            {lancarCompra && (
+              <div className="mt-4">
+                <WalletField
+                  wallets={walletsQuery.data ?? []}
+                  value={carteiraCompraId}
+                  onChange={setCarteiraCompraId}
+                  loading={walletsQuery.isLoading}
+                />
+                {form.valorCompra <= 0 && (
+                  <p className="mt-2 text-xs text-status-warning">
+                    Informe o valor da compra para lançá-la na carteira.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {precoSugeridoPrevisto !== null && (
           <div className="rounded-xl bg-bg-muted p-3 text-xs text-text-secondary">

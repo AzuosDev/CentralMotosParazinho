@@ -12,6 +12,10 @@ export const DEFAULT_CATEGORIES = [
   { name: 'Transferências Recebidas', slug: 'transferencias-recebidas', icon: 'ArrowLeftRight', color: '#8A8A8A', isDefault: true, isIncome: true },
   { name: 'Assinaturas Digitais', slug: 'assinaturas-digitais', icon: 'Repeat', color: '#9085E9', isDefault: true },
   { name: 'Cartão de Crédito', slug: 'cartao-credito', icon: 'CreditCard', color: '#E66767', isDefault: true },
+  // Usadas pelos lançamentos que a ficha da moto gera (MotosService). Ficam aqui, como
+  // categoria de sistema (userId null), em vez de serem criadas por usuário: o índice
+  // único { slug, isDefault } não permitiria o mesmo slug para dois usuários.
+  { name: 'Compra de Moto', slug: 'compra-de-moto', icon: 'Bike', color: '#D95926', isDefault: true },
   { name: 'Casa', slug: 'casa', icon: 'Home', color: '#C98500', isDefault: true },
   { name: 'Comida e Bebida', slug: 'comida-bebida', icon: 'UtensilsCrossed', color: '#D95926', isDefault: true },
   { name: 'Compras', slug: 'compras', icon: 'ShoppingBag', color: '#E66767', isDefault: true },
@@ -35,5 +39,6 @@ export const DEFAULT_CATEGORIES = [
   { name: 'Venda de Produtos', slug: 'venda-produtos', icon: 'Package', color: '#3987E5', isDefault: true, isIncome: true },
   { name: 'Rendimentos', slug: 'rendimentos', icon: 'TrendingUp', color: '#9085E9', isDefault: true, isIncome: true },
   { name: 'Cashback / Reembolso', slug: 'cashback', icon: 'RefreshCcw', color: '#C98500', isDefault: true, isIncome: true },
+  { name: 'Venda de Moto', slug: 'venda-de-moto', icon: 'Bike', color: '#008300', isDefault: true, isIncome: true },
   { name: 'Outras Entradas', slug: 'outras-entradas', icon: 'Gift', color: '#8A8A8A', isDefault: true, isIncome: true },
 ];

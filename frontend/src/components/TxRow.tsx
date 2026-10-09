@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeftRight, Bike, Calendar, Edit2, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Bike, Calendar, Edit2, Lock, Trash2 } from "lucide-react";
 
 import { useMotos } from "./motos/useMotos";
 import { cn } from "../lib/utils";
@@ -62,6 +62,10 @@ export function TxRow({
   // Selecionar uma transação que já tem carteiraId tomaria 400 no bulk-wallet.
   const isLegacy = tx.carteira?._id === "legacy-wallet";
   const showSelect = Boolean(onToggleSelect) && isLegacy;
+  // Compra e venda geradas pela ficha da moto: o backend recusa editar e excluir por aqui
+  // (ficha e extrato têm que contar a mesma história), então a linha não oferece as ações
+  // e explica para onde ir.
+  const daFichaDaMoto = tx.origem === "venda_moto" || tx.origem === "compra_moto";
   const isTransfer = tx.type === "TRANSFER" || Boolean(tx.carteiraDestinoId);
   const isIncome = tx.type === "INCOME";
   // Transferências: positivo apenas quando esta carteira é o DESTINO.
@@ -112,6 +116,15 @@ export function TxRow({
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <p className="text-xs text-text-secondary">{fmtDate(tx.date)}</p>
             {showMotoBadge && tx.motoId && <MotoBadge motoId={tx.motoId} />}
+            {daFichaDaMoto && (
+              <span
+                className="flex shrink-0 items-center gap-1 rounded-pill bg-bg-muted px-2 py-0.5 text-xs font-medium text-text-secondary"
+                title="Lançamento criado pela ficha da moto: edite ou remova pela ficha."
+              >
+                <Lock className="h-3 w-3" />
+                {tx.origem === "venda_moto" ? "Venda da moto" : "Compra da moto"}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -122,7 +135,15 @@ export function TxRow({
           {brl.format(tx.amount)}
         </span>
 
-        {(onEdit || onDelete) && (
+        {/* Na própria ficha (showMotoBadge desligado) o aviso não faz sentido: os botões
+            de venda e de edição da moto estão logo acima, na mesma tela. */}
+        {daFichaDaMoto && showMotoBadge && (onEdit || onDelete) && (
+          <p className="shrink-0 text-xs text-text-muted sm:max-w-[11rem] sm:text-right">
+            Edite pela ficha da moto
+          </p>
+        )}
+
+        {!daFichaDaMoto && (onEdit || onDelete) && (
           <div className="flex shrink-0 items-center gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
             {onEdit && (
               <button

@@ -7,6 +7,7 @@ import { ICurrentUser } from '../../common/types/current-user.type';
 import { CreateMotoDto } from './dto/create-moto.dto';
 import { UpdateMotoDto } from './dto/update-moto.dto';
 import { VenderMotoDto } from './dto/vender-moto.dto';
+import { EditarVendaMotoDto } from './dto/editar-venda-moto.dto';
 import { GetMotosDto } from './dto/get-motos.dto';
 import { GetRelatorioMotosDto } from './dto/get-relatorio-motos.dto';
 
@@ -52,6 +53,26 @@ export class MotosController {
   @Patch(':id/vender')
   vender(@CurrentUser() user: ICurrentUser, @Param('id') id: string, @Body() dto: VenderMotoDto) {
     return this.motosService.vender(user._id.toString(), id, dto);
+  }
+
+  // Corrige a venda já registrada (valor, data, carteira) mantendo a receita vinculada em
+  // sincronia — e cria a receita que falta no caso de moto vendida antes de a venda gerar
+  // lançamento. Declarada antes de @Patch(':id') pelo mesmo motivo de 'relatorio'.
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/venda')
+  editarVenda(
+    @CurrentUser() user: ICurrentUser,
+    @Param('id') id: string,
+    @Body() dto: EditarVendaMotoDto,
+  ) {
+    return this.motosService.editarVenda(user._id.toString(), id, dto);
+  }
+
+  // Desfaz a venda: moto volta ao estoque e a receita gerada é excluída.
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/venda')
+  desfazerVenda(@CurrentUser() user: ICurrentUser, @Param('id') id: string) {
+    return this.motosService.desfazerVenda(user._id.toString(), id);
   }
 
   @UseGuards(JwtAuthGuard)

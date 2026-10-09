@@ -58,6 +58,13 @@ export type Transaction = MongoDocument & {
   carteira?: VirtualWallet;
   // Vincula o gasto a uma moto do estoque — é o que alimenta o custo total da ficha.
   motoId?: ApiId;
+  /**
+   * Presente só nos lançamentos que a ficha da moto gera (a receita da venda e a despesa
+   * opcional da compra). Eles não entram no custo da moto — compra e venda já são
+   * valorCompra e valorVenda — e não podem ser editados nem excluídos pela tela de
+   * transações: quem manda neles é a ficha.
+   */
+  origem?: TransactionOrigem;
   // Presentes só em transações de cartão de crédito.
   faturaId?: ApiId;
   parcelamentoId?: ApiId;
@@ -283,6 +290,8 @@ export type DashboardResponse = {
 
 export type MotoStatus = "em_estoque" | "vendida";
 
+export type TransactionOrigem = "compra_moto" | "venda_moto";
+
 /**
  * GET /api/motos e /api/motos/:id — o documento mais os campos que o backend calcula a
  * cada leitura (MotosService#comCamposCalculados). custoGastos, custoTotal, precoSugerido
@@ -322,6 +331,16 @@ export type MotoGastoPorCategoria = {
 
 /** GET /api/motos/:id/resumo — a ficha financeira da moto. */
 export type MotoResumo = {
+  /**
+   * A receita gerada pela venda, quando existe. É null numa moto em estoque e também numa
+   * moto marcada como vendida antes de a venda passar a gerar lançamento — nesse caso a
+   * ficha oferece "Lançar venda na carteira" em vez de "Editar venda".
+   */
+  lancamentoVenda: {
+    _id: ApiId;
+    carteiraId: ApiId | null;
+    categoryId: ApiId | null;
+  } | null;
   moto: {
     _id: ApiId;
     modelo: string;

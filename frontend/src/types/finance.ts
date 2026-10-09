@@ -16,6 +16,8 @@ export type Category = {
   color: string;
   icon?: string;
   isDefault?: boolean;
+  /** Usado para achar categoria de sistema por slug (ex: "venda-de-moto"). */
+  slug?: string;
 };
 
 export type Transaction = {
@@ -31,6 +33,8 @@ export type Transaction = {
   agendado?: boolean;
   carteira?: VirtualWallet;
   motoId?: string;
+  /** "compra_moto"/"venda_moto": lançamento gerado pela ficha da moto, não editável aqui. */
+  origem?: string;
   // Presentes só em transações de cartão de crédito.
   faturaId?: string;
   numeroParcela?: number;

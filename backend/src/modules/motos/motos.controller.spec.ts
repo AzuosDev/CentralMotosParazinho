@@ -8,12 +8,16 @@ import { Model, Types } from 'mongoose';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Moto } from './schemas/moto.schema';
 import { Transaction, TransactionType } from '../transactions/schemas/transaction.schema';
+import { Wallet } from '../wallets/schemas/wallet.schema';
 
 const FAKE_USER_ID = new Types.ObjectId().toString();
 const OUTRO_USER_ID = new Types.ObjectId().toString();
 
 const CATEGORIA_PECAS = new Types.ObjectId();
 const CATEGORIA_MAO_DE_OBRA = new Types.ObjectId();
+// A venda exige a carteira que recebeu o dinheiro: sem ela a moto sairia do estoque sem
+// nada aparecer em saldo nenhum, que é justamente o que esta feature corrige.
+const CARTEIRA_ID = new Types.ObjectId();
 
 const motoBase = {
   modelo: 'Honda CG 160 Titan',
@@ -32,6 +36,7 @@ describe('MotosController (e2e)', () => {
   let mongod: MongoMemoryServer;
   let motoModel: Model<Moto>;
   let transactionModel: Model<Transaction>;
+  let walletModel: Model<Wallet>;
 
   // MotosModule não registra o model de Category (o resumo resolve o nome por $lookup na
   // coleção, não pelo model), então as categorias de teste vão direto na coleção.
@@ -41,6 +46,18 @@ describe('MotosController (e2e)', () => {
       { _id: CATEGORIA_MAO_DE_OBRA, name: 'Mão de obra', slug: 'mao-de-obra', isDefault: true },
     ]);
   };
+
+  const venda = (extra: Record<string, unknown> = {}) => ({
+    valorVenda: 17500,
+    dataVenda: '2026-03-05',
+    carteiraId: CARTEIRA_ID.toString(),
+    ...extra,
+  });
+
+  const carteira = () => walletModel.findById(CARTEIRA_ID).exec();
+
+  const receitaDaVenda = (motoId: string) =>
+    transactionModel.findOne({ motoId: new Types.ObjectId(motoId), origem: 'venda_moto' }).exec();
 
   const gasto = (motoId: string, value: number, date: string, extra: Record<string, unknown> = {}) =>
     transactionModel.create({
@@ -85,6 +102,7 @@ describe('MotosController (e2e)', () => {
 
     motoModel = app.get<Model<Moto>>(getModelToken(Moto.name));
     transactionModel = app.get<Model<Transaction>>(getModelToken(Transaction.name));
+    walletModel = app.get<Model<Wallet>>(getModelToken(Wallet.name));
   });
 
   afterAll(async () => {
@@ -95,8 +113,17 @@ describe('MotosController (e2e)', () => {
   beforeEach(async () => {
     await motoModel.deleteMany({}).exec();
     await transactionModel.deleteMany({}).exec();
+    await walletModel.deleteMany({}).exec();
     await motoModel.db.collection('categories').deleteMany({});
     await semearCategorias();
+    await walletModel.create({
+      _id: CARTEIRA_ID,
+      userId: new Types.ObjectId(FAKE_USER_ID),
+      nome: 'Caixa da Loja',
+      tipo: 'dinheiro',
+      saldo: 0,
+      saldoInicial: 0,
+    });
   });
 
   it('POST cria a moto em estoque, normaliza a placa e calcula o preco sugerido', async () => {
@@ -129,7 +156,7 @@ describe('MotosController (e2e)', () => {
 
     await request(app.getHttpServer())
       .patch(`/api/motos/${criada._id}/vender`)
-      .send({ valorVenda: 17000, dataVenda: '2026-03-05' })
+      .send(venda({ valorVenda: 17000 }))
       .expect(200);
 
     const estoque = await request(app.getHttpServer()).get('/api/motos?status=em_estoque').expect(200);
@@ -180,7 +207,7 @@ describe('MotosController (e2e)', () => {
 
     const res = await request(app.getHttpServer())
       .patch(`/api/motos/${criada._id}/vender`)
-      .send({ valorVenda: 17500, dataVenda: '2026-03-05' })
+      .send(venda())
       .expect(200);
 
     expect(res.body.status).toBe('vendida');
@@ -190,10 +217,9 @@ describe('MotosController (e2e)', () => {
 
   it('PATCH :id/vender recusa vender duas vezes', async () => {
     const criada = await criarMoto();
-    const venda = { valorVenda: 17500, dataVenda: '2026-03-05' };
 
-    await request(app.getHttpServer()).patch(`/api/motos/${criada._id}/vender`).send(venda).expect(200);
-    await request(app.getHttpServer()).patch(`/api/motos/${criada._id}/vender`).send(venda).expect(400);
+    await request(app.getHttpServer()).patch(`/api/motos/${criada._id}/vender`).send(venda()).expect(200);
+    await request(app.getHttpServer()).patch(`/api/motos/${criada._id}/vender`).send(venda()).expect(400);
   });
 
   it('PATCH :id/vender recusa data de venda anterior a compra', async () => {
@@ -201,7 +227,7 @@ describe('MotosController (e2e)', () => {
 
     await request(app.getHttpServer())
       .patch(`/api/motos/${criada._id}/vender`)
-      .send({ valorVenda: 17500, dataVenda: '2025-12-01' })
+      .send(venda({ dataVenda: '2025-12-01' }))
       .expect(400);
   });
 
@@ -292,7 +318,7 @@ describe('MotosController (e2e)', () => {
       await gasto(criada._id, 1500, '2026-02-01', { categoryId: CATEGORIA_PECAS });
       await request(app.getHttpServer())
         .patch(`/api/motos/${criada._id}/vender`)
-        .send({ valorVenda: 19000, dataVenda: '2026-03-05' })
+        .send(venda({ valorVenda: 19000 }))
         .expect(200);
 
       const res = await request(app.getHttpServer()).get(`/api/motos/${criada._id}/resumo`).expect(200);
@@ -358,14 +384,14 @@ describe('MotosController (e2e)', () => {
       await gasto(vendidaNoMes._id, 1000, '2026-03-06', { categoryId: CATEGORIA_MAO_DE_OBRA });
       await request(app.getHttpServer())
         .patch(`/api/motos/${vendidaNoMes._id}/vender`)
-        .send({ valorVenda: 18000, dataVenda: '2026-03-20' })
+        .send(venda({ valorVenda: 18000, dataVenda: '2026-03-20' }))
         .expect(200);
 
       // Vendida em janeiro e sem gasto em março: fica fora do relatório de março.
       const vendidaAntes = await criarMoto({ modelo: 'C Biz 125', placa: 'CCC3C33', chassi: '9C2KC2200NR000012' });
       await request(app.getHttpServer())
         .patch(`/api/motos/${vendidaAntes._id}/vender`)
-        .send({ valorVenda: 11000, dataVenda: '2026-01-20' })
+        .send(venda({ valorVenda: 11000, dataVenda: '2026-01-20' }))
         .expect(200);
 
       const res = await request(app.getHttpServer()).get('/api/motos/relatorio?mes=2026-03').expect(200);
@@ -400,7 +426,7 @@ describe('MotosController (e2e)', () => {
       const criada = await criarMoto();
       await request(app.getHttpServer())
         .patch(`/api/motos/${criada._id}/vender`)
-        .send({ valorVenda: 17000, dataVenda: '2026-01-20' })
+        .send(venda({ valorVenda: 17000, dataVenda: '2026-01-20' }))
         .expect(200);
       await gasto(criada._id, 250, '2026-03-02', { categoryId: CATEGORIA_PECAS });
 
@@ -444,6 +470,172 @@ describe('MotosController (e2e)', () => {
       const res = await request(app.getHttpServer()).get('/api/motos/relatorio?mes=2026-01').expect(200);
       expect(res.body.motos).toEqual([]);
       expect(res.body.totais.capitalEmEstoque).toBe(0);
+    });
+  });
+
+  // A venda só vale se o dinheiro aparecer em algum lugar: antes desta feature a moto saía
+  // do estoque e saldo, dashboard e extrato não mudavam nada.
+  describe('venda lançada na carteira', () => {
+    it('PATCH :id/vender cria a receita, mexe no saldo e não conta o dinheiro duas vezes', async () => {
+      const criada = await criarMoto();
+      await gasto(criada._id, 1000, '2026-02-01', { categoryId: CATEGORIA_PECAS });
+
+      await request(app.getHttpServer())
+        .patch(`/api/motos/${criada._id}/vender`)
+        .send(venda({ valorVenda: 18000 }))
+        .expect(200);
+
+      const receita = await receitaDaVenda(criada._id);
+      expect(receita).not.toBeNull();
+      expect(receita!.type).toBe(TransactionType.INCOME);
+      expect(receita!.value).toBe(18000);
+      expect(receita!.carteiraId?.toString()).toBe(CARTEIRA_ID.toString());
+      expect(receita!.motoId?.toString()).toBe(criada._id);
+      expect((await carteira())!.saldo).toBe(18000);
+
+      // custoGastos continua só com o gasto lançado à mão: a receita da venda não é gasto,
+      // e somá-la aqui faria o lucro encolher sozinho.
+      const resumo = await request(app.getHttpServer()).get(`/api/motos/${criada._id}/resumo`).expect(200);
+      expect(resumo.body.custoGastos).toBe(1000);
+      expect(resumo.body.custoTotal).toBe(15000);
+      expect(resumo.body.lucro).toBe(3000);
+      expect(resumo.body.lancamentoVenda._id).toBe(receita!._id.toString());
+    });
+
+    it('PATCH :id/vender exige carteira e recusa cartão de crédito', async () => {
+      const criada = await criarMoto();
+      const cartao = await walletModel.create({
+        userId: new Types.ObjectId(FAKE_USER_ID),
+        nome: 'Cartão',
+        tipo: 'credito',
+        saldo: 0,
+        saldoInicial: 0,
+        limite: 5000,
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/api/motos/${criada._id}/vender`)
+        .send({ valorVenda: 17500, dataVenda: '2026-03-05' })
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .patch(`/api/motos/${criada._id}/vender`)
+        .send(venda({ carteiraId: cartao._id.toString() }))
+        .expect(400);
+
+      // Nenhuma das duas tentativas pode ter deixado a moto vendida pela metade.
+      const depois = await motoModel.findById(criada._id).exec();
+      expect(depois!.status).toBe('em_estoque');
+      expect(await receitaDaVenda(criada._id)).toBeNull();
+    });
+
+    it('PATCH :id/venda corrige o valor e a receita acompanha', async () => {
+      const criada = await criarMoto();
+      await request(app.getHttpServer())
+        .patch(`/api/motos/${criada._id}/vender`)
+        .send(venda({ valorVenda: 18000 }))
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .patch(`/api/motos/${criada._id}/venda`)
+        .send({ valorVenda: 16500, dataVenda: '2026-03-09' })
+        .expect(200);
+
+      expect(res.body.valorVenda).toBe(16500);
+      const receita = await receitaDaVenda(criada._id);
+      expect(receita!.value).toBe(16500);
+      expect(receita!.date.toISOString().slice(0, 10)).toBe('2026-03-09');
+      expect((await carteira())!.saldo).toBe(16500);
+    });
+
+    it('DELETE :id/venda volta a moto ao estoque e devolve o saldo', async () => {
+      const criada = await criarMoto();
+      await request(app.getHttpServer())
+        .patch(`/api/motos/${criada._id}/vender`)
+        .send(venda({ valorVenda: 18000 }))
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .delete(`/api/motos/${criada._id}/venda`)
+        .expect(200);
+
+      expect(res.body.status).toBe('em_estoque');
+      expect(res.body.valorVenda).toBeUndefined();
+      expect(res.body.lucro).toBeNull();
+      expect(await receitaDaVenda(criada._id)).toBeNull();
+      expect((await carteira())!.saldo).toBe(0);
+    });
+
+    // Moto marcada como vendida antes desta feature: nada é lançado sozinho, só quando o
+    // usuário escolhe a carteira pela ficha.
+    it('PATCH :id/venda lança a receita que faltava numa venda antiga', async () => {
+      const antiga = await motoModel.create({
+        ...motoBase,
+        placa: 'OLD1A11',
+        chassi: '9C2KC2200NR000099',
+        userId: new Types.ObjectId(FAKE_USER_ID),
+        dataCompra: new Date(motoBase.dataCompra),
+        status: 'vendida',
+        valorVenda: 17000,
+        dataVenda: new Date('2026-02-20'),
+      });
+
+      const resumoAntes = await request(app.getHttpServer())
+        .get(`/api/motos/${antiga._id}/resumo`)
+        .expect(200);
+      expect(resumoAntes.body.lancamentoVenda).toBeNull();
+
+      await request(app.getHttpServer())
+        .patch(`/api/motos/${antiga._id}/venda`)
+        .send({ carteiraId: CARTEIRA_ID.toString() })
+        .expect(200);
+
+      const receita = await receitaDaVenda(antiga._id.toString());
+      expect(receita!.value).toBe(17000);
+      expect(receita!.date.toISOString().slice(0, 10)).toBe('2026-02-20');
+      expect((await carteira())!.saldo).toBe(17000);
+    });
+
+    it('POST com lancarCompra gera a despesa sem dobrar o custo da moto', async () => {
+      const criada = await criarMoto({ lancarCompra: true, carteiraCompraId: CARTEIRA_ID.toString() });
+
+      const despesa = await transactionModel
+        .findOne({ motoId: new Types.ObjectId(criada._id), origem: 'compra_moto' })
+        .exec();
+      expect(despesa!.type).toBe(TransactionType.EXPENSE);
+      expect(despesa!.value).toBe(14000);
+      expect((await carteira())!.saldo).toBe(-14000);
+
+      // O custo da moto continua sendo valorCompra: se a despesa gerada entrasse em
+      // custoGastos, a moto apareceria custando R$ 28.000.
+      const resumo = await request(app.getHttpServer()).get(`/api/motos/${criada._id}/resumo`).expect(200);
+      expect(resumo.body.custoGastos).toBe(0);
+      expect(resumo.body.custoTotal).toBe(14000);
+
+      // Corrigir o valor da compra arrasta a despesa junto.
+      await request(app.getHttpServer())
+        .patch(`/api/motos/${criada._id}`)
+        .send({ valorCompra: 13000 })
+        .expect(200);
+      const atualizada = await transactionModel.findById(despesa!._id).exec();
+      expect(atualizada!.value).toBe(13000);
+      expect((await carteira())!.saldo).toBe(-13000);
+    });
+
+    it('DELETE :id apaga os lançamentos da ficha, mas não a moto com gasto lançado à mão', async () => {
+      const criada = await criarMoto({ lancarCompra: true, carteiraCompraId: CARTEIRA_ID.toString() });
+      await gasto(criada._id, 300, '2026-02-01', { categoryId: CATEGORIA_PECAS });
+
+      await request(app.getHttpServer()).delete(`/api/motos/${criada._id}`).expect(400);
+
+      await transactionModel
+        .deleteMany({ motoId: new Types.ObjectId(criada._id), origem: { $exists: false } })
+        .exec();
+      await request(app.getHttpServer()).delete(`/api/motos/${criada._id}`).expect(200);
+
+      expect(await transactionModel.countDocuments({ motoId: new Types.ObjectId(criada._id) }).exec()).toBe(0);
+      // Despesa da compra desfeita: o saldo da carteira volta ao que era.
+      expect((await carteira())!.saldo).toBe(0);
     });
   });
 });

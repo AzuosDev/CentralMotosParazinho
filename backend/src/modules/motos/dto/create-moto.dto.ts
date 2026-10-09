@@ -1,4 +1,16 @@
-import { IsDateString, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsInt,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateMotoDto {
@@ -51,4 +63,14 @@ export class CreateMotoDto {
   @Type(() => Number)
   @Min(0)
   precoAnunciado?: number;
+
+  // Opcional: nem toda loja quer a compra da moto no fluxo de caixa (pode ter sido paga
+  // por fora, em consignação ou em troca). Marcado, gera a despesa na carteira escolhida.
+  @IsOptional()
+  @IsBoolean()
+  lancarCompra?: boolean;
+
+  @IsOptional()
+  @IsMongoId()
+  carteiraCompraId?: string;
 }

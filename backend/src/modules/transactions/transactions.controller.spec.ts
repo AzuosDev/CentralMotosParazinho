@@ -336,5 +336,39 @@ describe('TransactionsController (e2e)', () => {
         .send({ motoId: deOutro._id.toString() })
         .expect(400);
     });
+
+    // A compra e a venda geradas pela ficha da moto são mantidas em sincronia com ela
+    // (MotosService): editar ou excluir por fora deixaria moto e extrato divergentes.
+    it('PATCH e DELETE recusam o lançamento gerado pela ficha da moto', async () => {
+      const moto = await criarMoto(FAKE_USER_ID, 'VIN0006');
+      const gerada = await transactionModel.create({
+        userId: new Types.ObjectId(FAKE_USER_ID),
+        type: 'INCOME',
+        value: 18000,
+        date: new Date('2026-04-20'),
+        motoId: moto._id,
+        origem: 'venda_moto',
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/api/transactions/${gerada._id}`)
+        .send({ value: 19000 })
+        .expect(400);
+
+      await request(app.getHttpServer()).delete(`/api/transactions/${gerada._id}`).expect(400);
+
+      expect((await transactionModel.findById(gerada._id).exec())!.value).toBe(18000);
+    });
+
+    it('POST não aceita origem vinda do cliente', async () => {
+      const moto = await criarMoto(FAKE_USER_ID, 'VIN0007');
+
+      // forbidNonWhitelisted: origem não existe no DTO, então o corpo é recusado inteiro —
+      // ninguém marca um gasto comum como lançamento de moto para tirá-lo do custo dela.
+      await request(app.getHttpServer())
+        .post('/api/transactions')
+        .send(corpoDespesa({ motoId: moto._id.toString(), origem: 'compra_moto' }))
+        .expect(400);
+    });
   });
 });
