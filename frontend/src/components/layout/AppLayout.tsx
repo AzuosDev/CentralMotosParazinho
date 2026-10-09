@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeftRight,
   BarChart2,
+  Bike,
   CalendarCheck,
   CalendarRange,
   ChevronDown,
@@ -74,14 +75,17 @@ function isGroup(entry: NavEntry): entry is NavGroup {
   return "items" in entry;
 }
 
-// Dashboard fica solto; o resto vive dentro de grupos recolhíveis para encurtar o menu.
+// Dashboard e Motos ficam soltos (são as duas telas do dia a dia da loja); o resto vive
+// dentro de grupos recolhíveis para encurtar o menu.
 const navigation: NavEntry[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/motos", label: "Motos", icon: Bike },
   {
     label: "Relatórios",
     icon: BarChart2,
     items: [
       { to: "/relatorios", label: "Visão Geral", icon: Gauge },
+      { to: "/motos/relatorio", label: "Motos no Mês", icon: Bike },
       { to: "/resumo", label: "Resumo", icon: CalendarRange },
       { to: "/insights", label: "Insights", icon: Lightbulb },
     ],
@@ -129,6 +133,15 @@ function isNavItemActive(item: NavItem, currentPath: string, currentUrl: string)
     return currentUrl === item.match;
   }
 
+  if (item.to === "/motos") {
+    // "Motos" acende na lista e na ficha (/motos/:id), mas não no relatório mensal: ele
+    // tem item próprio dentro do grupo Relatórios.
+    return (
+      currentPath === "/motos" ||
+      (currentPath.startsWith("/motos/") && currentPath !== "/motos/relatorio")
+    );
+  }
+
   if (item.to === "/transactions") {
     // "Transações" não acende quando o filtro de Ganhos está ativo.
     return currentPath === "/transactions" && currentUrl !== "/transactions?type=INCOME";
@@ -150,6 +163,8 @@ const mobileNavigation = [
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/motos": "Motos",
+  "/motos/relatorio": "Motos no Mês",
   "/relatorios": "Visão Geral",
   "/resumo": "Resumo",
   "/insights": "Insights",

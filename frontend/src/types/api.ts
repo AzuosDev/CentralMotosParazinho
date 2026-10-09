@@ -56,6 +56,15 @@ export type Transaction = MongoDocument & {
   carteiraDestinoId?: ApiId;
   agendado?: boolean;
   carteira?: VirtualWallet;
+  // Vincula o gasto a uma moto do estoque — é o que alimenta o custo total da ficha.
+  motoId?: ApiId;
+  /**
+   * Presente só nos lançamentos que a ficha da moto gera (a receita da venda e a despesa
+   * opcional da compra). Eles não entram no custo da moto — compra e venda já são
+   * valorCompra e valorVenda — e não podem ser editados nem excluídos pela tela de
+   * transações: quem manda neles é a ficha.
+   */
+  origem?: TransactionOrigem;
   // Presentes só em transações de cartão de crédito.
   faturaId?: ApiId;
   parcelamentoId?: ApiId;
@@ -277,6 +286,120 @@ export type DashboardResponse = {
     totalPending: number;
   };
   goalsSummary: Goal[];
+};
+
+export type MotoStatus = "em_estoque" | "vendida";
+
+export type TransactionOrigem = "compra_moto" | "venda_moto";
+
+/**
+ * GET /api/motos e /api/motos/:id — o documento mais os campos que o backend calcula a
+ * cada leitura (MotosService#comCamposCalculados). custoGastos, custoTotal, precoSugerido
+ * e lucro não existem na coleção: são derivados de valorCompra, margemDesejada e das
+ * despesas vinculadas, então nunca são enviados de volta num POST/PATCH.
+ */
+export type Moto = MongoDocument & {
+  userId: ApiId;
+  modelo: string;
+  ano: number;
+  placa: string;
+  chassi: string;
+  cor: string;
+  km: number;
+  valorCompra: number;
+  dataCompra: ApiDate;
+  /** Percentual sobre o custo total (compra + gastos), não sobre o valor de compra. */
+  margemDesejada: number;
+  precoAnunciado?: number;
+  status: MotoStatus;
+  // Preenchidos juntos, só quando status === "vendida".
+  valorVenda?: number;
+  dataVenda?: ApiDate;
+  // Calculados (ver acima).
+  custoGastos: number;
+  custoTotal: number;
+  precoSugerido: number;
+  lucro: number | null;
+};
+
+export type MotoGastoPorCategoria = {
+  categoryId: ApiId | null;
+  /** "Sem categoria" quando a despesa não tem categoria (ex: importação de OFX). */
+  categoria: string;
+  total: number;
+};
+
+/** GET /api/motos/:id/resumo — a ficha financeira da moto. */
+export type MotoResumo = {
+  /**
+   * A receita gerada pela venda, quando existe. É null numa moto em estoque e também numa
+   * moto marcada como vendida antes de a venda passar a gerar lançamento — nesse caso a
+   * ficha oferece "Lançar venda na carteira" em vez de "Editar venda".
+   */
+  lancamentoVenda: {
+    _id: ApiId;
+    carteiraId: ApiId | null;
+    categoryId: ApiId | null;
+  } | null;
+  moto: {
+    _id: ApiId;
+    modelo: string;
+    placa: string;
+    ano: number;
+    status: MotoStatus;
+    valorCompra: number;
+    margemDesejada: number;
+    precoAnunciado: number | null;
+    valorVenda: number | null;
+    dataVenda: ApiDate | null;
+  };
+  custoGastos: number;
+  custoTotal: number;
+  gastosPorCategoria: MotoGastoPorCategoria[];
+  precoSugerido: number;
+  /**
+   * Quanto se pode abater do preço anunciado (ou do sugerido, quando ainda não houve
+   * anúncio) antes de a venda virar prejuízo.
+   */
+  descontoMaximo: number;
+  lucro: number | null;
+  lucroPercentual: number | null;
+};
+
+/** Uma linha de GET /api/motos/relatorio: a moto no recorte do mês pedido. */
+export type MotoRelatorioLinha = {
+  _id: ApiId;
+  modelo: string;
+  placa: string;
+  status: MotoStatus;
+  valorCompra: number;
+  valorVenda: number | null;
+  dataVenda: ApiDate | null;
+  /** Vendida dentro do mês consultado — é o que faz a linha entrar no lucro do mês. */
+  vendidaNoMes: boolean;
+  /** Só os gastos com data dentro do mês; o custoTotal ao lado é de sempre. */
+  gastosNoMes: number;
+  custoTotal: number;
+  /** Preenchido apenas quando vendidaNoMes: o lucro realizado naquele mês. */
+  lucro: number | null;
+};
+
+/**
+ * GET /api/motos/relatorio?mes=AAAA-MM. A lista não é o estoque inteiro: traz o que está
+ * em estoque, o que foi vendido no mês e o que consumiu dinheiro no mês mesmo já vendido
+ * antes (MotosService#relatorio), e é por isso que a coluna de gastos fecha com
+ * totais.gastosDoMes.
+ */
+export type MotoRelatorio = {
+  mes: string;
+  motos: MotoRelatorioLinha[];
+  totais: {
+    /** Compra + gastos de tudo que ainda não foi vendido: dinheiro parado no pátio. */
+    capitalEmEstoque: number;
+    gastosDoMes: number;
+    lucroDoMes: number;
+    quantidadeVendida: number;
+  };
 };
 
 export type ApiValidationError = {

@@ -27,6 +27,8 @@ const schema = z.object({
   description: z.string().max(500, "Use atÃ© 500 caracteres.").optional(),
 });
 
+type FormValues = z.infer<typeof schema>;
+
 function todayInputValue() {
   return localDateString();
 }
@@ -42,7 +44,7 @@ export function AddIncomeModal({
   const categoriesQuery = useIncomeCategories();
   const walletsQuery = useWallets();
   const hasWallets = (walletsQuery.data?.length ?? 0) > 0;
-  const form = useForm<any>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       amount: 0,
@@ -66,7 +68,7 @@ export function AddIncomeModal({
   }, [form, open]);
 
   const mutation = useMutation({
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: FormValues) => {
       await api.post<ApiTransaction>("/api/transactions", {
         ...buildTransactionPayload({ ...values, type: "INCOME" }),
         carteiraId: values.carteiraId,

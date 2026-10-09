@@ -36,4 +36,10 @@ export class UpdateTransactionDto {
   @IsOptional()
   @IsString()
   carteiraDestinoId?: string;
+
+  // String vazia desvincula a moto (volta a transação para "sem moto"); um ObjectId
+  // revincula. Ver TransactionsService#update.
+  @IsOptional()
+  @IsString()
+  motoId?: string;
 }
