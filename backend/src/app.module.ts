@@ -21,6 +21,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { CartoesModule } from './modules/cartoes/cartoes.module';
 import { SupportModule } from './modules/support/support.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { VozModule } from './modules/voz/voz.module';
 import { MotosModule } from './modules/motos/motos.module';
 
 @Module({
@@ -74,6 +75,7 @@ import { MotosModule } from './modules/motos/motos.module';
     CartoesModule,
     SupportModule,
     AdminModule,
+    VozModule,
     MotosModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

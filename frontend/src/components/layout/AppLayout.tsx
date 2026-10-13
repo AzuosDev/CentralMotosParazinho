@@ -20,6 +20,7 @@ import {
   List,
   LogOut,
   Menu,
+  Mic,
   Moon,
   Plus,
   Settings,
@@ -50,6 +51,9 @@ import { ADMIN_EMAIL } from "../../lib/brand";
 import { BrandLockup, BrandSymbol } from "../BrandMark";
 const TransactionModal = lazy(() =>
   import("../modals/TransactionModal").then((m) => ({ default: m.TransactionModal }))
+);
+const VozModal = lazy(() =>
+  import("../modals/VozModal").then((m) => ({ default: m.VozModal }))
 );
 const WhatsNewModal = lazy(() =>
   import("../modals/WhatsNewModal").then((m) => ({ default: m.WhatsNewModal }))
@@ -655,7 +659,12 @@ function MobileNotificationBell() {
   return <NotificationBell openDirection="down" iconOnly />;
 }
 
-export const TransactionModalContext = createContext<{ open: boolean; setOpen: React.Dispatch<React.SetStateAction<boolean>> }>({
+export const TransactionModalContext = createContext<{
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Abre o lançamento por voz; undefined quando o recurso não está disponível no servidor. */
+  abrirVoz?: () => void;
+}>({
   open: false,
   setOpen: () => {},
 });
@@ -671,6 +680,7 @@ export function AppLayout() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
   const [txTab, setTxTab] = useState<"INCOME" | "EXPENSE" | "TRANSFER">("EXPENSE");
+  const [vozOpen, setVozOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
@@ -685,6 +695,15 @@ export function AppLayout() {
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
+  // Esconde o microfone quando o servidor não tem GROQ_API_KEY — melhor não mostrar do que
+  // mostrar e falhar depois de o usuário falar.
+  const vozStatusQuery = useQuery<{ disponivel: boolean }>({
+    queryKey: ["voz-status"],
+    queryFn: () => api.get<{ disponivel: boolean }>("/api/voz/status").then((r) => r.data),
+    staleTime: Infinity,
+    retry: false,
+  });
+  const vozDisponivel = vozStatusQuery.data?.disponivel === true;
   const name = userQuery.data?.name;
   const avatarUrl = userQuery.data?.avatarUrl;
 
@@ -695,6 +714,20 @@ export function AppLayout() {
   useEffect(() => {
     setMobileSidebarOpen(false);
   }, [location.pathname, location.search]);
+
+  // Atalho do ícone do app (manifest "shortcuts") abre /dashboard?voz=1 direto no microfone.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("voz") !== "1" || !vozDisponivel) return;
+    params.delete("voz");
+    setVozOpen(true);
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+  }, [location.pathname, location.search, vozDisponivel, navigate]);
+
+  const abrirVoz = () => {
+    setAddModalOpen(false);
+    setVozOpen(true);
+  };
 
   useEffect(() => {
     const tokenEmail = getUserEmailFromToken();
@@ -745,7 +778,9 @@ export function AppLayout() {
   };
 
   return (
-    <TransactionModalContext.Provider value={{ open: addModalOpen, setOpen: setAddModalOpen }}>
+    <TransactionModalContext.Provider
+      value={{ open: addModalOpen, setOpen: setAddModalOpen, abrirVoz: vozDisponivel ? abrirVoz : undefined }}
+    >
         <div className="min-h-screen bg-bg-base text-text-primary">
       <aside
         className={cn(
@@ -875,6 +910,18 @@ export function AppLayout() {
               </button>
             </div>
             <div className="grid gap-3">
+              {vozDisponivel && (
+                <button
+                  onClick={abrirVoz}
+                  className="flex items-center gap-3 rounded-xl bg-accent-brand p-4 text-left text-white hover:bg-accent-brand-hover"
+                >
+                  <Mic className="h-5 w-5" />
+                  <span>
+                    <span className="block font-semibold">Lançar por voz</span>
+                    <span className="block text-xs text-white/80">Fale vários gastos e ganhos de uma vez</span>
+                  </span>
+                </button>
+              )}
               <button
                 onClick={() => openTx("EXPENSE")}
                 className="flex items-center gap-3 rounded-xl bg-bg-muted p-4 text-left hover:bg-bg-overlay"
@@ -913,6 +960,24 @@ export function AppLayout() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Microfone sempre à mão: em qualquer tela, um toque e já está gravando. */}
+      {vozDisponivel && !vozOpen && (
+        <button
+          onClick={abrirVoz}
+          className="fixed bottom-24 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-accent-brand text-white shadow-lg shadow-accent-brand/40 transition hover:bg-accent-brand-hover active:scale-95 lg:bottom-6 lg:right-6"
+          aria-label="Lançar por voz"
+          title="Lançar por voz"
+        >
+          <Mic className="h-6 w-6" />
+        </button>
+      )}
+
+      {vozOpen && (
+        <Suspense fallback={null}>
+          <VozModal open={vozOpen} onClose={() => setVozOpen(false)} />
+        </Suspense>
       )}
 
       <Suspense fallback={null}>
