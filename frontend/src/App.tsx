@@ -16,6 +16,11 @@ import type { User } from "./types/api";
 
 const BudgetPage = lazy(() => import("./pages/BudgetPage").then((m) => ({ default: m.BudgetPage })));
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const MotosPage = lazy(() => import("./pages/MotosPage").then((m) => ({ default: m.MotosPage })));
+const MotoPage = lazy(() => import("./pages/MotoPage").then((m) => ({ default: m.MotoPage })));
+const MotosRelatorioPage = lazy(() =>
+  import("./pages/MotosRelatorioPage").then((m) => ({ default: m.MotosRelatorioPage })),
+);
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage").then((m) => ({ default: m.ExpensesPage })));
 const RelatoriosPage = lazy(() => import("./pages/RelatoriosPage").then((m) => ({ default: m.RelatoriosPage })));
 const ResumoPage = lazy(() => import("./pages/ResumoPage").then((m) => ({ default: m.ResumoPage })));
@@ -220,6 +225,11 @@ export default function App() {
                 <Route element={<SubscriptionGate />}>
                   <Route element={<AppLayout />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/motos" element={<MotosPage />} />
+                    {/* Antes de /motos/:id para deixar claro quem casa com "relatorio" —
+                        o router v6 já prioriza o segmento estático sobre o dinâmico. */}
+                    <Route path="/motos/relatorio" element={<MotosRelatorioPage />} />
+                    <Route path="/motos/:id" element={<MotoPage />} />
                     <Route path="/relatorios" element={<RelatoriosPage />} />
                     <Route path="/resumo" element={<ResumoPage />} />
                     <Route path="/insights" element={<InsightsPage />} />

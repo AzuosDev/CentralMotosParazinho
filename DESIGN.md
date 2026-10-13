@@ -189,8 +189,11 @@ para nada aqui.
 
 ### Secondary
 - **Semânticas** (color-income #2FB85C, color-expense #FF3B30, color-pending
-  #F5A623): entrada, saída, pendente. Só significam dinheiro. No claro escurecem
-  para green-700, #C60B00 e yellow-700.
+  #F5A623): entrada, saída, pendente. Só significam dinheiro — e também são o que
+  diz **resultado**: lucro é entrada, prejuízo é saída. No claro escurecem para
+  green-800, #C60B00 e yellow-700. O verde do claro é green-800 e não green-700
+  porque ele aparece como texto sobre banho da própria cor (os chips "Pago",
+  "Vendida", "Paga", "Estorno"), onde o green-700 dava 4,1:1 a 15% de banho.
 - **status-info é neutro** (#D4D4D4 / #404040), nunca azul: informação não é cor
   de marca. `status-warning` e `status-danger` derivam de pending e expense.
 
@@ -222,7 +225,23 @@ precisa mesmo ser um literal de JavaScript.
 **The White Is Normal Rule.** Valor positivo — saldo, saldo de carteira, meta a
 alcançar — é **branco**, não vermelho. Vermelho sobre número só significa
 negativo, vencido ou destrutivo. Num app de dinheiro, pintar o saldo saudável
-com a cor da marca é dizer ao usuário que ele está no prejuízo.
+com a cor da marca é dizer ao usuário que ele está no prejuízo. Vale também para
+o **valor que se digita**: o campo grande de valor (`AmountField`, saldo inicial,
+valor a pagar, valor da venda) é branco, porque é o mesmo campo em ganho e em
+gasto e portanto a cor ali nunca distinguiu nada. O que destaca o campo é
+tamanho, centralização e a borda de foco — não a tinta do número. Débito já
+apurado ("Total devido" de fatura) continua vermelho: ali o vermelho é o sentido,
+não o enfeite.
+
+**The Result Is Green Or Red, Never Brand Rule.** Resultado — lucro, prejuízo,
+estorno, desconto, variação — é `semantic-income` / `semantic-expense`, nunca
+`accent-brand`. No escuro `accent-brand-ink` e `accent-red-ink` resolvem os dois
+para **#FF3B30**: usar a marca no lado positivo deixa lucro e prejuízo com a
+mesma tinta exata, e o usuário não tem como saber qual dos dois está vendo. Um
+estado bom nunca veste a cor do alerta — quando o normal já está vermelho, o
+alerta não alerta nada: é por isso que "Desconto máximo", "Vendida", "Paga" e
+"Estorno" não são vermelhos. Em motos, `components/motos/resultado-venda.ts` é o
+único lugar que escolhe esse tom; nenhuma tela decide por conta própria.
 
 **The Red Fill Takes White Rule.** Todo preenchimento `accent-brand` leva texto
 branco. O acento anterior (lima) era claro e pedia texto preto; o vermelho é

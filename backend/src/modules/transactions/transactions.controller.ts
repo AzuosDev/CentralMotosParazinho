@@ -34,6 +34,7 @@ export class TransactionsController {
       query.year,
       query.carteiraId,
       query.semCategoria,
+      query.motoId,
     );
   }
 

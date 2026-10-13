@@ -13,4 +13,4 @@ dist-ssr
 .impeccable/questions/
 .impeccable/build/
 .impeccable/config.local.json
-.env.vercel
+.env.example

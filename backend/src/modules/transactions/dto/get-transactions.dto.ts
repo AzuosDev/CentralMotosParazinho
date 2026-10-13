@@ -34,6 +34,9 @@ export class GetTransactionsDto {
   carteiraId?: string;
 
   @IsOptional()
+  motoId?: string;
+
+  @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   semCategoria?: boolean;

@@ -1,7 +1,6 @@
 import { CalendarClock, Fuel } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/utils";
-import { BrandBadge } from "./BrandMark";
 
 /*
  * Painel de destaques das telas de autenticação (só a partir de lg).
@@ -85,16 +84,10 @@ export function AuthShowcase() {
         className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:repeating-linear-gradient(135deg,rgba(255,255,255,0.025)_0px,rgba(255,255,255,0.025)_1px,transparent_1px,transparent_7px)]"
       />
 
-      <div className="relative flex items-center gap-3">
-        <BrandBadge className="h-11 w-11" />
-        <span className="flex flex-col leading-none">
-          <span className="text-[0.8125rem] font-extrabold uppercase tracking-[0.2em] text-white">
-            Central
-          </span>
-          <span className="text-[0.8125rem] font-extrabold uppercase tracking-[0.2em] text-[#e10600]">
-            Motos
-          </span>
-        </span>
+      {/* O lockup já abre a coluna do formulário, na mesma linha do olho: repeti-lo
+          aqui era a assinatura da marca duas vezes na mesma tela. Fica só a
+          localidade, que o lockup não diz. */}
+      <div className="relative flex h-11 items-center">
         <span className="ml-auto text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-[#7a7a7a]">
           Parazinho · CE
         </span>
