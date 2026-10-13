@@ -22,7 +22,9 @@ const statusConfig: Record<FaturaStatus, { label: string; cls: string }> = {
   aberta: { label: "Aberta", cls: "bg-status-info/15 text-status-info" },
   fechada: { label: "Fechada", cls: "bg-accent-yellow/15 text-accent-yellow" },
   parcial: { label: "Parcial", cls: "bg-accent-yellow/15 text-accent-yellow" },
-  paga: { label: "Paga", cls: "bg-accent-brand/15 text-accent-brand" },
+  // Verde, o mesmo da conta paga em ContasPage: fatura quitada é assunto encerrado, e o
+  // vermelho aqui a deixava igual a "Vencida" num olhar rápido pela lista de faturas.
+  paga: { label: "Paga", cls: "bg-semantic-income/15 text-semantic-income" },
 };
 
 function mesReferenciaLabel(mesReferencia: string) {
@@ -670,7 +672,7 @@ export function CartaoPage() {
                                   </span>
                                 )}
                                 {tx.isEstorno && (
-                                  <span className="shrink-0 rounded-full bg-accent-brand/15 px-2 py-0.5 text-[11px] font-semibold text-accent-brand">
+                                  <span className="shrink-0 rounded-full bg-semantic-income/15 px-2 py-0.5 text-[11px] font-semibold text-semantic-income">
                                     Estorno
                                   </span>
                                 )}
@@ -683,7 +685,9 @@ export function CartaoPage() {
                               <p className="text-xs text-text-secondary">{formatDisplayDate(tx.date)}</p>
                             </div>
                             <div className="flex shrink-0 items-center gap-3">
-                              <span className={cn("font-bold tabular-nums", tx.isEstorno ? "text-accent-brand" : "text-text-primary")}>
+                              {/* Estorno abate a fatura: o "+" já diz que o valor voltou, e
+                                  dizer isso em vermelho contradizia o próprio sinal. */}
+                              <span className={cn("font-bold tabular-nums", tx.isEstorno ? "text-semantic-income" : "text-text-primary")}>
                                 {tx.isEstorno ? "+" : ""}{formatCurrency(tx.value)}
                               </span>
                               {!tx.isEstorno && !isJuros && !estornadasIds.has(tx._id) && (
