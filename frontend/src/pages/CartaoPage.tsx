@@ -211,7 +211,7 @@ function PagarFaturaModal({
               <CurrencyInput
                 value={valor}
                 onChange={setValor}
-                className="w-full bg-transparent text-center font-sans text-2xl font-bold text-accent-brand outline-none"
+                className="w-full bg-transparent text-center font-sans text-2xl font-bold tabular-nums text-text-primary outline-none"
               />
             </div>
           )}

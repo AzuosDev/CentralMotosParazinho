@@ -187,7 +187,7 @@ export function VenderMotoModal({
           <CurrencyInput
             value={valorVenda}
             onChange={setValorVenda}
-            className="w-full rounded-2xl border border-bg-muted bg-bg-muted px-4 py-3 text-center font-sans text-3xl font-bold text-accent-brand outline-none transition focus:border-accent-brand"
+            className="w-full rounded-2xl border border-bg-muted bg-bg-muted px-4 py-3 text-center font-sans text-3xl font-bold tabular-nums text-text-primary outline-none transition focus:border-accent-brand"
           />
         </label>
 

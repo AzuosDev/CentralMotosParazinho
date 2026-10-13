@@ -222,7 +222,13 @@ precisa mesmo ser um literal de JavaScript.
 **The White Is Normal Rule.** Valor positivo — saldo, saldo de carteira, meta a
 alcançar — é **branco**, não vermelho. Vermelho sobre número só significa
 negativo, vencido ou destrutivo. Num app de dinheiro, pintar o saldo saudável
-com a cor da marca é dizer ao usuário que ele está no prejuízo.
+com a cor da marca é dizer ao usuário que ele está no prejuízo. Vale também para
+o **valor que se digita**: o campo grande de valor (`AmountField`, saldo inicial,
+valor a pagar, valor da venda) é branco, porque é o mesmo campo em ganho e em
+gasto e portanto a cor ali nunca distinguiu nada. O que destaca o campo é
+tamanho, centralização e a borda de foco — não a tinta do número. Débito já
+apurado ("Total devido" de fatura) continua vermelho: ali o vermelho é o sentido,
+não o enfeite.
 
 **The Result Is Green Or Red, Never Brand Rule.** Resultado — lucro, prejuízo,
 estorno, desconto, variação — é `semantic-income` / `semantic-expense`, nunca
