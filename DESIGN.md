@@ -189,8 +189,11 @@ para nada aqui.
 
 ### Secondary
 - **Semânticas** (color-income #2FB85C, color-expense #FF3B30, color-pending
-  #F5A623): entrada, saída, pendente. Só significam dinheiro. No claro escurecem
-  para green-700, #C60B00 e yellow-700.
+  #F5A623): entrada, saída, pendente. Só significam dinheiro — e também são o que
+  diz **resultado**: lucro é entrada, prejuízo é saída. No claro escurecem para
+  green-800, #C60B00 e yellow-700. O verde do claro é green-800 e não green-700
+  porque ele aparece como texto sobre banho da própria cor (os chips "Pago",
+  "Vendida", "Paga", "Estorno"), onde o green-700 dava 4,1:1 a 15% de banho.
 - **status-info é neutro** (#D4D4D4 / #404040), nunca azul: informação não é cor
   de marca. `status-warning` e `status-danger` derivam de pending e expense.
 
