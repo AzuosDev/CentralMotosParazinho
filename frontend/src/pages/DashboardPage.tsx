@@ -1,6 +1,6 @@
 import { useMemo, useState, useContext } from "react";
 import { TransactionModalContext } from "../components/layout/AppLayout";
-import { Plus } from "lucide-react";
+import { Mic, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { Wallet as WalletType } from "../types/api";
@@ -395,7 +395,7 @@ export function DashboardPage() {
   const [month, setMonth] = useState(() => new Date().getMonth() + 1);
   const [year, setYear] = useState(currentYear);
   const navigate = useNavigate();
-  const { setOpen: setAddModalOpen } = useContext(TransactionModalContext);
+  const { setOpen: setAddModalOpen, abrirVoz } = useContext(TransactionModalContext);
   const { show, toggle } = useShowValues();
   const fmt = (v: number) => (show ? formatCurrency(v) : "R$ ••••");
 
@@ -448,6 +448,15 @@ export function DashboardPage() {
           >
             <Plus className="h-6 w-6" /> Nova
           </button>
+          {abrirVoz && (
+            <button
+              onClick={abrirVoz}
+              className="hidden md:flex items-center gap-2 rounded-xl border border-accent-brand px-4 py-3 text-sm font-bold text-accent-brand transition hover:bg-accent-brand/10"
+              aria-label="Lançar por voz"
+            >
+              <Mic className="h-5 w-5" /> Por voz
+            </button>
+          )}
           <select
             value={month}
             onChange={(event) => setMonth(Number(event.target.value))}
