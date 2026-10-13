@@ -19,6 +19,7 @@ import { getApiErrorMessages } from "../lib/errors";
 import { formatCurrency, formatDisplayDate, normalizeTransaction } from "../lib/finance";
 import { BarList, ReportCard, StatTile } from "../components/insights/ReportPrimitives";
 import { MotoStatusBadge } from "../components/motos/MotoStatusBadge";
+import { resultadoDaVenda } from "../components/motos/resultado-venda";
 import { ModalShell } from "../components/modals/ModalShell";
 import { MotoModal } from "../components/modals/MotoModal";
 import { VenderMotoModal } from "../components/modals/VenderMotoModal";
@@ -53,9 +54,12 @@ function DescontoMaximoCard({ resumo }: { resumo: MotoResumo }) {
     <div
       className={cn(
         "rounded-2xl border p-6",
+        // Vermelho só no alarme: quando o estado saudável já veste a cor do alerta, o
+        // alerta não alerta nada. No positivo a moldura carrega a marca e o número fica
+        // branco, o tom de valor normal.
         abaixoDoCusto
-          ? "border-accent-red/40 bg-accent-red/10"
-          : "border-accent-brand/40 bg-accent-brand/10",
+          ? "border-semantic-expense/40 bg-semantic-expense/10"
+          : "border-accent-brand/30 bg-bg-muted",
       )}
     >
       <p className="text-xs font-semibold uppercase tracking-widest text-text-secondary">
@@ -63,8 +67,8 @@ function DescontoMaximoCard({ resumo }: { resumo: MotoResumo }) {
       </p>
       <p
         className={cn(
-          "mt-2 font-sans text-4xl font-extrabold",
-          abaixoDoCusto ? "text-accent-red" : "text-accent-brand",
+          "mt-2 font-sans text-4xl font-extrabold tabular-nums",
+          abaixoDoCusto ? "text-semantic-expense" : "text-text-primary",
         )}
       >
         {formatCurrency(Math.abs(descontoMaximo))}
@@ -101,27 +105,16 @@ function DescontoMaximoCard({ resumo }: { resumo: MotoResumo }) {
 function LucroCard({ resumo }: { resumo: MotoResumo }) {
   const { lucro, lucroPercentual, custoTotal } = resumo;
   const valorVenda = resumo.moto.valorVenda ?? 0;
-  const prejuizo = (lucro ?? 0) < 0;
+  const resultado = resultadoDaVenda(lucro);
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border p-6",
-        prejuizo
-          ? "border-accent-red/40 bg-accent-red/10"
-          : "border-semantic-income/40 bg-semantic-income/10",
-      )}
-    >
+    <div className={cn("rounded-2xl border p-6", resultado.bordaCls, resultado.fundoCls)}>
       <p className="text-xs font-semibold uppercase tracking-widest text-text-secondary">
-        {prejuizo ? "Prejuízo na venda" : "Lucro na venda"}
+        {resultado.substantivo} na venda
       </p>
-      <p
-        className={cn(
-          "mt-2 font-sans text-4xl font-extrabold",
-          prejuizo ? "text-accent-red" : "text-semantic-income",
-        )}
-      >
-        {formatCurrency(Math.abs(lucro ?? 0))}
+      <p className={cn("mt-2 font-sans text-4xl font-extrabold tabular-nums", resultado.textoCls)}>
+        {resultado.sinal}
+        {formatCurrency(resultado.valorAbsoluto)}
       </p>
       <p className="mt-3 text-sm text-text-secondary">
         <span className="font-semibold text-text-primary">{formatCurrency(valorVenda)}</span> de

@@ -96,7 +96,11 @@ html.light {
   --border-default: 226 226 226;
   --border-strong: 200 200 200;
 
-  --color-income: 21 128 61; /* green-700  5,0:1 */
+  /* green-800, não green-700: o verde entra como texto sobre banho da própria cor
+     (chip "Pago", "Vendida", "Paga", "Estorno") e ali o green-700 caía para 4,1:1 a 15%
+     e 3,8:1 a 20% — reprovado. Escurecer um passo dá 7,1:1 no card, 5,7:1 no chip de 15%
+     e 5,2:1 no de 20%, sem deixar de ser o mesmo verde. O escuro não muda. */
+  --color-income: 22 101 52; /* green-800  7,1:1 */
   --color-expense: 198 11 0; /* #c60b00   6,1:1 */
   --color-pending: 161 98 7; /* yellow-700 4,9:1 */
 

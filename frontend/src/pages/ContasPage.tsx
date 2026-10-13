@@ -399,8 +399,9 @@ export function ContasPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-semibold text-text-primary">{item.title}</h2>
+              {/* "3/12" é informação, não alerta: neutro, igual ao chip de "Recorrente". */}
               {installmentLabel && (
-                <span className="rounded-full bg-accent-brand/10 px-2.5 py-1 text-[11px] font-semibold text-accent-brand">{installmentLabel}</span>
+                <span className="rounded-full bg-status-info/10 px-2.5 py-1 text-[11px] font-semibold text-status-info">{installmentLabel}</span>
               )}
               {(item.isRecorrente || item.isVirtual || item.recorrenciaTemplateId) && (
                 <span className="rounded-full bg-status-info/10 px-2.5 py-1 text-[11px] font-semibold text-status-info">Recorrente</span>

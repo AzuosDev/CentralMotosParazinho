@@ -426,7 +426,7 @@ export function AccountModal({
             <CurrencyInput
               value={formValue}
               onChange={setFormValue}
-              className="flex-1 bg-transparent text-center text-xl font-bold text-accent-brand outline-none"
+              className="flex-1 bg-transparent text-center text-xl font-bold tabular-nums text-text-primary outline-none"
             />
           </div>
         </div>

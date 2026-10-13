@@ -72,7 +72,11 @@ export function AmountField<TFieldValues extends FieldValues>({
               onChange={field.onChange}
               onBlur={field.onBlur}
               disabled={disabled}
-              className="w-full bg-transparent text-center font-sans text-3xl font-bold text-accent-brand outline-none disabled:opacity-60"
+              // Branco, não vermelho: este campo é o mesmo em ganho e em gasto, então o
+              // vermelho aqui nunca significou nada — e num app de dinheiro ele diz
+              // "número ruim". Quem destaca o campo é o tamanho, a centralização e a
+              // borda de foco; a cor fica livre para significar o que deve.
+              className="w-full bg-transparent text-center font-sans text-3xl font-bold tabular-nums text-text-primary outline-none disabled:opacity-60"
             />
           )}
         />

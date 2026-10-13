@@ -6,11 +6,13 @@ const statusLabel: Record<MotoStatus, string> = {
   vendida: "Vendida",
 };
 
-// Mesmo vocabulário de cor dos badges de fatura (CartaoPage): azul para "em andamento",
-// verde-marca para o que já se encerrou.
+// Mesmo vocabulário dos badges de fatura (CartaoPage) e de conta paga (ContasPage):
+// neutro para "em andamento", verde para o que se encerrou com dinheiro entrando.
+// "Vendida" não pode ser vermelha: numa lista de estoque isso pinta de alerta justamente
+// a moto que deu certo, e gasta no normal a cor que só deveria acender no problema.
 const statusCls: Record<MotoStatus, string> = {
   em_estoque: "bg-status-info/15 text-status-info",
-  vendida: "bg-accent-brand/15 text-accent-brand",
+  vendida: "bg-semantic-income/15 text-semantic-income",
 };
 
 export function MotoStatusBadge({
