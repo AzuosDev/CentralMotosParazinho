@@ -224,6 +224,16 @@ alcançar — é **branco**, não vermelho. Vermelho sobre número só significa
 negativo, vencido ou destrutivo. Num app de dinheiro, pintar o saldo saudável
 com a cor da marca é dizer ao usuário que ele está no prejuízo.
 
+**The Result Is Green Or Red, Never Brand Rule.** Resultado — lucro, prejuízo,
+estorno, desconto, variação — é `semantic-income` / `semantic-expense`, nunca
+`accent-brand`. No escuro `accent-brand-ink` e `accent-red-ink` resolvem os dois
+para **#FF3B30**: usar a marca no lado positivo deixa lucro e prejuízo com a
+mesma tinta exata, e o usuário não tem como saber qual dos dois está vendo. Um
+estado bom nunca veste a cor do alerta — quando o normal já está vermelho, o
+alerta não alerta nada: é por isso que "Desconto máximo", "Vendida", "Paga" e
+"Estorno" não são vermelhos. Em motos, `components/motos/resultado-venda.ts` é o
+único lugar que escolhe esse tom; nenhuma tela decide por conta própria.
+
 **The Red Fill Takes White Rule.** Todo preenchimento `accent-brand` leva texto
 branco. O acento anterior (lima) era claro e pedia texto preto; o vermelho é
 escuro e qualquer `text-black` sobre ele é um resto do sistema antigo.

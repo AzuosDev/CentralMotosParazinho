@@ -10,6 +10,7 @@ import { formatCompactValue, formatCurrency, formatDisplayDate } from "../lib/fi
 import { MONTH_NAMES } from "../components/insights/period";
 import { ChartTooltip, ReportCard } from "../components/insights/ReportPrimitives";
 import { MotoStatusBadge } from "../components/motos/MotoStatusBadge";
+import { resultadoDaVenda } from "../components/motos/resultado-venda";
 import type { MotoRelatorio, MotoRelatorioLinha } from "../types/api";
 
 const MESES_CURTOS = [
@@ -84,17 +85,12 @@ function textoVenda(linha: MotoRelatorioLinha) {
 }
 
 function LucroValor({ lucro }: { lucro: number }) {
-  const prejuizo = lucro < 0;
+  const resultado = resultadoDaVenda(lucro);
 
   return (
-    <span
-      className={cn(
-        "font-semibold tabular-nums",
-        prejuizo ? "text-semantic-expense" : "text-semantic-income",
-      )}
-    >
-      {prejuizo ? "−" : "+"}
-      {formatCurrency(Math.abs(lucro))}
+    <span className={cn("font-semibold tabular-nums", resultado.textoCls)}>
+      {resultado.sinal}
+      {formatCurrency(resultado.valorAbsoluto)}
     </span>
   );
 }
@@ -140,6 +136,7 @@ export function MotosRelatorioPage() {
   const linhas = useMemo(() => relatorio?.motos ?? [], [relatorio]);
   const totais = relatorio?.totais;
   const emEstoque = linhas.filter((linha) => linha.status === "em_estoque").length;
+  const resultadoDoMes = resultadoDaVenda(totais?.lucroDoMes ?? 0);
 
   // Só motos que consumiram dinheiro no mês entram no gráfico, em ordem decrescente: uma
   // barra de R$ 0,00 não diz nada e empurra as outras para baixo.
@@ -222,9 +219,9 @@ export function MotosRelatorioPage() {
             hint="Despesas lançadas em motos com data neste mês"
           />
           <TotalCard
-            label={totais.lucroDoMes < 0 ? "Prejuízo do mês" : "Lucro do mês"}
-            value={formatCurrency(Math.abs(totais.lucroDoMes))}
-            tone={totais.lucroDoMes < 0 ? "expense" : "income"}
+            label={`${resultadoDoMes.substantivo} do mês`}
+            value={formatCurrency(resultadoDoMes.valorAbsoluto)}
+            tone={resultadoDoMes.tomStat}
             hint="Venda menos custo total das motos vendidas no mês"
           />
           <TotalCard
@@ -419,7 +416,7 @@ export function MotosRelatorioPage() {
                     <p>Venda: {textoVenda(linha)}</p>
                     {linha.lucro !== null && (
                       <p>
-                        {linha.lucro < 0 ? "Prejuízo" : "Lucro"} no mês:{" "}
+                        {resultadoDaVenda(linha.lucro).substantivo} no mês:{" "}
                         <LucroValor lucro={linha.lucro} />
                       </p>
                     )}

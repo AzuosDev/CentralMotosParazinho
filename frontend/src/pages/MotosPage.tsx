@@ -7,6 +7,7 @@ import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { formatCurrency, formatDisplayDate } from "../lib/finance";
 import { MotoStatusBadge } from "../components/motos/MotoStatusBadge";
+import { resultadoDaVenda } from "../components/motos/resultado-venda";
 import { MotoModal } from "../components/modals/MotoModal";
 import type { Moto, MotoStatus } from "../types/api";
 
@@ -29,13 +30,15 @@ function detalheMoto(moto: Moto) {
 
 function LucroCaption({ moto }: { moto: Moto }) {
   if (moto.status !== "vendida" || moto.lucro === null) return null;
-  const prejuizo = moto.lucro < 0;
+  const resultado = resultadoDaVenda(moto.lucro);
 
   return (
     <p className="text-xs text-text-secondary">
       {moto.dataVenda ? `Vendida em ${formatDisplayDate(moto.dataVenda)} · ` : ""}
-      <span className={cn("font-semibold", prejuizo ? "text-accent-red" : "text-accent-brand")}>
-        {prejuizo ? "Prejuízo" : "Lucro"} de {formatCurrency(Math.abs(moto.lucro))}
+      <span className={cn("font-semibold tabular-nums", resultado.textoCls)}>
+        {resultado.tom === "no-custo"
+          ? "Vendida no custo"
+          : `${resultado.substantivo} de ${formatCurrency(resultado.valorAbsoluto)}`}
       </span>
     </p>
   );

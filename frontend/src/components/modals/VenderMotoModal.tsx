@@ -9,6 +9,7 @@ import { formatCurrency, formatDisplayDate, localDateString, utcDateStr } from "
 import { CurrencyInput } from "../ui/CurrencyInput";
 import { useToast } from "../ui/Toast";
 import { ModalShell } from "./ModalShell";
+import { resultadoDaVenda } from "../motos/resultado-venda";
 import { WalletField, useIncomeCategories, useWallets } from "./TransactionFormFields";
 import type { Moto, MotoResumo } from "../../types/api";
 
@@ -92,7 +93,7 @@ export function VenderMotoModal({
   const dataCompra = utcDateStr(moto.dataCompra);
   const dataInvalida = dataVenda.length > 0 && dataVenda < dataCompra;
   const lucro = Number((valorVenda - moto.custoTotal).toFixed(2));
-  const prejuizo = lucro < 0;
+  const resultado = resultadoDaVenda(lucro);
 
   const venderMutation = useMutation({
     mutationFn: async () => {
@@ -232,17 +233,18 @@ export function VenderMotoModal({
         </label>
 
         {valorVenda > 0 && (
-          <div className={cn("rounded-xl p-4", prejuizo ? "bg-accent-red/10" : "bg-accent-brand/10")}>
+          <div className={cn("rounded-xl p-4", resultado.fundoCls)}>
             <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-              {prejuizo ? "Prejuízo nesta venda" : "Lucro nesta venda"}
+              {resultado.substantivo} nesta venda
             </p>
             <p
               className={cn(
-                "mt-1 font-sans text-2xl font-extrabold",
-                prejuizo ? "text-accent-red" : "text-accent-brand",
+                "mt-1 font-sans text-2xl font-extrabold tabular-nums",
+                resultado.textoCls,
               )}
             >
-              {formatCurrency(Math.abs(lucro))}
+              {resultado.sinal}
+              {formatCurrency(resultado.valorAbsoluto)}
             </p>
             <p className="mt-1 text-xs text-text-secondary">
               {formatCurrency(valorVenda)} de venda − {formatCurrency(moto.custoTotal)} de custo
