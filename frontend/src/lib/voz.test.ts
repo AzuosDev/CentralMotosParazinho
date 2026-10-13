@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { escolherMimeType, linhaEmBranco, paraPayload, pendenciasDaLinha, trocarTipo, type LinhaVoz } from "./voz";
+import { escolherMimeType, paraPayload, pendenciasDaLinha, rotuloData, type LinhaVoz } from "./voz";
 
 const CARTAO = "cartao-1";
 const isCartao = (id: string | null) => id === CARTAO;
 
 function linha(over: Partial<LinhaVoz> = {}): LinhaVoz {
   return {
-    ...linhaEmBranco("2026-10-12", "conta-1"),
+    chave: "l1",
+    type: "EXPENSE",
+    date: "2026-10-12",
+    carteiraId: "conta-1",
+    carteiraDestinoId: null,
+    parcelas: 1,
     value: 45.9,
     description: "Mercado",
     categoryId: "cat-1",
@@ -61,14 +66,19 @@ describe("paraPayload", () => {
   });
 });
 
-describe("trocarTipo", () => {
-  it("limpa a categoria, que é específica de gasto ou ganho", () => {
-    expect(trocarTipo(linha(), "INCOME")).toMatchObject({ type: "INCOME", categoryId: null });
-  });
-});
-
 describe("escolherMimeType", () => {
   it("cai para mp4 no Safari", () => {
     expect(escolherMimeType((m) => m === "audio/mp4")).toBe("audio/mp4");
+  });
+});
+
+describe("rotuloData", () => {
+  it("usa palavras para os dias próximos e dd/mm para o resto", () => {
+    expect(rotuloData("2026-10-13", "2026-10-13")).toBe("Hoje");
+    expect(rotuloData("2026-10-12", "2026-10-13")).toBe("Ontem");
+    expect(rotuloData("2026-10-14", "2026-10-13")).toBe("Amanhã");
+    expect(rotuloData("2026-10-01", "2026-10-13")).toBe("01/10");
+    expect(rotuloData("2025-12-31", "2026-01-01")).toBe("Ontem");
+    expect(rotuloData("2025-12-20", "2026-01-01")).toBe("20/12/2025");
   });
 });

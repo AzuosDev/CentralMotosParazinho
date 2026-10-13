@@ -42,20 +42,6 @@ export function paraLinhas(itens: RascunhoVoz[]): LinhaVoz[] {
   return itens.map((item) => ({ ...item, chave: novaChave() }));
 }
 
-export function linhaEmBranco(hoje: string, carteiraId: string | null): LinhaVoz {
-  return {
-    chave: novaChave(),
-    type: "EXPENSE",
-    value: null,
-    description: "",
-    date: hoje,
-    categoryId: null,
-    carteiraId,
-    carteiraDestinoId: null,
-    parcelas: 1,
-  };
-}
-
 /** O que ainda falta para a linha poder ser salva — vazio quando está pronta. */
 export function pendenciasDaLinha(linha: RascunhoVoz, isCartao: (id: string | null) => boolean): string[] {
   const faltas: string[] = [];
@@ -94,10 +80,15 @@ export function paraPayload(linha: LinhaVoz, isCartao: (id: string | null) => bo
   };
 }
 
-/** Ao trocar o tipo, limpa o que deixou de fazer sentido (categoria é de gasto OU de ganho). */
-export function trocarTipo(linha: LinhaVoz, type: TipoLancamentoVoz): LinhaVoz {
-  if (linha.type === type) return linha;
-  return { ...linha, type, categoryId: null, carteiraDestinoId: null, parcelas: 1, erro: undefined };
+/** "Hoje", "Ontem", "Amanhã" ou "12/10" — o chip de data da tela de confirmação. */
+export function rotuloData(data: string, hoje: string): string {
+  const dia = (iso: string) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86_400_000;
+  const diff = dia(data) - dia(hoje);
+  if (diff === 0) return "Hoje";
+  if (diff === -1) return "Ontem";
+  if (diff === 1) return "Amanhã";
+  const [ano, mes, d] = data.split("-");
+  return ano === hoje.slice(0, 4) ? `${d}/${mes}` : `${d}/${mes}/${ano}`;
 }
 
 // Mantém a ordem do navegador: Safari/iOS só grava mp4; Chrome/Firefox/Android preferem webm/ogg.

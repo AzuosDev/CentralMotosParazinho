@@ -3,13 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeftRight,
+  CalendarDays,
+  Check,
   Keyboard,
   Loader2,
   Mic,
-  Plus,
   Sparkles,
   Square,
-  Trash2,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -25,18 +25,16 @@ import { DURACAO_MAXIMA_S, useGravadorVoz } from "../../hooks/useGravadorVoz";
 import {
   extensaoDoMime,
   lerCarteiraPadrao,
-  linhaEmBranco,
   motivoSemVoz,
   paraLinhas,
   paraPayload,
   pendenciasDaLinha,
+  rotuloData,
   salvarCarteiraPadrao,
-  trocarTipo,
   vozSuportada,
   type InterpretacaoVoz,
   type LinhaVoz,
   type ResultadoConfirmacaoVoz,
-  type TipoLancamentoVoz,
 } from "../../lib/voz";
 import type { Wallet } from "../../types/api";
 import type { Category } from "../../types/finance";
@@ -50,14 +48,9 @@ const EXEMPLOS = [
   "Comprei um pneu de 900 em 3x no cartão",
 ];
 
-const TIPOS: Array<{ valor: TipoLancamentoVoz; rotulo: string; Icone: typeof TrendingDown; cor: string }> = [
-  { valor: "EXPENSE", rotulo: "Gasto", Icone: TrendingDown, cor: "bg-accent-red text-white" },
-  { valor: "INCOME", rotulo: "Ganho", Icone: TrendingUp, cor: "bg-semantic-income text-white" },
-  { valor: "TRANSFER", rotulo: "Transf.", Icone: ArrowLeftRight, cor: "bg-accent-brand text-white" },
-];
-
-const campo =
-  "w-full rounded-lg bg-bg-muted px-2.5 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-accent-brand";
+// Campo que só aparece quando a IA não identificou algo obrigatório.
+const campoFaltante =
+  "w-full rounded-lg bg-bg-muted px-2.5 py-2 text-sm text-text-primary outline-none ring-2 ring-accent-yellow/70 focus:ring-accent-brand";
 
 function mmss(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -79,7 +72,6 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
   const [modoTexto, setModoTexto] = useState(() => !vozSuportada());
   const [texto, setTexto] = useState("");
   const [linhas, setLinhas] = useState<LinhaVoz[]>([]);
-  const [transcricao, setTranscricao] = useState("");
   const [aviso, setAviso] = useState<string | null>(null);
   const [carteiraPadrao, setCarteiraPadrao] = useState<string | null>(() => lerCarteiraPadrao());
 
@@ -93,7 +85,6 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
   }, [open, modoTexto, gravador]);
 
   const receberInterpretacao = (res: InterpretacaoVoz) => {
-    setTranscricao(res.transcricao);
     if (res.itens.length === 0) {
       setAviso(
         res.transcricao
@@ -159,39 +150,49 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
     void gravador.iniciar();
   };
 
-  const atualizar = (chave: string, mudanca: Partial<LinhaVoz> | ((l: LinhaVoz) => LinhaVoz)) =>
+  const atualizar = (chave: string, mudanca: Partial<LinhaVoz>) =>
     setLinhas((atuais) =>
       atuais.map((l) => {
         if (l.chave !== chave) return l;
-        const nova = typeof mudanca === "function" ? mudanca(l) : { ...l, ...mudanca };
+        const nova = { ...l, ...mudanca };
         // Marcar "lançar mesmo assim" mantém o erro de limite à vista (o checkbox mora nele);
         // qualquer outra edição invalida o erro que o servidor deu para a versão anterior.
-        const soConfirmacao =
-          typeof mudanca === "object" && Object.keys(mudanca).every((k) => k === "confirmarMesmoAssim");
+        const soConfirmacao = Object.keys(mudanca).every((k) => k === "confirmarMesmoAssim");
         return soConfirmacao
           ? nova
           : { ...nova, erro: undefined, limiteExcedido: undefined, confirmarMesmoAssim: undefined };
       }),
     );
 
-  const aplicarCarteiraPadrao = (id: string | null) => {
+  // Escolher a carteira numa linha que veio sem ela preenche todas as outras que também
+  // vieram sem (e vira a padrão das próximas falas) — um toque em vez de um por linha.
+  const preencherCarteiraFaltante = (id: string | null) => {
+    if (!id) return;
     setCarteiraPadrao(id);
     salvarCarteiraPadrao(id);
-    if (!id) return;
     setLinhas((atuais) =>
-      atuais.map((l) =>
-        l.type === "TRANSFER" || (l.type === "INCOME" && isCartao(id))
-          ? l
-          : { ...l, carteiraId: id, parcelas: isCartao(id) ? l.parcelas : 1, erro: undefined },
-      ),
+      atuais.map((l) => {
+        const semCarteiraValida = !l.carteiraId || (l.type === "INCOME" && isCartao(l.carteiraId));
+        if (l.type === "TRANSFER" || !semCarteiraValida || (l.type === "INCOME" && isCartao(id))) return l;
+        return { ...l, carteiraId: id, parcelas: 1, erro: undefined };
+      }),
     );
   };
 
+  // "Não está certo": descarta o que foi entendido e volta a ouvir.
+  const refazer = () => {
+    setLinhas([]);
+    if (vozSuportada()) {
+      falarMais();
+    } else {
+      setAviso(null);
+      setModoTexto(true);
+      setFase("ouvindo");
+    }
+  };
+
   const pendencias = linhas.map((l) => pendenciasDaLinha(l, isCartao));
-  const prontas = pendencias.filter((p) => p.length === 0).length;
-  const totalGastos = linhas.filter((l) => l.type === "EXPENSE").reduce((s, l) => s + (l.value ?? 0), 0);
-  const totalGanhos = linhas.filter((l) => l.type === "INCOME").reduce((s, l) => s + (l.value ?? 0), 0);
-  const tudoPronto = linhas.length > 0 && prontas === linhas.length;
+  const tudoPronto = linhas.length > 0 && pendencias.every((p) => p.length === 0);
 
   const salvar = useMutation({
     mutationFn: async (lote: LinhaVoz[]) => {
@@ -243,27 +244,27 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
       title="Lançar por voz"
       icon={<Sparkles className="h-5 w-5 text-accent-brand" />}
       onClose={fechar}
-      containerClassName={fase === "revisao" ? "max-w-2xl" : ""}
       footer={
         fase === "revisao" ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-xs text-text-secondary">
-              <span className="font-semibold text-text-primary">
-                {prontas}/{linhas.length} pronto{linhas.length !== 1 ? "s" : ""}
-              </span>
-              {totalGastos > 0 && <> · Gastos <span className="text-accent-red">{formatCurrency(totalGastos)}</span></>}
-              {totalGanhos > 0 && <> · Ganhos <span className="text-semantic-income">{formatCurrency(totalGanhos)}</span></>}
-            </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={refazer}
+              disabled={salvar.isPending}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-bg-muted px-4 py-3 text-sm font-semibold text-text-secondary transition hover:bg-bg-overlay hover:text-text-primary disabled:opacity-50"
+            >
+              {vozSuportada() ? <Mic className="h-4 w-4" /> : <Keyboard className="h-4 w-4" />} Falar de novo
+            </button>
             <button
               type="button"
               onClick={() => salvar.mutate(linhas)}
               disabled={!tudoPronto || salvar.isPending}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent-brand px-4 py-3 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {salvar.isPending ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Salvando...</>
               ) : (
-                `Salvar ${linhas.length} lançamento${linhas.length !== 1 ? "s" : ""}`
+                <><Check className="h-4 w-4" /> Confirmar</>
               )}
             </button>
           </div>
@@ -336,15 +337,6 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
           </ul>
 
           <div className="flex w-full flex-wrap justify-center gap-2">
-            {linhas.length > 0 && (
-              <button
-                type="button"
-                onClick={() => { gravador.cancelar(); setFase("revisao"); }}
-                className="rounded-xl px-4 py-2 text-sm text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
-              >
-                Voltar aos {linhas.length} lançamentos
-              </button>
-            )}
             <button
               type="button"
               onClick={() => { gravador.cancelar(); setModoTexto(true); }}
@@ -405,67 +397,23 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
 
       {!processando && fase === "revisao" && (
         <div className="space-y-3 py-1">
-          {transcricao && (
-            <p className="rounded-xl bg-bg-muted/60 px-3 py-2 text-xs italic text-text-secondary">
-              Você disse: “{transcricao}”
-            </p>
-          )}
-
-          <label className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
-            <span className="shrink-0">Carteira padrão:</span>
-            <SeletorCarteira
-              carteiras={carteiras}
-              value={carteiraPadrao}
-              onChange={aplicarCarteiraPadrao}
-              incluirCartoes
-              placeholder="Escolher e aplicar a todos"
-              className="min-w-0 flex-1"
-            />
-          </label>
-
-          <div className="space-y-2.5">
+          <p className="text-sm text-text-secondary">
+            {linhas.length === 1 ? "Entendi isto. Está certo?" : `Entendi ${linhas.length} lançamentos. Está certo?`}
+          </p>
+          <ul className="divide-y divide-bg-muted overflow-hidden rounded-xl border border-bg-muted">
             {linhas.map((linha, i) => (
-              <CartaoLinha
+              <LinhaResumo
                 key={linha.chave}
                 linha={linha}
                 pendencias={pendencias[i]}
                 carteiras={carteiras}
                 expenseCats={expenseCats}
                 incomeCats={incomeCats}
-                isCartao={isCartao}
                 onChange={(m) => atualizar(linha.chave, m)}
-                onRemover={() => setLinhas((atuais) => atuais.filter((l) => l.chave !== linha.chave))}
+                onEscolherCarteira={preencherCarteiraFaltante}
               />
             ))}
-            {linhas.length === 0 && (
-              <p className="py-6 text-center text-sm text-text-secondary">Nenhum lançamento na lista.</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={falarMais}
-              disabled={!vozSuportada()}
-              className="flex flex-col items-center gap-1 rounded-xl bg-accent-brand/10 px-2 py-3 text-xs font-semibold text-accent-brand transition hover:bg-accent-brand/20 disabled:opacity-40"
-            >
-              <Mic className="h-5 w-5" /> Falar mais
-            </button>
-            <button
-              type="button"
-              onClick={() => { setModoTexto(true); setFase("ouvindo"); }}
-              className="flex flex-col items-center gap-1 rounded-xl bg-bg-muted px-2 py-3 text-xs font-semibold text-text-secondary transition hover:bg-bg-overlay"
-            >
-              <Keyboard className="h-5 w-5" /> Digitar mais
-            </button>
-            <button
-              type="button"
-              onClick={() => setLinhas((atuais) => [...atuais, linhaEmBranco(localDateString(), carteiraPadrao)])}
-              className="flex flex-col items-center gap-1 rounded-xl bg-bg-muted px-2 py-3 text-xs font-semibold text-text-secondary transition hover:bg-bg-overlay"
-            >
-              <Plus className="h-5 w-5" /> Linha manual
-            </button>
-          </div>
+          </ul>
         </div>
       )}
     </ModalShell>
@@ -474,29 +422,19 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
 
 function SeletorCarteira({
   carteiras,
-  value,
   onChange,
   incluirCartoes,
   placeholder,
-  className,
-  invalido,
 }: {
   carteiras: Wallet[];
-  value: string | null;
   onChange: (id: string | null) => void;
   incluirCartoes: boolean;
   placeholder: string;
-  className?: string;
-  invalido?: boolean;
 }) {
   const contas = carteiras.filter((w) => w.tipo !== "credito");
   const cartoes = incluirCartoes ? carteiras.filter((w) => w.tipo === "credito") : [];
   return (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value || null)}
-      className={cn(campo, invalido && "ring-2 ring-accent-yellow/70", className)}
-    >
+    <select value="" onChange={(e) => onChange(e.target.value || null)} aria-label={placeholder} className={campoFaltante}>
       <option value="">{placeholder}</option>
       <optgroup label="Carteiras">
         {contas.map((w) => (
@@ -514,143 +452,131 @@ function SeletorCarteira({
   );
 }
 
-function CartaoLinha({
+const ESTILO_TIPO = {
+  EXPENSE: { Icone: TrendingDown, fundo: "bg-accent-red/15", texto: "text-accent-red", sinal: "-", nome: "Gasto" },
+  INCOME: { Icone: TrendingUp, fundo: "bg-semantic-income/15", texto: "text-semantic-income", sinal: "+", nome: "Ganho" },
+  TRANSFER: { Icone: ArrowLeftRight, fundo: "bg-accent-brand/15", texto: "text-accent-brand", sinal: "", nome: "Transferência" },
+} as const;
+
+/**
+ * O que a IA entendeu, em uma linha só-leitura. O único ajuste sempre à mão é a data;
+ * um campo de edição só aparece para o que faltou — sem ele o lançamento não salva.
+ */
+function LinhaResumo({
   linha,
   pendencias,
   carteiras,
   expenseCats,
   incomeCats,
-  isCartao,
   onChange,
-  onRemover,
+  onEscolherCarteira,
 }: {
   linha: LinhaVoz;
   pendencias: string[];
   carteiras: Wallet[];
   expenseCats: Category[];
   incomeCats: Category[];
-  isCartao: (id: string | null) => boolean;
-  onChange: (m: Partial<LinhaVoz> | ((l: LinhaVoz) => LinhaVoz)) => void;
-  onRemover: () => void;
+  onChange: (m: Partial<LinhaVoz>) => void;
+  onEscolherCarteira: (id: string | null) => void;
 }) {
-  const falta = (nome: string) => pendencias.some((p) => p.startsWith(nome));
-  const cartao = linha.type === "EXPENSE" && isCartao(linha.carteiraId);
+  const falta = (nome: string) => pendencias.includes(nome);
   const categorias = linha.type === "INCOME" ? incomeCats : expenseCats;
+  const nomeCategoria = categorias.find((c) => c.id === linha.categoryId)?.name;
+  const nomeCarteira = (id: string | null) => carteiras.find((w) => w._id === id)?.nome;
+  const estilo = ESTILO_TIPO[linha.type];
+
+  const detalhes =
+    linha.type === "TRANSFER"
+      ? [nomeCarteira(linha.carteiraId), nomeCarteira(linha.carteiraDestinoId)].filter(Boolean).join(" → ")
+      : [nomeCategoria, nomeCarteira(linha.carteiraId), linha.parcelas >= 2 ? `${linha.parcelas}x` : null]
+          .filter(Boolean)
+          .join(" · ");
 
   return (
-    <div
-      className={cn(
-        "space-y-2 rounded-xl border p-3",
-        linha.erro ? "border-status-danger/60" : pendencias.length ? "border-accent-yellow/50" : "border-bg-muted",
-      )}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-1 rounded-lg bg-bg-muted p-0.5" role="group" aria-label="Tipo do lançamento">
-          {TIPOS.map(({ valor, rotulo, Icone, cor }) => (
-            <button
-              key={valor}
-              type="button"
-              aria-pressed={linha.type === valor}
-              onClick={() => onChange((l) => trocarTipo(l, valor))}
-              className={cn(
-                "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition",
-                linha.type === valor ? cor : "text-text-secondary hover:text-text-primary",
-              )}
-            >
-              <Icone className="h-3.5 w-3.5" /> {rotulo}
-            </button>
-          ))}
+    <li className={cn("space-y-2 px-3 py-3", linha.erro && "bg-accent-red/5")}>
+      <div className="flex items-center gap-3">
+        <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-full", estilo.fundo, estilo.texto)}>
+          <estilo.Icone className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-text-primary">{linha.description || nomeCategoria || estilo.nome}</p>
+          {detalhes && <p className="truncate text-xs text-text-secondary">{detalhes}</p>}
         </div>
-        <button
-          type="button"
-          onClick={onRemover}
-          aria-label="Remover lançamento"
-          className="grid h-8 w-8 place-items-center rounded-lg text-text-secondary hover:bg-bg-overlay hover:text-status-danger"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {linha.value ? (
+            <span className={cn("font-bold tabular-nums", estilo.texto)}>
+              {estilo.sinal}
+              {formatCurrency(linha.value)}
+            </span>
+          ) : null}
+          <label className="relative inline-flex cursor-pointer items-center gap-1 rounded-md bg-bg-muted px-1.5 py-0.5 text-xs text-text-secondary hover:text-text-primary">
+            <CalendarDays className="h-3 w-3" />
+            {rotuloData(linha.date, localDateString())}
+            <input
+              type="date"
+              value={linha.date}
+              onChange={(e) => e.target.value && onChange({ date: e.target.value })}
+              onClick={(e) => {
+                try {
+                  e.currentTarget.showPicker?.();
+                } catch {
+                  // sem showPicker: o próprio toque no input abre o calendário
+                }
+              }}
+              aria-label="Mudar a data"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
+        </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <div className={cn("rounded-lg bg-bg-muted px-2.5 py-1.5", falta("valor") && "ring-2 ring-accent-yellow/70")}>
+      {falta("valor") && (
+        <div className="rounded-lg bg-bg-muted px-2.5 py-1.5 ring-2 ring-accent-yellow/70">
           <CurrencyInput
             value={linha.value ?? 0}
             onChange={(v) => onChange({ value: v > 0 ? v : null })}
-            className={cn(
-              "w-full bg-transparent text-lg font-bold outline-none",
-              linha.type === "INCOME" ? "text-semantic-income" : linha.type === "EXPENSE" ? "text-accent-red" : "text-accent-brand",
-            )}
+            className="w-full bg-transparent font-bold text-text-primary outline-none"
           />
         </div>
-        <input
-          type="date"
-          value={linha.date}
-          onChange={(e) => onChange({ date: e.target.value })}
-          aria-label="Data"
-          className={cn(campo, "w-auto")}
-        />
-      </div>
-
-      <input
-        type="text"
-        value={linha.description}
-        maxLength={200}
-        onChange={(e) => onChange({ description: e.target.value })}
-        placeholder="Descrição"
-        aria-label="Descrição"
-        className={campo}
-      />
-
-      <div className={cn("grid gap-2", cartao ? "grid-cols-[1fr_1fr_auto]" : "grid-cols-2")}>
-        {linha.type === "TRANSFER" ? (
-          <SeletorCarteira
-            carteiras={carteiras}
-            value={linha.carteiraDestinoId}
-            onChange={(id) => onChange({ carteiraDestinoId: id })}
-            incluirCartoes={false}
-            placeholder="Para qual carteira?"
-            invalido={falta("carteira de destino") || falta("carteiras diferentes")}
-          />
-        ) : (
-          <select
-            value={linha.categoryId ?? ""}
-            onChange={(e) => onChange({ categoryId: e.target.value || null })}
-            aria-label="Categoria"
-            className={cn(campo, falta("categoria") && "ring-2 ring-accent-yellow/70")}
-          >
-            <option value="">{linha.type === "INCOME" ? "Sem categoria" : "Categoria"}</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        )}
-
+      )}
+      {falta("categoria") && (
+        <select
+          value=""
+          onChange={(e) => onChange({ categoryId: e.target.value || null })}
+          aria-label="Categoria"
+          className={campoFaltante}
+        >
+          <option value="">Qual a categoria?</option>
+          {categorias.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      )}
+      {pendencias.some((p) => p === "carteira" || p.startsWith("carteira (")) && (
         <SeletorCarteira
           carteiras={carteiras}
-          value={linha.carteiraId}
-          onChange={(id) => onChange((l) => ({ ...l, carteiraId: id, parcelas: isCartao(id) ? l.parcelas : 1 }))}
+          onChange={onEscolherCarteira}
           incluirCartoes={linha.type === "EXPENSE"}
-          placeholder={linha.type === "TRANSFER" ? "De qual carteira?" : "Carteira"}
-          invalido={falta("carteira")}
+          placeholder="Em qual carteira?"
         />
-
-        {cartao && (
-          <select
-            value={linha.parcelas}
-            onChange={(e) => onChange({ parcelas: Number(e.target.value) })}
-            aria-label="Parcelas"
-            className={cn(campo, "w-auto")}
-          >
-            {Array.from({ length: 24 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>{n}x</option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {pendencias.length > 0 && !linha.erro && (
-        <p className="text-xs text-accent-yellow">Falta: {pendencias.join(", ")}</p>
       )}
+      {falta("carteira de origem") && (
+        <SeletorCarteira
+          carteiras={carteiras}
+          onChange={(id) => onChange({ carteiraId: id })}
+          incluirCartoes={false}
+          placeholder="De qual carteira?"
+        />
+      )}
+      {(falta("carteira de destino") || falta("carteiras diferentes")) && (
+        <SeletorCarteira
+          carteiras={carteiras}
+          onChange={(id) => onChange({ carteiraDestinoId: id })}
+          incluirCartoes={false}
+          placeholder="Para qual carteira?"
+        />
+      )}
+
       {linha.erro && (
         <div className="flex flex-wrap items-center gap-2 text-xs text-status-danger">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -668,6 +594,6 @@ function CartaoLinha({
           )}
         </div>
       )}
-    </div>
+    </li>
   );
 }
