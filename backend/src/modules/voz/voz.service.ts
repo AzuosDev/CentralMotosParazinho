@@ -10,6 +10,11 @@ import { WalletsService } from '../wallets/wallets.service';
 import { GroqClient } from './groq.client';
 import { ConfirmarVozDto, LancamentoVozDto, TipoLancamentoVoz } from './dto/confirmar-voz.dto';
 
+// Forma de pagamento citada na fala, independente de qual carteira a IA escolheu — é o que
+// permite acertar "em espécie" mesmo quando o nome da carteira não lembra dinheiro, e avisar
+// o usuário quando ele não tem carteira daquele tipo.
+export type FormaPagamentoVoz = 'dinheiro' | 'credito';
+
 // Nada aqui é persistido: é o rascunho que o usuário revisa/edita antes de confirmar.
 export interface RascunhoVoz {
   type: TipoLancamentoVoz;
@@ -20,6 +25,7 @@ export interface RascunhoVoz {
   carteiraId: string | null;
   carteiraDestinoId: string | null;
   parcelas: number;
+  formaPagamento: FormaPagamentoVoz | null;
 }
 
 export interface ResultadoInterpretacao {
@@ -49,6 +55,11 @@ const TIPO_POR_PALAVRA: Record<string, TipoLancamentoVoz> = {
   gasto: 'EXPENSE',
   ganho: 'INCOME',
   transferencia: 'TRANSFER',
+};
+const NOME_DE_DINHEIRO_FISICO = /\b(dinheiro|esp[eé]cie|cash|bolso|f[ií]sic[oa])\b/i;
+const FORMA_POR_PALAVRA: Record<string, FormaPagamentoVoz> = {
+  dinheiro: 'dinheiro',
+  credito: 'credito',
 };
 
 function hojeEmSaoPaulo(): string {
@@ -222,7 +233,15 @@ export class VozService {
       nome: c.name,
       isIncome: Boolean(c.isIncome),
     }));
-    const wallets = carteiras.map((w, i) => ({ ref: `w${i + 1}`, id: String(w._id), nome: w.nome, tipo: w.tipo }));
+    // O formulário de "Nova Carteira" não pergunta o tipo (tudo nasce 'conta'), então quem
+    // cria uma carteira "Dinheiro" ou "Bolso" para o dinheiro físico a tem como conta. Para a
+    // voz, o nome basta para tratá-la como dinheiro em espécie.
+    const wallets = carteiras.map((w, i) => ({
+      ref: `w${i + 1}`,
+      id: String(w._id),
+      nome: w.nome,
+      tipo: w.tipo === 'conta' && NOME_DE_DINHEIRO_FISICO.test(w.nome) ? ('dinheiro' as const) : w.tipo,
+    }));
 
     let padrao = wallets.find((w) => w.id === carteiraPadraoId)?.id ?? null;
     if (!padrao) {
@@ -240,7 +259,7 @@ export class VozService {
 
   private montarDicasTranscricao(ctx: ContextoUsuario): string {
     const nomes = [...ctx.carteiras.map((w) => w.nome), ...ctx.categorias.map((c) => c.nome)];
-    return `Lançamentos financeiros em reais: gastei, paguei, recebi, transferi, Pix, parcelado. ${nomes.join(', ')}.`;
+    return `Lançamentos financeiros em reais: gastei, paguei, recebi, transferi, Pix, parcelado, em espécie, em dinheiro, no débito, no crédito. ${nomes.join(', ')}.`;
   }
 
   private montarPromptSistema(ctx: ContextoUsuario): string {
@@ -259,7 +278,9 @@ export class VozService {
       '- data: YYYY-MM-DD. Sem menção = hoje. Resolva "ontem", "anteontem", "sexta passada", "semana passada", "dia 5" (dia 5 do mês atual; se ainda não chegou, do mês anterior).',
       '- descricao: curta (até 60 caracteres), o que foi comprado/recebido e de quem/onde. Sem o valor e sem a data.',
       '- categoria: o código da lista que melhor se encaixa, respeitando gasto x ganho. null se nenhuma servir.',
-      '- carteira: código só se a fala mencionar a conta, cartão ou forma de pagamento ("no Nubank", "no cartão do Inter", "em dinheiro", "no crédito"). Senão null. Em transferencia: carteira = origem e carteiraDestino = destino.',
+      '- carteira: código só se a fala mencionar a conta, cartão ou forma de pagamento ("no Nubank", "no cartão do Inter", "em dinheiro", "no crédito"). Senão null. Em transferencia: carteira = origem e carteiraDestino = destino. Cada lançamento usa a carteira dita PARA ELE — não copie a carteira de um lançamento para o outro.',
+      '- "em espécie", "em dinheiro", "dinheiro vivo", "cash", "na mão" = a carteira do tipo "dinheiro em espécie". Se não existir nenhuma desse tipo, carteira = null (NUNCA use uma conta bancária no lugar).',
+      '- pagamento: "dinheiro" se a fala disser que foi em espécie/dinheiro vivo; "credito" se disser crédito/cartão de crédito; senão null. Preencha mesmo que nenhuma carteira combine.',
       '- parcelas: número de parcelas se disser "em 10x", "parcelado em 3 vezes"; senão 1. O valor é sempre o TOTAL da compra (se disser "10x de 50", valor = 500).',
       '- Ignore hesitações e repetições. Em correções ("foi 40, não, 50") use o valor final.',
       '',
@@ -268,7 +289,7 @@ export class VozService {
       `Carteiras e cartões: ${ctx.carteiras.map((w) => `${w.ref}=${w.nome} (${ROTULO_TIPO_CARTEIRA[w.tipo] ?? w.tipo})`).join('; ') || '(nenhuma)'}`,
       '',
       'Responda APENAS com JSON neste formato:',
-      '{"lancamentos":[{"tipo":"gasto","valor":45.9,"descricao":"Mercado","data":"2026-01-31","categoria":"c1","carteira":null,"carteiraDestino":null,"parcelas":1}]}',
+      '{"lancamentos":[{"tipo":"gasto","valor":45.9,"descricao":"Mercado","data":"2026-01-31","categoria":"c1","carteira":null,"carteiraDestino":null,"parcelas":1,"pagamento":null}]}',
       'Se nada do que foi dito for um lançamento financeiro, responda {"lancamentos":[]}.',
     ].join('\n');
   }
@@ -283,6 +304,11 @@ export class VozService {
     const catPorRef = new Map(ctx.categorias.map((c) => [c.ref, c]));
     const walletPorRef = new Map(ctx.carteiras.map((w) => [w.ref, w]));
     const walletPorId = new Map(ctx.carteiras.map((w) => [w.id, w]));
+    // Só dá para deduzir a carteira pela forma de pagamento quando há exatamente uma daquele tipo.
+    const unicaDoTipo = (tipo: Wallet['tipo']) => {
+      const doTipo = ctx.carteiras.filter((w) => w.tipo === tipo);
+      return doTipo.length === 1 ? doTipo[0].id : null;
+    };
 
     return brutos.slice(0, MAX_ITENS).flatMap((bruto): RascunhoVoz[] => {
       if (typeof bruto !== 'object' || bruto === null) return [];
@@ -298,13 +324,21 @@ export class VozService {
       const categoriaCoerente =
         type !== 'TRANSFER' && categoria && categoria.isIncome === (type === 'INCOME') ? categoria.id : null;
 
+      let formaPagamento: FormaPagamentoVoz | null =
+        type === 'TRANSFER' ? null : FORMA_POR_PALAVRA[String(b.pagamento ?? '').toLowerCase()] ?? null;
+      if (type === 'INCOME' && formaPagamento === 'credito') formaPagamento = null;
+
       let carteiraId = walletPorRef.get(String(b.carteira ?? ''))?.id ?? null;
       let carteiraDestinoId: string | null = null;
       if (type === 'TRANSFER') {
         carteiraDestinoId = walletPorRef.get(String(b.carteiraDestino ?? ''))?.id ?? null;
       } else {
         if (type === 'INCOME' && carteiraId && walletPorId.get(carteiraId)?.tipo === 'credito') carteiraId = null;
-        if (!carteiraId) {
+        // A forma de pagamento dita manda: "20 em espécie" nunca cai numa conta bancária,
+        // mesmo que a IA tenha escolhido uma ou que haja carteira padrão.
+        if (formaPagamento && carteiraId && walletPorId.get(carteiraId)?.tipo !== formaPagamento) carteiraId = null;
+        if (formaPagamento && !carteiraId) carteiraId = unicaDoTipo(formaPagamento);
+        if (!carteiraId && !formaPagamento) {
           const padrao = ctx.carteiraPadraoId ? walletPorId.get(ctx.carteiraPadraoId) : undefined;
           carteiraId = padrao && !(type === 'INCOME' && padrao.tipo === 'credito') ? padrao.id : null;
         }
@@ -324,6 +358,7 @@ export class VozService {
           carteiraId,
           carteiraDestinoId,
           parcelas,
+          formaPagamento,
         },
       ];
     });

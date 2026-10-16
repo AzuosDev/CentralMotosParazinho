@@ -134,6 +134,72 @@ describe('VozController (e2e)', () => {
     expect(res.body.itens[1]).toMatchObject({ type: 'INCOME', categoryId: null, carteiraId: contaId });
   });
 
+  it('gasto "em espécie" sem carteira de dinheiro fica sem carteira (não cai na conta padrão)', async () => {
+    respostaIa = (prompt) => ({
+      lancamentos: [
+        { tipo: 'gasto', valor: 20, descricao: 'Comida', categoria: refDe(prompt, 'Mercado'), carteira: refDe(prompt, 'Nubank') },
+        // IA errou e pôs a conta bancária num gasto que foi em espécie
+        { tipo: 'gasto', valor: 20, descricao: 'Comida', categoria: refDe(prompt, 'Mercado'), carteira: refDe(prompt, 'Nubank'), pagamento: 'dinheiro' },
+        { tipo: 'gasto', valor: 20, descricao: 'Comida', categoria: refDe(prompt, 'Mercado'), carteira: null, pagamento: 'dinheiro' },
+      ],
+    });
+
+    const res = await request(app.getHttpServer())
+      .post('/api/voz/interpretar')
+      .send({ texto: '20 de comida no Nubank, 20 em espécie e mais 20 em dinheiro' })
+      .expect(201);
+
+    expect(res.body.itens).toEqual([
+      expect.objectContaining({ carteiraId: contaId, formaPagamento: null }),
+      expect.objectContaining({ carteiraId: null, formaPagamento: 'dinheiro' }),
+      expect.objectContaining({ carteiraId: null, formaPagamento: 'dinheiro' }),
+    ]);
+  });
+
+  it('gasto "em espécie" vai para a única carteira de dinheiro, mesmo sem a IA indicar', async () => {
+    const dinheiro = await walletModel.create({ userId: new Types.ObjectId(FAKE_USER_ID), nome: 'Bolso', tipo: 'dinheiro' });
+    try {
+      respostaIa = (prompt) => ({
+        lancamentos: [
+          { tipo: 'gasto', valor: 20, descricao: 'Comida', categoria: refDe(prompt, 'Mercado'), carteira: refDe(prompt, 'Nubank'), pagamento: 'dinheiro' },
+          { tipo: 'gasto', valor: 15, descricao: 'Pão', categoria: refDe(prompt, 'Mercado'), carteira: null, pagamento: 'credito' },
+        ],
+      });
+
+      const res = await request(app.getHttpServer()).post('/api/voz/interpretar').send({ texto: 'x' }).expect(201);
+
+      expect(res.body.itens).toEqual([
+        expect.objectContaining({ carteiraId: String(dinheiro._id), formaPagamento: 'dinheiro' }),
+        expect.objectContaining({ carteiraId: cartaoId, formaPagamento: 'credito' }),
+      ]);
+    } finally {
+      await walletModel.deleteOne({ _id: dinheiro._id });
+    }
+  });
+
+  it('carteira do tipo conta com nome de dinheiro físico conta como dinheiro em espécie', async () => {
+    const especie = await walletModel.create({ userId: new Types.ObjectId(FAKE_USER_ID), nome: 'Dinheiro', tipo: 'conta' });
+    try {
+      let promptVisto = '';
+      respostaIa = (prompt) => {
+        promptVisto = prompt;
+        return {
+          lancamentos: [
+            { tipo: 'gasto', valor: 20, descricao: 'Comida', categoria: refDe(prompt, 'Mercado'), carteira: refDe(prompt, 'Dinheiro'), pagamento: 'dinheiro' },
+            { tipo: 'gasto', valor: 20, descricao: 'Comida', categoria: refDe(prompt, 'Mercado'), carteira: null, pagamento: 'dinheiro' },
+          ],
+        };
+      };
+
+      const res = await request(app.getHttpServer()).post('/api/voz/interpretar').send({ texto: 'x' }).expect(201);
+
+      expect(promptVisto).toMatch(/w\d+=Dinheiro \(dinheiro em espécie\)/);
+      expect(res.body.itens.map((i: { carteiraId: string }) => i.carteiraId)).toEqual([String(especie._id), String(especie._id)]);
+    } finally {
+      await walletModel.deleteOne({ _id: especie._id });
+    }
+  });
+
   it('transcreve o áudio antes de interpretar', async () => {
     respostaIa = () => ({ lancamentos: [] });
 
