@@ -3,11 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeftRight,
+  Banknote,
   CalendarDays,
   Check,
   Keyboard,
   Loader2,
   Mic,
+  Plus,
   Sparkles,
   Square,
   TrendingDown,
@@ -23,6 +25,7 @@ import { formatCurrency, localDateString } from "../../lib/finance";
 import { cn } from "../../lib/utils";
 import { DURACAO_MAXIMA_S, useGravadorVoz } from "../../hooks/useGravadorVoz";
 import {
+  ehCarteiraDinheiro,
   extensaoDoMime,
   lerCarteiraPadrao,
   motivoSemVoz,
@@ -73,6 +76,8 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
   const [texto, setTexto] = useState("");
   const [linhas, setLinhas] = useState<LinhaVoz[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
+  // O que foi ouvido na última fala — mostra se um erro veio da transcrição ou da interpretação.
+  const [transcricao, setTranscricao] = useState("");
   const [carteiraPadrao, setCarteiraPadrao] = useState<string | null>(() => lerCarteiraPadrao());
 
   // Abre já ouvindo: o objetivo é falar sem nenhum toque extra.
@@ -96,6 +101,7 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
     }
     setAviso(null);
     setTexto("");
+    setTranscricao(res.transcricao);
     setLinhas((atuais) => [...atuais, ...paraLinhas(res.itens)]);
     setFase("revisao");
   };
@@ -166,22 +172,50 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
 
   // Escolher a carteira numa linha que veio sem ela preenche todas as outras que também
   // vieram sem (e vira a padrão das próximas falas) — um toque em vez de um por linha.
-  const preencherCarteiraFaltante = (id: string | null) => {
+  // Só entre linhas com a mesma forma de pagamento dita: escolher o Itaú para um gasto sem
+  // forma citada não pode arrastar junto um gasto que foi "em espécie".
+  const preencherCarteiraFaltante = (origem: LinhaVoz, id: string | null) => {
     if (!id) return;
-    setCarteiraPadrao(id);
-    salvarCarteiraPadrao(id);
+    if (!origem.formaPagamento) {
+      setCarteiraPadrao(id);
+      salvarCarteiraPadrao(id);
+    }
     setLinhas((atuais) =>
       atuais.map((l) => {
         const semCarteiraValida = !l.carteiraId || (l.type === "INCOME" && isCartao(l.carteiraId));
+        if (l.chave !== origem.chave && l.formaPagamento !== origem.formaPagamento) return l;
         if (l.type === "TRANSFER" || !semCarteiraValida || (l.type === "INCOME" && isCartao(id))) return l;
         return { ...l, carteiraId: id, parcelas: 1, erro: undefined };
       }),
     );
   };
 
+  // Falou "em espécie" sem ter carteira de dinheiro: cria uma num toque e já a usa nessas linhas.
+  const temCarteiraDinheiro = carteiras.some(ehCarteiraDinheiro);
+  const criarCarteiraDinheiro = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<Wallet>("/api/wallets", { nome: "Dinheiro", tipo: "dinheiro", saldo: 0, icone: "💵" });
+      return data;
+    },
+    onSuccess: (nova) => {
+      void queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      setLinhas((atuais) =>
+        atuais.map((l) =>
+          l.formaPagamento === "dinheiro" && !l.carteiraId && l.type !== "TRANSFER"
+            ? { ...l, carteiraId: nova._id, parcelas: 1, erro: undefined }
+            : l,
+        ),
+      );
+      addToast("Carteira Dinheiro criada.", "success");
+    },
+    onError: (err) => setAviso(getApiErrorText(err, "Não foi possível criar a carteira.")),
+  });
+
   // "Não está certo": descarta o que foi entendido e volta a ouvir.
   const refazer = () => {
     setLinhas([]);
+    setTranscricao("");
     if (vozSuportada()) {
       falarMais();
     } else {
@@ -400,6 +434,11 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
           <p className="text-sm text-text-secondary">
             {linhas.length === 1 ? "Entendi isto. Está certo?" : `Entendi ${linhas.length} lançamentos. Está certo?`}
           </p>
+          {transcricao && (
+            <p className="rounded-lg bg-bg-muted/60 px-3 py-2 text-xs italic text-text-secondary">
+              Ouvi: “{transcricao}”
+            </p>
+          )}
           <ul className="divide-y divide-bg-muted overflow-hidden rounded-xl border border-bg-muted">
             {linhas.map((linha, i) => (
               <LinhaResumo
@@ -410,7 +449,10 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
                 expenseCats={expenseCats}
                 incomeCats={incomeCats}
                 onChange={(m) => atualizar(linha.chave, m)}
-                onEscolherCarteira={preencherCarteiraFaltante}
+                onEscolherCarteira={(id) => preencherCarteiraFaltante(linha, id)}
+                semCarteiraDinheiro={linha.formaPagamento === "dinheiro" && !temCarteiraDinheiro}
+                onCriarCarteiraDinheiro={() => criarCarteiraDinheiro.mutate()}
+                criandoCarteira={criarCarteiraDinheiro.isPending}
               />
             ))}
           </ul>
@@ -470,6 +512,9 @@ function LinhaResumo({
   incomeCats,
   onChange,
   onEscolherCarteira,
+  semCarteiraDinheiro,
+  onCriarCarteiraDinheiro,
+  criandoCarteira,
 }: {
   linha: LinhaVoz;
   pendencias: string[];
@@ -478,6 +523,9 @@ function LinhaResumo({
   incomeCats: Category[];
   onChange: (m: Partial<LinhaVoz>) => void;
   onEscolherCarteira: (id: string | null) => void;
+  semCarteiraDinheiro: boolean;
+  onCriarCarteiraDinheiro: () => void;
+  criandoCarteira: boolean;
 }) {
   const falta = (nome: string) => pendencias.includes(nome);
   const categorias = linha.type === "INCOME" ? incomeCats : expenseCats;
@@ -551,6 +599,21 @@ function LinhaResumo({
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+      )}
+      {falta("carteira") && semCarteiraDinheiro && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-accent-yellow/10 px-2.5 py-2 text-xs text-text-primary">
+          <Banknote className="h-4 w-4 shrink-0 text-accent-yellow" />
+          <span className="flex-1">Você falou em dinheiro, mas ainda não tem uma carteira de dinheiro.</span>
+          <button
+            type="button"
+            onClick={onCriarCarteiraDinheiro}
+            disabled={criandoCarteira}
+            className="flex items-center gap-1.5 rounded-md bg-accent-brand px-2.5 py-1 font-semibold text-white transition hover:bg-accent-brand-hover disabled:opacity-50"
+          >
+            {criandoCarteira ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+            Criar carteira Dinheiro
+          </button>
+        </div>
       )}
       {pendencias.some((p) => p === "carteira" || p.startsWith("carteira (")) && (
         <SeletorCarteira

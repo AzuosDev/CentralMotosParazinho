@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escolherMimeType, paraPayload, pendenciasDaLinha, rotuloData, type LinhaVoz } from "./voz";
+import { ehCarteiraDinheiro, escolherMimeType,paraPayload, pendenciasDaLinha, rotuloData, type LinhaVoz } from "./voz";
 
 const CARTAO = "cartao-1";
 const isCartao = (id: string | null) => id === CARTAO;
@@ -15,6 +15,7 @@ function linha(over: Partial<LinhaVoz> = {}): LinhaVoz {
     value: 45.9,
     description: "Mercado",
     categoryId: "cat-1",
+    formaPagamento: null,
     ...over,
   };
 }
@@ -63,6 +64,16 @@ describe("paraPayload", () => {
     const payload = paraPayload(linha({ type: "TRANSFER", carteiraDestinoId: "conta-2" }), isCartao);
     expect(payload).not.toHaveProperty("categoryId");
     expect(payload).toMatchObject({ carteiraId: "conta-1", carteiraDestinoId: "conta-2" });
+  });
+});
+
+describe("ehCarteiraDinheiro", () => {
+  it("reconhece pelo tipo ou pelo nome, nunca um cartão", () => {
+    expect(ehCarteiraDinheiro({ tipo: "dinheiro", nome: "Carteira" })).toBe(true);
+    expect(ehCarteiraDinheiro({ tipo: "conta", nome: "Dinheiro" })).toBe(true);
+    expect(ehCarteiraDinheiro({ tipo: "conta", nome: "Espécie" })).toBe(true);
+    expect(ehCarteiraDinheiro({ tipo: "conta", nome: "Itaú" })).toBe(false);
+    expect(ehCarteiraDinheiro({ tipo: "credito", nome: "Cartão cash back" })).toBe(false);
   });
 });
 

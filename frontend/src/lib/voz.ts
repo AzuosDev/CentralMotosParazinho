@@ -2,6 +2,7 @@
 // para poderem ser testadas isoladamente.
 
 export type TipoLancamentoVoz = "EXPENSE" | "INCOME" | "TRANSFER";
+export type FormaPagamentoVoz = "dinheiro" | "credito";
 
 // Espelha RascunhoVoz de backend/src/modules/voz/voz.service.ts.
 export type RascunhoVoz = {
@@ -13,6 +14,8 @@ export type RascunhoVoz = {
   carteiraId: string | null;
   carteiraDestinoId: string | null;
   parcelas: number;
+  // Forma de pagamento dita na fala ("em espécie", "no crédito"), mesmo sem carteira que combine.
+  formaPagamento: FormaPagamentoVoz | null;
 };
 
 export type InterpretacaoVoz = {
@@ -31,6 +34,14 @@ export type LinhaVoz = RascunhoVoz & {
   limiteExcedido?: boolean;
   confirmarMesmoAssim?: boolean;
 };
+
+// Mesma regra de VozService#carregarContexto: "Nova Carteira" não pergunta o tipo, então uma
+// carteira "Dinheiro"/"Bolso" do tipo conta também conta como dinheiro físico.
+const NOME_DE_DINHEIRO_FISICO = /\b(dinheiro|esp[eé]cie|cash|bolso|f[ií]sic[oa])\b/i;
+
+export function ehCarteiraDinheiro(w: { tipo?: string; nome: string }): boolean {
+  return w.tipo === "dinheiro" || (w.tipo !== "credito" && NOME_DE_DINHEIRO_FISICO.test(w.nome));
+}
 
 let contador = 0;
 export function novaChave() {
