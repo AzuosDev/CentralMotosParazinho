@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ehCarteiraDinheiro, escolherMimeType,paraPayload, pendenciasDaLinha, rotuloData, type LinhaVoz } from "./voz";
+import { ehCarteiraDinheiro, escolherMimeType, motoIgnoradaNoParcelado, paraPayload, pendenciasDaLinha, rotuloData, type LinhaVoz } from "./voz";
 
 const CARTAO = "cartao-1";
 const isCartao = (id: string | null) => id === CARTAO;
@@ -16,6 +16,8 @@ function linha(over: Partial<LinhaVoz> = {}): LinhaVoz {
     description: "Mercado",
     categoryId: "cat-1",
     formaPagamento: null,
+    destino: "geral",
+    motoId: null,
     ...over,
   };
 }
@@ -45,6 +47,35 @@ describe("pendenciasDaLinha", () => {
     expect(pendenciasDaLinha(linha({ type: "TRANSFER", carteiraDestinoId: "conta-1" }), isCartao)).toEqual([
       "carteiras diferentes",
     ]);
+  });
+});
+
+describe("gasto de moto x geral", () => {
+  it("só pergunta moto ou geral para quem tem moto em estoque", () => {
+    expect(pendenciasDaLinha(linha({ destino: null }), isCartao)).toEqual([]);
+    expect(pendenciasDaLinha(linha({ destino: null }), isCartao, true)).toEqual(["moto ou geral"]);
+    expect(pendenciasDaLinha(linha({ destino: "geral" }), isCartao, true)).toEqual([]);
+  });
+
+  it("gasto de moto exige escolher a moto", () => {
+    expect(pendenciasDaLinha(linha({ destino: "moto" }), isCartao, true)).toEqual(["moto"]);
+    expect(pendenciasDaLinha(linha({ destino: "moto", motoId: "moto-1" }), isCartao, true)).toEqual([]);
+  });
+
+  it("ganho não pergunta de moto", () => {
+    expect(pendenciasDaLinha(linha({ type: "INCOME", destino: null }), isCartao, true)).toEqual([]);
+  });
+
+  it("moto em compra parcelada no cartão é pendência", () => {
+    const parcelada = linha({ destino: "moto", motoId: "moto-1", carteiraId: CARTAO, parcelas: 3 });
+    expect(motoIgnoradaNoParcelado(parcelada, isCartao)).toBe(true);
+    expect(pendenciasDaLinha(parcelada, isCartao, true)).toEqual(["moto em compra parcelada"]);
+    expect(pendenciasDaLinha({ ...parcelada, parcelas: 1 }, isCartao, true)).toEqual([]);
+  });
+
+  it("manda motoId só quando o destino é moto", () => {
+    expect(paraPayload(linha({ destino: "moto", motoId: "moto-1" }), isCartao)).toMatchObject({ motoId: "moto-1" });
+    expect(paraPayload(linha({ destino: "geral", motoId: "moto-1" }), isCartao).motoId).toBeUndefined();
   });
 });
 

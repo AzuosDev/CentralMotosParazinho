@@ -4,12 +4,14 @@ import {
   AlertCircle,
   ArrowLeftRight,
   Banknote,
+  Bike,
   CalendarDays,
   Check,
   Keyboard,
   Loader2,
   Mic,
   Plus,
+  Receipt,
   Sparkles,
   Square,
   TrendingDown,
@@ -19,6 +21,7 @@ import { ModalShell } from "./ModalShell";
 import { useCategories, useIncomeCategories, useWalletsWithCartoes } from "./TransactionFormFields";
 import { CurrencyInput } from "../ui/CurrencyInput";
 import { useToast } from "../ui/Toast";
+import { useMotos } from "../motos/useMotos";
 import { api } from "../../lib/api";
 import { getApiErrorText } from "../../lib/errors";
 import { formatCurrency, localDateString } from "../../lib/finance";
@@ -26,6 +29,7 @@ import { cn } from "../../lib/utils";
 import { DURACAO_MAXIMA_S, useGravadorVoz } from "../../hooks/useGravadorVoz";
 import {
   ehCarteiraDinheiro,
+  motoIgnoradaNoParcelado,
   extensaoDoMime,
   lerCarteiraPadrao,
   motivoSemVoz,
@@ -35,11 +39,12 @@ import {
   rotuloData,
   salvarCarteiraPadrao,
   vozSuportada,
+  type DestinoGastoVoz,
   type InterpretacaoVoz,
   type LinhaVoz,
   type ResultadoConfirmacaoVoz,
 } from "../../lib/voz";
-import type { Wallet } from "../../types/api";
+import type { Moto, Wallet } from "../../types/api";
 import type { Category } from "../../types/finance";
 
 type Fase = "ouvindo" | "processando" | "revisao";
@@ -49,6 +54,7 @@ const EXEMPLOS = [
   "Recebi 1.500 do cliente Marcos no Pix",
   "Ontem paguei 180 de luz no Nubank",
   "Comprei um pneu de 900 em 3x no cartão",
+  "Troquei o óleo da CG vermelha, 90 no Pix",
 ];
 
 // Campo que só aparece quando a IA não identificou algo obrigatório.
@@ -66,6 +72,10 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
   const { data: expenseCats = [] } = useCategories();
   const { data: incomeCats = [] } = useIncomeCategories();
   const { data: todasCarteiras = [] } = useWalletsWithCartoes();
+  const { data: todasMotos = [] } = useMotos();
+  // O pátio: gasto novo é de moto em estoque (mesma lista que a IA recebe no backend).
+  const motos = useMemo(() => todasMotos.filter((m) => m.status === "em_estoque"), [todasMotos]);
+  const temMotos = motos.length > 0;
 
   const carteiras = useMemo(() => todasCarteiras.filter((w) => w.tipo !== "VIRTUAL" && !w.arquivadaEm), [todasCarteiras]);
   const cartaoIds = useMemo(() => new Set(carteiras.filter((w) => w.tipo === "credito").map((w) => w._id)), [carteiras]);
@@ -225,7 +235,7 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
     }
   };
 
-  const pendencias = linhas.map((l) => pendenciasDaLinha(l, isCartao));
+  const pendencias = linhas.map((l) => pendenciasDaLinha(l, isCartao, temMotos));
   const tudoPronto = linhas.length > 0 && pendencias.every((p) => p.length === 0);
 
   const salvar = useMutation({
@@ -236,7 +246,7 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
       return { lote, resultados: data.resultados };
     },
     onSuccess: ({ lote, resultados }) => {
-      // Um lote pode tocar carteiras, cartões/faturas, contas, metas e dashboard de uma vez —
+      // Um lote pode tocar carteiras, cartões/faturas, contas, metas, motos e dashboard de uma vez —
       // invalidar tudo é mais seguro que manter uma lista de chaves que fica desatualizada.
       void queryClient.invalidateQueries();
 
@@ -446,6 +456,8 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
                 linha={linha}
                 pendencias={pendencias[i]}
                 carteiras={carteiras}
+                motos={motos}
+                isCartao={isCartao}
                 expenseCats={expenseCats}
                 incomeCats={incomeCats}
                 onChange={(m) => atualizar(linha.chave, m)}
@@ -494,6 +506,82 @@ function SeletorCarteira({
   );
 }
 
+const OPCOES_DESTINO: Array<{ valor: DestinoGastoVoz; rotulo: string; Icone: typeof Bike }> = [
+  { valor: "moto", rotulo: "Moto", Icone: Bike },
+  { valor: "geral", rotulo: "Gasto geral", Icone: Receipt },
+];
+
+/**
+ * Moto ou geral: sempre à vista num gasto (a IA pode errar o destino), mas só pede atenção
+ * quando faltou. "Moto" abre o seletor das motos em estoque.
+ */
+function DestinoGasto({
+  linha,
+  motos,
+  faltando,
+  motoFaltando,
+  onChange,
+}: {
+  linha: LinhaVoz;
+  motos: Moto[];
+  faltando: boolean;
+  motoFaltando: boolean;
+  onChange: (m: Partial<LinhaVoz>) => void;
+}) {
+  const escolher = (destino: DestinoGastoVoz) =>
+    onChange({
+      destino,
+      // Uma moto só no pátio: escolher "Moto" já é escolher ela.
+      motoId: destino === "geral" ? null : (linha.motoId ?? (motos.length === 1 ? motos[0]._id : null)),
+    });
+
+  return (
+    <div className="space-y-2">
+      <div
+        role="radiogroup"
+        aria-label="Foi gasto de moto ou geral?"
+        className={cn("grid grid-cols-2 gap-1 rounded-lg bg-bg-muted p-1", faltando && "ring-2 ring-accent-yellow/70")}
+      >
+        {OPCOES_DESTINO.map(({ valor, rotulo, Icone }) => (
+          <button
+            key={valor}
+            type="button"
+            role="radio"
+            aria-checked={linha.destino === valor}
+            onClick={() => escolher(valor)}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold transition",
+              linha.destino === valor
+                ? "bg-accent-brand text-white"
+                : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary",
+            )}
+          >
+            <Icone className="h-3.5 w-3.5" /> {rotulo}
+          </button>
+        ))}
+      </div>
+      {linha.destino === "moto" && (
+        <select
+          value={linha.motoId ?? ""}
+          onChange={(e) => onChange({ motoId: e.target.value || null })}
+          aria-label="Qual moto?"
+          className={cn(
+            campoFaltante,
+            !motoFaltando && "ring-0 focus:ring-2",
+          )}
+        >
+          <option value="">Qual moto?</option>
+          {motos.map((m) => (
+            <option key={m._id} value={m._id}>
+              {m.modelo} {m.ano} · {m.cor} · {m.placa}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
 const ESTILO_TIPO = {
   EXPENSE: { Icone: TrendingDown, fundo: "bg-accent-red/15", texto: "text-accent-red", sinal: "-", nome: "Gasto" },
   INCOME: { Icone: TrendingUp, fundo: "bg-semantic-income/15", texto: "text-semantic-income", sinal: "+", nome: "Ganho" },
@@ -508,6 +596,8 @@ function LinhaResumo({
   linha,
   pendencias,
   carteiras,
+  motos,
+  isCartao,
   expenseCats,
   incomeCats,
   onChange,
@@ -519,6 +609,8 @@ function LinhaResumo({
   linha: LinhaVoz;
   pendencias: string[];
   carteiras: Wallet[];
+  motos: Moto[];
+  isCartao: (id: string | null) => boolean;
   expenseCats: Category[];
   incomeCats: Category[];
   onChange: (m: Partial<LinhaVoz>) => void;
@@ -577,6 +669,29 @@ function LinhaResumo({
           </label>
         </div>
       </div>
+
+      {linha.type === "EXPENSE" && motos.length > 0 && (
+        <DestinoGasto
+          linha={linha}
+          motos={motos}
+          faltando={falta("moto ou geral")}
+          motoFaltando={falta("moto")}
+          onChange={onChange}
+        />
+      )}
+      {motoIgnoradaNoParcelado(linha, isCartao) && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-accent-yellow/10 px-2.5 py-2 text-xs text-text-primary">
+          <AlertCircle className="h-4 w-4 shrink-0 text-accent-yellow" />
+          <span className="flex-1">Compra parcelada não entra no custo da moto. Lance à vista ou marque como geral.</span>
+          <button
+            type="button"
+            onClick={() => onChange({ parcelas: 1 })}
+            className="rounded-md bg-accent-brand px-2.5 py-1 font-semibold text-white transition hover:bg-accent-brand-hover"
+          >
+            Lançar à vista
+          </button>
+        </div>
+      )}
 
       {falta("valor") && (
         <div className="rounded-lg bg-bg-muted px-2.5 py-1.5 ring-2 ring-accent-yellow/70">

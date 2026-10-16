@@ -3,6 +3,8 @@
 
 export type TipoLancamentoVoz = "EXPENSE" | "INCOME" | "TRANSFER";
 export type FormaPagamentoVoz = "dinheiro" | "credito";
+// Gasto de uma moto do estoque (entra no custo dela) ou despesa geral. Só em gasto.
+export type DestinoGastoVoz = "moto" | "geral";
 
 // Espelha RascunhoVoz de backend/src/modules/voz/voz.service.ts.
 export type RascunhoVoz = {
@@ -16,6 +18,9 @@ export type RascunhoVoz = {
   parcelas: number;
   // Forma de pagamento dita na fala ("em espécie", "no crédito"), mesmo sem carteira que combine.
   formaPagamento: FormaPagamentoVoz | null;
+  // null = a fala não deixou claro se foi moto ou geral; o usuário escolhe na revisão.
+  destino: DestinoGastoVoz | null;
+  motoId: string | null;
 };
 
 export type InterpretacaoVoz = {
@@ -53,8 +58,20 @@ export function paraLinhas(itens: RascunhoVoz[]): LinhaVoz[] {
   return itens.map((item) => ({ ...item, chave: novaChave() }));
 }
 
-/** O que ainda falta para a linha poder ser salva — vazio quando está pronta. */
-export function pendenciasDaLinha(linha: RascunhoVoz, isCartao: (id: string | null) => boolean): string[] {
+/** Compra parcelada no cartão vira Parcelamento, que não guarda o vínculo com a moto. */
+export function motoIgnoradaNoParcelado(linha: RascunhoVoz, isCartao: (id: string | null) => boolean): boolean {
+  return linha.type === "EXPENSE" && linha.destino === "moto" && isCartao(linha.carteiraId) && linha.parcelas >= 2;
+}
+
+/**
+ * O que ainda falta para a linha poder ser salva — vazio quando está pronta. `temMotos`:
+ * só quem tem moto em estoque precisa dizer se o gasto foi de moto ou geral.
+ */
+export function pendenciasDaLinha(
+  linha: RascunhoVoz,
+  isCartao: (id: string | null) => boolean,
+  temMotos = false,
+): string[] {
   const faltas: string[] = [];
   if (!linha.value || linha.value <= 0) faltas.push("valor");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(linha.date)) faltas.push("data");
@@ -67,6 +84,11 @@ export function pendenciasDaLinha(linha: RascunhoVoz, isCartao: (id: string | nu
   if (!linha.carteiraId) faltas.push("carteira");
   if (linha.type === "INCOME" && isCartao(linha.carteiraId)) faltas.push("carteira (ganho não entra em cartão)");
   if (linha.type === "EXPENSE" && !linha.categoryId) faltas.push("categoria");
+  if (linha.type === "EXPENSE" && temMotos) {
+    if (!linha.destino) faltas.push("moto ou geral");
+    else if (linha.destino === "moto" && !linha.motoId) faltas.push("moto");
+    else if (motoIgnoradaNoParcelado(linha, isCartao)) faltas.push("moto em compra parcelada");
+  }
   return faltas;
 }
 
@@ -86,6 +108,7 @@ export function paraPayload(linha: LinhaVoz, isCartao: (id: string | null) => bo
     ...base,
     categoryId: linha.categoryId ?? undefined,
     carteiraId: linha.carteiraId ?? undefined,
+    motoId: linha.type === "EXPENSE" && linha.destino === "moto" && linha.motoId ? linha.motoId : undefined,
     parcelas: cartao && linha.parcelas >= 2 ? linha.parcelas : undefined,
     confirmarMesmoAssim: cartao && linha.confirmarMesmoAssim ? true : undefined,
   };
