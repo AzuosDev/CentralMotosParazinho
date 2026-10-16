@@ -47,6 +47,11 @@ export class LancamentoVozDto {
   @IsString()
   carteiraId?: string;
 
+  // Só EXPENSE: vincula o gasto a uma moto do estoque (entra no custo dela).
+  @IsOptional()
+  @IsString()
+  motoId?: string;
+
   // Só TRANSFER.
   @IsOptional()
   @IsString()

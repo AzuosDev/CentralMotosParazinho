@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Category, CategoryDocument } from '../categories/schemas/category.schema';
 import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
+import { Moto, MotoDocument } from '../motos/schemas/moto.schema';
 import { TransactionsService } from '../transactions/transactions.service';
 import { TransactionType } from '../transactions/schemas/transaction.schema';
 import { CartoesService } from '../cartoes/cartoes.service';
@@ -15,6 +16,11 @@ import { ConfirmarVozDto, LancamentoVozDto, TipoLancamentoVoz } from './dto/conf
 // o usuário quando ele não tem carteira daquele tipo.
 export type FormaPagamentoVoz = 'dinheiro' | 'credito';
 
+// Para onde vai um gasto: o custo de uma moto do estoque ou as despesas gerais. null = a fala
+// não deixou claro, e o usuário escolhe na revisão. Só existe em gasto (ganho e transferência
+// não entram no custo de moto nenhuma).
+export type DestinoGastoVoz = 'moto' | 'geral';
+
 // Nada aqui é persistido: é o rascunho que o usuário revisa/edita antes de confirmar.
 export interface RascunhoVoz {
   type: TipoLancamentoVoz;
@@ -26,6 +32,8 @@ export interface RascunhoVoz {
   carteiraDestinoId: string | null;
   parcelas: number;
   formaPagamento: FormaPagamentoVoz | null;
+  destino: DestinoGastoVoz | null;
+  motoId: string | null;
 }
 
 export interface ResultadoInterpretacao {
@@ -41,6 +49,7 @@ interface ContextoUsuario {
   hoje: string;
   categorias: Array<{ ref: string; id: string; nome: string; isIncome: boolean }>;
   carteiras: Array<{ ref: string; id: string; nome: string; tipo: Wallet['tipo'] }>;
+  motos: Array<{ ref: string; id: string; descricao: string; modelo: string }>;
   carteiraPadraoId: string | null;
 }
 
@@ -57,6 +66,10 @@ const TIPO_POR_PALAVRA: Record<string, TipoLancamentoVoz> = {
   transferencia: 'TRANSFER',
 };
 const NOME_DE_DINHEIRO_FISICO = /\b(dinheiro|esp[eé]cie|cash|bolso|f[ií]sic[oa])\b/i;
+const DESTINO_POR_PALAVRA: Record<string, DestinoGastoVoz> = {
+  moto: 'moto',
+  geral: 'geral',
+};
 const FORMA_POR_PALAVRA: Record<string, FormaPagamentoVoz> = {
   dinheiro: 'dinheiro',
   credito: 'credito',
@@ -90,6 +103,7 @@ export class VozService {
   constructor(
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    @InjectModel(Moto.name) private motoModel: Model<MotoDocument>,
     private readonly groq: GroqClient,
     private readonly transactionsService: TransactionsService,
     private readonly cartoesService: CartoesService,
@@ -176,7 +190,16 @@ export class VozService {
       throw new BadRequestException('Um ganho não pode entrar num cartão de crédito — escolha uma carteira.');
     }
 
+    const motoId = item.type === 'EXPENSE' && item.motoId ? item.motoId : undefined;
+
     if (isCartao && (item.parcelas ?? 1) >= 2) {
+      // Parcelamento não guarda motoId (cada parcela nasce dentro do CartoesService) — a
+      // revisão já avisa e o frontend nem envia; recusar evita sumir com o vínculo calado.
+      if (motoId) {
+        throw new BadRequestException(
+          'Compra parcelada não guarda o vínculo com a moto. Lance à vista ou marque como gasto geral.',
+        );
+      }
       const parcelamento = await this.cartoesService.criarParcelamento(userId, {
         carteiraId: item.carteiraId,
         categoryId: item.categoryId,
@@ -194,6 +217,8 @@ export class VozService {
       value: item.value,
       categoryId: item.categoryId || undefined,
       carteiraId: item.carteiraId,
+      // TransactionsService#create checa a posse da moto (moto de outro usuário é erro).
+      motoId,
       description,
       date: item.date,
       confirmarMesmoAssim: isCartao ? item.confirmarMesmoAssim : undefined,
@@ -216,13 +241,15 @@ export class VozService {
 
   private async carregarContexto(userId: string, carteiraPadraoId?: string, hoje?: string): Promise<ContextoUsuario> {
     const userObjectId = new Types.ObjectId(userId);
-    const [categorias, carteiras] = await Promise.all([
+    const [categorias, carteiras, motos] = await Promise.all([
       this.categoryModel.find({ $or: [{ userId: userObjectId }, { userId: null }] }).sort({ name: 1 }).lean().exec(),
       this.walletModel
         .find({ userId: userObjectId, arquivadaEm: { $exists: false } })
         .sort({ createdAt: 1 })
         .lean()
         .exec(),
+      // Só o pátio: gasto novo é de moto que ainda está lá (mesma regra do MotoField).
+      this.motoModel.find({ userId: userObjectId, status: 'em_estoque' }).sort({ dataCompra: 1 }).lean().exec(),
     ]);
 
     // Referências curtas (c1, w1...) em vez de ObjectIds: o modelo erra menos copiando
@@ -243,6 +270,13 @@ export class VozService {
       tipo: w.tipo === 'conta' && NOME_DE_DINHEIRO_FISICO.test(w.nome) ? ('dinheiro' as const) : w.tipo,
     }));
 
+    const motosCtx = motos.map((m, i) => ({
+      ref: `m${i + 1}`,
+      id: String(m._id),
+      modelo: m.modelo,
+      descricao: [m.modelo, m.ano, m.cor, `placa ${m.placa}`].filter(Boolean).join(' '),
+    }));
+
     let padrao = wallets.find((w) => w.id === carteiraPadraoId)?.id ?? null;
     if (!padrao) {
       const naoCartoes = wallets.filter((w) => w.tipo !== 'credito');
@@ -253,13 +287,18 @@ export class VozService {
       hoje: isDataValida(hoje) ? hoje : hojeEmSaoPaulo(),
       categorias: cats,
       carteiras: wallets,
+      motos: motosCtx,
       carteiraPadraoId: padrao,
     };
   }
 
   private montarDicasTranscricao(ctx: ContextoUsuario): string {
-    const nomes = [...ctx.carteiras.map((w) => w.nome), ...ctx.categorias.map((c) => c.nome)];
-    return `Lançamentos financeiros em reais: gastei, paguei, recebi, transferi, Pix, parcelado, em espécie, em dinheiro, no débito, no crédito. ${nomes.join(', ')}.`;
+    const nomes = [
+      ...ctx.carteiras.map((w) => w.nome),
+      ...ctx.categorias.map((c) => c.nome),
+      ...new Set(ctx.motos.map((m) => m.modelo)),
+    ];
+    return `Lançamentos financeiros em reais: gastei, paguei, recebi, transferi, Pix, parcelado, em espécie, em dinheiro, no débito, no crédito, moto, peça, oficina. ${nomes.join(', ')}.`;
   }
 
   private montarPromptSistema(ctx: ContextoUsuario): string {
@@ -282,14 +321,22 @@ export class VozService {
       '- "em espécie", "em dinheiro", "dinheiro vivo", "cash", "na mão" = a carteira do tipo "dinheiro em espécie". Se não existir nenhuma desse tipo, carteira = null (NUNCA use uma conta bancária no lugar).',
       '- pagamento: "dinheiro" se a fala disser que foi em espécie/dinheiro vivo; "credito" se disser crédito/cartão de crédito; senão null. Preencha mesmo que nenhuma carteira combine.',
       '- parcelas: número de parcelas se disser "em 10x", "parcelado em 3 vezes"; senão 1. O valor é sempre o TOTAL da compra (se disser "10x de 50", valor = 500).',
+      ...(ctx.motos.length > 0
+        ? [
+            '- O usuário revende motos. Todo GASTO tem um destino: "moto" (gasto com uma moto do estoque: peça, pneu, óleo, revisão, mecânico, oficina, funilaria, pintura, lavagem, documentação, DETRAN, vistoria, transferência de documento, IPVA, licenciamento, multa, frete/guincho da moto, ou quando cita modelo/placa/cor de uma moto) ou "geral" (despesa que não é de moto nenhuma: almoço, mercado, luz, aluguel, internet, Uber, salário etc.).',
+            '- destino = null quando a fala não permite saber (ex.: "gastei 20 reais da Nubank", "paguei 50 no Pix"). NÃO chute: na dúvida, null — o usuário escolhe depois.',
+            '- moto: o código da lista de motos SÓ se a fala identificar UMA moto (modelo, placa, cor, ano). Se combinar com mais de uma ou não disser qual, null. Se moto != null, destino = "moto". Em ganho e transferência, destino e moto = null.',
+          ]
+        : []),
       '- Ignore hesitações e repetições. Em correções ("foi 40, não, 50") use o valor final.',
       '',
       `Categorias de GASTO: ${listar(ctx.categorias.filter((c) => !c.isIncome))}`,
       `Categorias de GANHO: ${listar(ctx.categorias.filter((c) => c.isIncome))}`,
+      ...(ctx.motos.length > 0 ? [`Motos em estoque: ${ctx.motos.map((m) => `${m.ref}=${m.descricao}`).join('; ')}`] : []),
       `Carteiras e cartões: ${ctx.carteiras.map((w) => `${w.ref}=${w.nome} (${ROTULO_TIPO_CARTEIRA[w.tipo] ?? w.tipo})`).join('; ') || '(nenhuma)'}`,
       '',
       'Responda APENAS com JSON neste formato:',
-      '{"lancamentos":[{"tipo":"gasto","valor":45.9,"descricao":"Mercado","data":"2026-01-31","categoria":"c1","carteira":null,"carteiraDestino":null,"parcelas":1,"pagamento":null}]}',
+      `{"lancamentos":[{"tipo":"gasto","valor":45.9,"descricao":"Mercado","data":"2026-01-31","categoria":"c1","carteira":null,"carteiraDestino":null,"parcelas":1,"pagamento":null${ctx.motos.length > 0 ? ',"destino":"geral","moto":null' : ''}}]}`,
       'Se nada do que foi dito for um lançamento financeiro, responda {"lancamentos":[]}.',
     ].join('\n');
   }
@@ -304,6 +351,7 @@ export class VozService {
     const catPorRef = new Map(ctx.categorias.map((c) => [c.ref, c]));
     const walletPorRef = new Map(ctx.carteiras.map((w) => [w.ref, w]));
     const walletPorId = new Map(ctx.carteiras.map((w) => [w.id, w]));
+    const motoPorRef = new Map(ctx.motos.map((m) => [m.ref, m]));
     // Só dá para deduzir a carteira pela forma de pagamento quando há exatamente uma daquele tipo.
     const unicaDoTipo = (tipo: Wallet['tipo']) => {
       const doTipo = ctx.carteiras.filter((w) => w.tipo === tipo);
@@ -344,6 +392,18 @@ export class VozService {
         }
       }
 
+      // Sem moto em estoque não há o que perguntar: todo gasto é geral.
+      let destino: DestinoGastoVoz | null = null;
+      let motoId: string | null = null;
+      if (type === 'EXPENSE') {
+        motoId = motoPorRef.get(String(b.moto ?? ''))?.id ?? null;
+        if (ctx.motos.length === 0) destino = 'geral';
+        else if (motoId) destino = 'moto';
+        else destino = DESTINO_POR_PALAVRA[String(b.destino ?? '').toLowerCase()] ?? null;
+        // Uma moto só no pátio: "gasto de moto" só pode ser dela.
+        if (destino === 'moto' && !motoId && ctx.motos.length === 1) motoId = ctx.motos[0].id;
+      }
+
       const ehCompraNoCartao = type === 'EXPENSE' && carteiraId !== null && walletPorId.get(carteiraId)?.tipo === 'credito';
       const parcelasBrutas = Math.trunc(Number(b.parcelas));
       const parcelas = ehCompraNoCartao && parcelasBrutas >= 2 ? Math.min(parcelasBrutas, 48) : 1;
@@ -359,6 +419,8 @@ export class VozService {
           carteiraDestinoId,
           parcelas,
           formaPagamento,
+          destino,
+          motoId,
         },
       ];
     });

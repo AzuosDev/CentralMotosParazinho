@@ -9,6 +9,7 @@ import { VozModule } from './voz.module';
 import { GroqClient } from './groq.client';
 import { Category } from '../categories/schemas/category.schema';
 import { Wallet } from '../wallets/schemas/wallet.schema';
+import { Moto } from '../motos/schemas/moto.schema';
 import { Transaction, TransactionType } from '../transactions/schemas/transaction.schema';
 
 const FAKE_USER_ID = new Types.ObjectId().toString();
@@ -27,6 +28,7 @@ describe('VozController (e2e)', () => {
   let transactionModel: Model<Transaction>;
   let walletModel: Model<Wallet>;
   let categoryModel: Model<Category>;
+  let motoModel: Model<Moto>;
   let respostaIa: (prompt: string) => unknown;
   let ultimoTexto: string | null;
   const fakeGroq = {
@@ -66,6 +68,7 @@ describe('VozController (e2e)', () => {
     transactionModel = moduleFixture.get(getModelToken(Transaction.name));
     walletModel = moduleFixture.get(getModelToken(Wallet.name));
     categoryModel = moduleFixture.get(getModelToken(Category.name));
+    motoModel = moduleFixture.get(getModelToken(Moto.name));
 
     const userId = new Types.ObjectId(FAKE_USER_ID);
     const [conta, cartao] = await walletModel.create([
@@ -262,5 +265,107 @@ describe('VozController (e2e)', () => {
 
     expect(res.body.resultados[0]).toMatchObject({ ok: false });
     expect(await transactionModel.countDocuments()).toBe(0);
+  });
+  describe('gasto de moto x gasto geral', () => {
+    const userId = new Types.ObjectId(FAKE_USER_ID);
+    const fichaMoto = (modelo: string, placa: string, cor: string) => ({
+      userId,
+      modelo,
+      ano: 2022,
+      placa,
+      chassi: `CHASSI${placa}`,
+      cor,
+      km: 10000,
+      valorCompra: 10000,
+      dataCompra: new Date('2026-09-01'),
+      margemDesejada: 20,
+    });
+
+    afterEach(async () => {
+      await motoModel.deleteMany({});
+    });
+
+    it('sem moto em estoque, todo gasto é geral e o prompt não fala de moto', async () => {
+      let promptVisto = '';
+      respostaIa = (prompt) => {
+        promptVisto = prompt;
+        return { lancamentos: [{ tipo: 'gasto', valor: 20, categoria: refDe(prompt, 'Mercado'), destino: 'moto', moto: 'm1' }] };
+      };
+
+      const res = await request(app.getHttpServer()).post('/api/voz/interpretar').send({ texto: 'x' }).expect(201);
+
+      expect(promptVisto).not.toContain('Motos em estoque');
+      expect(res.body.itens[0]).toMatchObject({ destino: 'geral', motoId: null });
+    });
+
+    it('lista as motos do pátio e revalida destino e moto da IA', async () => {
+      const [, fazer] = await motoModel.create([
+        fichaMoto('Honda CG 160', 'ABC1D23', 'vermelha'),
+        fichaMoto('Yamaha Fazer 250', 'XYZ9K87', 'preta'),
+      ]);
+      await motoModel.create({ ...fichaMoto('Honda Biz', 'VEN1D00', 'azul'), status: 'vendida', valorVenda: 12000, dataVenda: new Date() });
+
+      let promptVisto = '';
+      respostaIa = (prompt) => {
+        promptVisto = prompt;
+        const ref = (placa: string) => prompt.match(new RegExp(`(m\\d+)=[^;]*placa ${placa}`))![1];
+        return {
+          lancamentos: [
+            // "gastei 20 reais da nubank": não dá para saber
+            { tipo: 'gasto', valor: 20, categoria: refDe(prompt, 'Mercado'), carteira: refDe(prompt, 'Nubank'), destino: null },
+            { tipo: 'gasto', valor: 300, categoria: refDe(prompt, 'Mercado'), destino: 'moto', moto: ref('XYZ9K87') },
+            { tipo: 'gasto', valor: 35, categoria: refDe(prompt, 'Mercado'), destino: 'geral' },
+            // disse que é de moto, mas não qual (há duas no pátio)
+            { tipo: 'gasto', valor: 80, categoria: refDe(prompt, 'Mercado'), destino: 'moto', moto: null },
+            // moto inventada e ganho com moto
+            { tipo: 'gasto', valor: 10, categoria: refDe(prompt, 'Mercado'), destino: 'moto', moto: 'm99' },
+            { tipo: 'ganho', valor: 50, categoria: refDe(prompt, 'Salário'), destino: 'moto', moto: ref('ABC1D23') },
+          ],
+        };
+      };
+
+      const res = await request(app.getHttpServer()).post('/api/voz/interpretar').send({ texto: 'x' }).expect(201);
+
+      expect(promptVisto).toMatch(/m\d+=Honda CG 160 2022 vermelha placa ABC1D23/);
+      expect(promptVisto).not.toContain('Biz');
+      expect(res.body.itens.map((i: { destino: string; motoId: string }) => [i.destino, i.motoId])).toEqual([
+        [null, null],
+        ['moto', String(fazer._id)],
+        ['geral', null],
+        ['moto', null],
+        ['moto', null],
+        [null, null],
+      ]);
+    });
+
+    it('com uma moto só no pátio, "gasto de moto" já vem com ela', async () => {
+      const [cg] = await motoModel.create([fichaMoto('Honda CG 160', 'ABC1D23', 'vermelha')]);
+      respostaIa = (prompt) => ({
+        lancamentos: [{ tipo: 'gasto', valor: 90, descricao: 'Óleo', categoria: refDe(prompt, 'Mercado'), destino: 'moto' }],
+      });
+
+      const res = await request(app.getHttpServer()).post('/api/voz/interpretar').send({ texto: 'troquei o óleo da moto, 90' }).expect(201);
+
+      expect(res.body.itens[0]).toMatchObject({ destino: 'moto', motoId: String(cg._id) });
+    });
+
+    it('confirma o gasto vinculado à moto e recusa moto em compra parcelada', async () => {
+      const [cg] = await motoModel.create([fichaMoto('Honda CG 160', 'ABC1D23', 'vermelha')]);
+      const res = await request(app.getHttpServer())
+        .post('/api/voz/confirmar')
+        .send({
+          itens: [
+            { type: 'EXPENSE', value: 90, description: 'Óleo', date: '2026-10-01', categoryId: mercadoId, carteiraId: contaId, motoId: String(cg._id) },
+            { type: 'EXPENSE', value: 900, description: 'Pneu', date: '2026-10-01', categoryId: mercadoId, carteiraId: cartaoId, parcelas: 3, motoId: String(cg._id) },
+            { type: 'EXPENSE', value: 10, description: 'Moto alheia', date: '2026-10-01', categoryId: mercadoId, carteiraId: contaId, motoId: String(new Types.ObjectId()) },
+          ],
+        })
+        .expect(201);
+
+      expect(res.body.resultados.map((r: { ok: boolean }) => r.ok)).toEqual([true, false, false]);
+      const salvas = await transactionModel.find().lean();
+      expect(salvas).toHaveLength(1);
+      expect(String(salvas[0].motoId)).toBe(String(cg._id));
+    });
   });
 });
