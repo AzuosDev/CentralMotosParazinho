@@ -138,22 +138,14 @@ export function extensaoDoMime(mime: string): string {
   return "webm";
 }
 
-const CHAVE_CARTEIRA_PADRAO = "meugasto:voz:carteira-padrao";
-
-export function lerCarteiraPadrao(): string | null {
+// A voz já lembrou a última carteira escolhida e a aplicava em silêncio a toda fala sem
+// carteira — o usuário via "Nubank" num gasto em que não citou carteira nenhuma. Removido;
+// isto só apaga o valor que ficou salvo nos navegadores.
+export function esquecerCarteiraPadraoAntiga() {
   try {
-    return localStorage.getItem(CHAVE_CARTEIRA_PADRAO);
+    localStorage.removeItem("meugasto:voz:carteira-padrao");
   } catch {
-    return null;
-  }
-}
-
-export function salvarCarteiraPadrao(id: string | null) {
-  try {
-    if (id) localStorage.setItem(CHAVE_CARTEIRA_PADRAO, id);
-    else localStorage.removeItem(CHAVE_CARTEIRA_PADRAO);
-  } catch {
-    // modo privado/armazenamento bloqueado: só perde a conveniência
+    // armazenamento bloqueado: não há o que apagar
   }
 }
 

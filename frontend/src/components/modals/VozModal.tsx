@@ -31,13 +31,12 @@ import {
   ehCarteiraDinheiro,
   motoIgnoradaNoParcelado,
   extensaoDoMime,
-  lerCarteiraPadrao,
+  esquecerCarteiraPadraoAntiga,
   motivoSemVoz,
   paraLinhas,
   paraPayload,
   pendenciasDaLinha,
   rotuloData,
-  salvarCarteiraPadrao,
   vozSuportada,
   type DestinoGastoVoz,
   type InterpretacaoVoz,
@@ -88,7 +87,10 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
   const [aviso, setAviso] = useState<string | null>(null);
   // O que foi ouvido na última fala — mostra se um erro veio da transcrição ou da interpretação.
   const [transcricao, setTranscricao] = useState("");
-  const [carteiraPadrao, setCarteiraPadrao] = useState<string | null>(() => lerCarteiraPadrao());
+
+  useEffect(() => {
+    esquecerCarteiraPadraoAntiga();
+  }, []);
 
   // Abre já ouvindo: o objetivo é falar sem nenhum toque extra.
   const iniciouRef = useRef(false);
@@ -123,15 +125,14 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
 
   const interpretar = useMutation({
     mutationFn: async (entrada: { audio: Blob; mimeType: string } | { texto: string }) => {
-      const comum = { carteiraPadraoId: carteiraPadrao ?? undefined, hoje: localDateString() };
+      const hoje = localDateString();
       if ("texto" in entrada) {
-        const { data } = await api.post<InterpretacaoVoz>("/api/voz/interpretar", { ...comum, texto: entrada.texto });
+        const { data } = await api.post<InterpretacaoVoz>("/api/voz/interpretar", { hoje, texto: entrada.texto });
         return data;
       }
       const form = new FormData();
       form.append("audio", entrada.audio, `gravacao.${extensaoDoMime(entrada.mimeType)}`);
-      if (comum.carteiraPadraoId) form.append("carteiraPadraoId", comum.carteiraPadraoId);
-      form.append("hoje", comum.hoje);
+      form.append("hoje", hoje);
       const { data } = await api.post<InterpretacaoVoz>("/api/voz/interpretar", form, { timeout: 60000 });
       return data;
     },
@@ -180,16 +181,13 @@ export function VozModal({ open, onClose }: { open: boolean; onClose: () => void
       }),
     );
 
-  // Escolher a carteira numa linha que veio sem ela preenche todas as outras que também
-  // vieram sem (e vira a padrão das próximas falas) — um toque em vez de um por linha.
+  // Escolher a carteira numa linha que veio sem ela preenche todas as outras desta revisão
+  // que também vieram sem — um toque em vez de um por linha. Não vira padrão das próximas
+  // falas: carteira não dita é perguntada, nunca presumida.
   // Só entre linhas com a mesma forma de pagamento dita: escolher o Itaú para um gasto sem
   // forma citada não pode arrastar junto um gasto que foi "em espécie".
   const preencherCarteiraFaltante = (origem: LinhaVoz, id: string | null) => {
     if (!id) return;
-    if (!origem.formaPagamento) {
-      setCarteiraPadrao(id);
-      salvarCarteiraPadrao(id);
-    }
     setLinhas((atuais) =>
       atuais.map((l) => {
         const semCarteiraValida = !l.carteiraId || (l.type === "INCOME" && isCartao(l.carteiraId));
