@@ -23,6 +23,7 @@ export type User = MongoDocument & {
   isLegacyFree?: boolean;
   subscriptionExpiresAt?: string | null;
   billingCycle?: string | null;
+  cpfCnpj?: string | null;
 };
 
 export type AuthTokens = {

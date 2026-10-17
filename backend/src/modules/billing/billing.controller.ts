@@ -34,6 +34,32 @@ export class BillingController {
     return this.billingService.createCheckout(req.user._id.toString(), dto);
   }
 
+  // Quais formas de pagamento o servidor tem configuradas (só presença, sem valores).
+  @UseGuards(JwtAuthGuard)
+  @Get('config')
+  config() {
+    return this.billingService.getConfigStatus();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('faturas')
+  async faturas(@Req() req: RequestWithUser) {
+    return this.billingService.listarFaturas(req.user._id.toString());
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('faturas/:paymentId/pix')
+  async pixDaFatura(@Req() req: RequestWithUser, @Param('paymentId') paymentId: string) {
+    return this.billingService.pixDaFatura(req.user._id.toString(), paymentId);
+  }
+
+  // Testa as chaves de pagamento contra as APIs do Asaas/Stripe.
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('diagnostico')
+  async diagnostico() {
+    return this.billingService.diagnostico();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('pix/:paymentId/status')
   async pixStatus(@Req() req: RequestWithUser, @Param('paymentId') paymentId: string) {
@@ -65,8 +91,11 @@ export class BillingController {
 
   @SkipThrottle()
   @Post('webhook/asaas')
-  async asaasWebhook(@Body() body: { event: string; payment: { id: string; status: string; externalReference?: string; dueDate: string } }) {
-    await this.billingService.handleAsaasWebhook(body);
+  async asaasWebhook(
+    @Body() body: { event: string; payment?: { id?: string } },
+    @Headers('asaas-access-token') accessToken?: string,
+  ) {
+    await this.billingService.handleAsaasWebhook(body, accessToken);
     return { received: true };
   }
 }

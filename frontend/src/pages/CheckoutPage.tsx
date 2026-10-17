@@ -4,6 +4,7 @@ import { ArrowRight, Check, CheckCircle, Copy, CreditCard, Loader2, QrCode } fro
 import { api } from "../lib/api";
 import { useAuth, extractSubscription, computeHasAccess } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
+import { formatCpfCnpj } from "../lib/cpfCnpj";
 import type { User } from "../types/api";
 
 type PlanCycle = "monthly" | "annual";
@@ -103,18 +104,6 @@ export function CheckoutPage() {
       }
     }, 5000);
   }, [stopPolling, setSubscription]);
-
-  const formatCpfCnpj = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 14);
-    if (digits.length <= 11) {
-      return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, (_, a, b, c, d) =>
-        [a, b, c].filter(Boolean).join('.') + (d ? '-' + d : ''),
-      );
-    }
-    return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, (_, a, b, c, d, e) =>
-      `${a}.${b}.${c}/${d}` + (e ? '-' + e : ''),
-    );
-  };
 
   const handleProceed = async () => {
     if (method === 'pix' && cpfCnpj.replace(/\D/g, '').length < 11) {

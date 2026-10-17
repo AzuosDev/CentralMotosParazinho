@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bug, CalendarClock, Gift, Lightbulb, Loader2, Mail, Search, Users } from "lucide-react";
+import { Bug, CalendarClock, CheckCircle2, Gift, Lightbulb, Loader2, Mail, Search, Users, XCircle } from "lucide-react";
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { formatDisplayDate } from "../lib/finance";
@@ -61,7 +61,7 @@ const statusConfig: Record<AdminUserStatus, { label: string; className: string }
 };
 
 export function SupportAdminPage() {
-  const [tab, setTab] = useState<"mensagens" | "usuarios">("mensagens");
+  const [tab, setTab] = useState<"mensagens" | "usuarios" | "pagamentos">("mensagens");
 
   return (
     <section className="space-y-6">
@@ -78,6 +78,7 @@ export function SupportAdminPage() {
           [
             { key: "mensagens" as const, label: "Mensagens" },
             { key: "usuarios" as const, label: "Usuários" },
+            { key: "pagamentos" as const, label: "Pagamentos" },
           ]
         ).map((t) => (
           <button
@@ -94,8 +95,60 @@ export function SupportAdminPage() {
         ))}
       </div>
 
-      {tab === "mensagens" ? <SupportMessagesTab /> : <AdminUsersTab />}
+      {tab === "mensagens" ? <SupportMessagesTab /> : tab === "usuarios" ? <AdminUsersTab /> : <PagamentosDiagnosticoTab />}
     </section>
+  );
+}
+
+type DiagnosticoItem = { chave: string; ok: boolean; detalhe: string };
+
+// Testa as chaves do Asaas/Stripe configuradas no servidor contra as APIs reais
+// (GET /api/billing/diagnostico) — não mostra os valores das chaves, só se funcionam.
+function PagamentosDiagnosticoTab() {
+  const diagQuery = useQuery<DiagnosticoItem[]>({
+    queryKey: ["billing-diagnostico"],
+    queryFn: async () => (await api.get<DiagnosticoItem[]>("/api/billing/diagnostico")).data,
+    staleTime: 0,
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-text-secondary">Verificação das chaves de pagamento configuradas no servidor.</p>
+        <button
+          type="button"
+          onClick={() => void diagQuery.refetch()}
+          disabled={diagQuery.isFetching}
+          className="rounded-lg border border-border-default px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:bg-bg-overlay disabled:opacity-50"
+        >
+          {diagQuery.isFetching ? "Testando..." : "Testar de novo"}
+        </button>
+      </div>
+
+      {diagQuery.isLoading ? (
+        <div className="flex items-center gap-2 text-sm text-text-secondary">
+          <Loader2 className="h-4 w-4 animate-spin" /> Testando chaves...
+        </div>
+      ) : diagQuery.isError ? (
+        <p className="text-sm text-accent-red">Não foi possível rodar o diagnóstico.</p>
+      ) : (
+        <div className="space-y-2">
+          {(diagQuery.data ?? []).map((item) => (
+            <div key={item.chave} className="flex items-start gap-3 rounded-xl bg-bg-card px-4 py-3">
+              {item.ok ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
+              ) : (
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent-red" />
+              )}
+              <div className="min-w-0">
+                <p className="font-mono text-xs font-semibold text-text-primary">{item.chave}</p>
+                <p className="break-words text-xs text-text-secondary">{item.detalhe}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

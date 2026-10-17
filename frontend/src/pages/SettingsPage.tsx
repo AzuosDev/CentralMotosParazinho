@@ -5,6 +5,7 @@ import { startRegistration, platformAuthenticatorIsAvailable } from "@simpleweba
 
 import { api } from "../lib/api";
 import { useAuth, computeHasAccess } from "../contexts/AuthContext";
+import { PagamentoSection } from "../components/settings/PagamentoSection";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 
 type StoredCredential = {
@@ -162,6 +163,9 @@ export function SettingsPage() {
           )}
         </div>
       )}
+
+      {/* Seção pagamento (PIX + faturas) */}
+      {subscription && !subscription.isLegacyFree && <PagamentoSection />}
 
       {/* Seção biometria */}
       <div className="rounded-2xl bg-bg-card p-6 space-y-4">

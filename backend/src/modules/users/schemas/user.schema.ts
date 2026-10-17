@@ -61,6 +61,11 @@ export class User {
   @Prop({ type: String, default: null })
   billingCycle?: string | null;
 
+  // Ids de cobranças do Asaas que já estenderam a assinatura — garante que webhook e
+  // polling aplicando o mesmo pagamento só renovem o prazo uma vez (billing.service.ts).
+  @Prop({ type: [String], default: [] })
+  asaasPagamentosAplicados?: string[];
+
   // Populados pelo Mongoose via @Schema({ timestamps: true }) — declarados aqui só para
   // o TypeScript reconhecer os campos (não geram Prop/coluna extra no schema).
   createdAt?: Date;
