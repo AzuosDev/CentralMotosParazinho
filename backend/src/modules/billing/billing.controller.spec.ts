@@ -9,6 +9,7 @@ import { Model, Types } from 'mongoose';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { BillingModule } from './billing.module';
+import { BillingConfig, BillingConfigDocument } from './schemas/billing-config.schema';
 
 const USER_ID = new Types.ObjectId();
 const OUTRO_ID = new Types.ObjectId();
@@ -71,6 +72,7 @@ describe('BillingController', () => {
   let app: INestApplication;
   let mongod: MongoMemoryServer;
   let userModel: Model<UserDocument>;
+  let configModel: Model<BillingConfigDocument>;
   const fetchOriginal = global.fetch;
 
   beforeAll(async () => {
@@ -95,6 +97,7 @@ describe('BillingController', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     await app.init();
     userModel = moduleFixture.get(getModelToken(User.name));
+    configModel = moduleFixture.get(getModelToken(BillingConfig.name));
   });
 
   afterAll(async () => {
@@ -111,6 +114,7 @@ describe('BillingController', () => {
     criados = [];
     fetchMock.mockClear();
     await userModel.deleteMany({});
+    await configModel.deleteMany({});
     await userModel.create({
       _id: USER_ID, email: 'cliente@teste.com', password: 'x', asaasCustomerId: 'cus_1', cpfCnpj: '12345678909',
     });
@@ -119,13 +123,36 @@ describe('BillingController', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('GET /config: informa só a presença das chaves', async () => {
+  it('GET /config: PIX disponível e preço padrão quando o admin ainda não definiu nenhum', async () => {
     const res = await http().get('/api/billing/config').expect(200);
     expect(res.body).toEqual({
       pix: true,
-      cartao: false,
-      plano: { id: 'empresarial', nome: 'Plano Empresarial', valorMensal: 29.9, valorAnual: 299.9 },
+      plano: { id: 'empresarial', nome: 'Plano Empresarial', valorMensal: 29.9, valorAnual: 299.9, personalizado: false },
     });
+  });
+
+  it('preço: padrão definido pelo admin vale para todos; preço próprio do cliente tem prioridade', async () => {
+    await configModel.updateOne({ chave: 'plano' }, { $set: { valorMensal: 199.9, valorAnual: 1999 } }, { upsert: true });
+    const padrao = await http().get('/api/billing/config').expect(200);
+    expect(padrao.body.plano).toMatchObject({ valorMensal: 199.9, valorAnual: 1999, personalizado: false });
+
+    await userModel.updateOne({ _id: USER_ID }, { valorMensalPersonalizado: 150 });
+    const proprio = await http().get('/api/billing/config').expect(200);
+    expect(proprio.body.plano).toMatchObject({ valorMensal: 150, valorAnual: 1999, personalizado: true });
+
+    const body = { plan: 'empresarial', cycle: 'monthly', method: 'pix', cpfCnpj: '12.345.678/0001-95' };
+    await http().post('/api/billing/checkout').send(body).expect(201);
+    expect(criados[0]).toMatchObject({ value: 150 });
+  });
+
+  it('PUT /precos: restrito ao admin', async () => {
+    await http().put('/api/billing/precos').send({ valorMensal: 10, valorAnual: 100 }).expect(403);
+  });
+
+  it('POST /checkout: cartão não é mais aceito', async () => {
+    await http().post('/api/billing/checkout')
+      .send({ plan: 'empresarial', cycle: 'monthly', method: 'stripe', cpfCnpj: '12.345.678/0001-95' })
+      .expect(400);
   });
 
   it('GET /faturas: lista as cobranças do usuário com status traduzido, sem as de outros', async () => {
@@ -175,15 +202,11 @@ describe('BillingController', () => {
     expect(criados[0]).toMatchObject({ value: 29.9, description: 'Central Motos - Plano Empresarial Mensal' });
   });
 
-  it('POST /checkout pix: usa o valor do plano configurado e não reaproveita cobrança com valor antigo', async () => {
+  it('POST /checkout pix: não reaproveita cobrança aberta depois que o preço mudou', async () => {
     const body = { plan: 'empresarial', cycle: 'annual', method: 'pix', cpfCnpj: '12.345.678/0001-95' };
     await http().post('/api/billing/checkout').send(body).expect(201);
-    process.env.PLANO_EMPRESARIAL_VALOR_ANUAL = '1200,00';
-    try {
-      await http().post('/api/billing/checkout').send(body).expect(201);
-    } finally {
-      delete process.env.PLANO_EMPRESARIAL_VALOR_ANUAL;
-    }
+    await configModel.updateOne({ chave: 'plano' }, { $set: { valorMensal: 120, valorAnual: 1200 } }, { upsert: true });
+    await http().post('/api/billing/checkout').send(body).expect(201);
     expect(criados).toHaveLength(2);
     expect(criados[1]).toMatchObject({ value: 1200, externalReference: `${USER_ID}__empresarial__annual` });
   });

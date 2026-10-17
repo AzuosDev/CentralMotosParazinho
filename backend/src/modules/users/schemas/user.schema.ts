@@ -76,6 +76,14 @@ export class User {
   @Prop({ type: [String], default: [] })
   asaasPagamentosAplicados?: string[];
 
+  // Preço próprio deste cliente no Plano Empresarial, definido pelo admin. null = usa o
+  // preço padrão (BillingConfig). Ver BillingService#precosDoUsuario.
+  @Prop({ type: Number, default: null })
+  valorMensalPersonalizado?: number | null;
+
+  @Prop({ type: Number, default: null })
+  valorAnualPersonalizado?: number | null;
+
   // Populados pelo Mongoose via @Schema({ timestamps: true }) — declarados aqui só para
   // o TypeScript reconhecer os campos (não geram Prop/coluna extra no schema).
   createdAt?: Date;

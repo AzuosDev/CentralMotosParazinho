@@ -5,15 +5,16 @@ import {
   Headers,
   Param,
   Post,
+  Put,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
-import { RawBodyRequest } from '@nestjs/common';
 import { Request } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
+import { SetPrecosDto } from './dto/precos.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { ICurrentUser } from '../../common/types/current-user.type';
@@ -37,8 +38,21 @@ export class BillingController {
   // Quais formas de pagamento o servidor tem configuradas (só presença, sem valores).
   @UseGuards(JwtAuthGuard)
   @Get('config')
-  config() {
-    return this.billingService.getConfigStatus();
+  async config(@Req() req: RequestWithUser) {
+    return this.billingService.getConfigStatus(req.user._id.toString());
+  }
+
+  // Preço padrão do Plano Empresarial (Painel Admin → Pagamentos).
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('precos')
+  async precos() {
+    return this.billingService.precosPadrao();
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Put('precos')
+  async definirPrecos(@Body() dto: SetPrecosDto) {
+    return this.billingService.definirPrecosPadrao(dto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -53,7 +67,7 @@ export class BillingController {
     return this.billingService.pixDaFatura(req.user._id.toString(), paymentId);
   }
 
-  // Testa as chaves de pagamento contra as APIs do Asaas/Stripe.
+  // Testa a configuração do PIX (Asaas) contra a API real e mostra o preço do plano.
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get('diagnostico')
   async diagnostico() {
@@ -66,27 +80,11 @@ export class BillingController {
     return this.billingService.verifyAndActivatePix(paymentId, req.user._id.toString());
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('portal')
-  async billingPortal(@Req() req: RequestWithUser) {
-    return this.billingService.createPortalSession(req.user._id.toString());
-  }
-
   // Sem guard, isso mutava subscriptionStatus/isLegacyFree de todo mundo sem autenticação.
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Post('migrate-legacy')
   async migrateLegacy(@Body() body: { excludeEmails?: string[] }) {
     return this.billingService.migrateLegacyUsers(body.excludeEmails ?? []);
-  }
-
-  @SkipThrottle()
-  @Post('webhook/stripe')
-  async stripeWebhook(
-    @Req() req: RawBodyRequest<Request>,
-    @Headers('stripe-signature') sig: string,
-  ) {
-    await this.billingService.handleStripeWebhook(req.rawBody!, sig);
-    return { received: true };
   }
 
   @SkipThrottle()

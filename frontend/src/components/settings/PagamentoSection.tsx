@@ -15,7 +15,7 @@ type FaturaStatus = "paga" | "pendente" | "vencida" | "cancelada" | "estornada";
 // Espelha FaturaAssinatura em backend/src/modules/billing/billing.service.ts.
 type Fatura = {
   id: string;
-  origem: "pix" | "cartao";
+  origem: "pix";
   descricao: string;
   valor: number;
   status: FaturaStatus;
@@ -220,7 +220,7 @@ export function PagamentoSection() {
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-text-primary">{f.descricao}</p>
         <p className="text-xs text-text-secondary">
-          {f.origem === "pix" ? "PIX" : "Cartão"} · Venc. {formatDia(f.vencimento)}
+          PIX · Venc. {formatDia(f.vencimento)}
           {f.pagoEm && ` · Pago em ${formatDia(f.pagoEm)}`}
         </p>
       </div>
@@ -293,6 +293,9 @@ export function PagamentoSection() {
             abertas.length === 0 && (
               <div className="space-y-3">
                 <p className="text-xs font-medium uppercase tracking-wider text-text-secondary">Novo pagamento</p>
+                {configQuery.data?.plano.personalizado && (
+                  <p className="text-xs text-text-secondary">Valores combinados para a sua empresa.</p>
+                )}
                 <div className="grid grid-cols-2 gap-2">
                   {(["monthly", "annual"] as Cycle[]).map((c) => (
                     <button

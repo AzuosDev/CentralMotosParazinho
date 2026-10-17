@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Check, CheckCircle, Copy, CreditCard, Loader2, QrCode } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Check, CheckCircle, Copy, Loader2, QrCode } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth, extractSubscription, computeHasAccess } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
@@ -9,7 +9,6 @@ import { PLANO_ID, PLANO_NOME, mesesEconomizados, precoPlano, useBillingConfig }
 import type { User } from "../types/api";
 
 type PlanCycle = "monthly" | "annual";
-type PaymentMethod = "pix" | "stripe";
 type Step = "select" | "pix-qr" | "success";
 
 interface PixData {
@@ -40,11 +39,9 @@ function trialDaysLeft(trialEndsAt: string | null | undefined): number {
 
 export function CheckoutPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { subscription, setSubscription } = useAuth();
 
   const [cycle, setCycle] = useState<PlanCycle>("monthly");
-  const [method, setMethod] = useState<PaymentMethod>("pix");
   const [step, setStep] = useState<Step>("select");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,33 +52,17 @@ export function CheckoutPage() {
   const { data: config } = useBillingConfig();
   const economia = mesesEconomizados(config);
 
-  // Handle Stripe success redirect
-  const success = searchParams.get("success");
-  useEffect(() => {
-    if (!success) return;
-    const refresh = async () => {
-      try {
-        const { data: me } = await api.get<User>('/api/auth/me');
-        setSubscription(extractSubscription(me));
-        setStep("success");
-      } catch {
-        setStep("success");
-      }
-    };
-    void refresh();
-  }, [success, setSubscription]);
-
   // Redirect if already has active subscription
   useEffect(() => {
     if (!subscription) return;
     if (
       computeHasAccess(subscription) &&
       subscription.subscriptionStatus !== 'trial' &&
-      !success
+      step !== "success"
     ) {
       navigate("/dashboard", { replace: true });
     }
-  }, [subscription, navigate, success]);
+  }, [subscription, navigate, step]);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -109,24 +90,19 @@ export function CheckoutPage() {
   }, [stopPolling, setSubscription]);
 
   const handleProceed = async () => {
-    if (method === 'pix' && cpfCnpj.replace(/\D/g, '').length < 11) {
+    if (cpfCnpj.replace(/\D/g, '').length < 11) {
       setError('Informe o CNPJ da empresa (ou CPF) para pagar via PIX.');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.post<{ method: string; url?: string; pixData?: PixData }>(
+      const { data } = await api.post<{ method: "pix"; pixData?: PixData }>(
         '/api/billing/checkout',
-        { plan: PLANO_ID, cycle, method, ...(method === 'pix' ? { cpfCnpj } : {}) },
+        { plan: PLANO_ID, cycle, method: "pix", cpfCnpj },
       );
 
-      if (method === 'stripe' && data.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      if (method === 'pix' && data.pixData) {
+      if (data.pixData) {
         setPixData(data.pixData);
         setStep("pix-qr");
         startPixPolling(data.pixData.id);
@@ -294,57 +270,25 @@ export function CheckoutPage() {
           </div>
         </div>
 
-        {/* Payment method */}
+        {/* Pagamento: somente PIX */}
         <div className="mb-6">
-          <p className="mb-3 text-sm font-medium text-text-secondary">Forma de pagamento</p>
-          <div className={cn("grid gap-3", config?.cartao ? "grid-cols-2" : "grid-cols-1")}>
-            <button
-              onClick={() => setMethod("pix")}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors",
-                method === "pix"
-                  ? "border-accent-brand bg-accent-brand/10 text-accent-brand"
-                  : "border-border-default bg-bg-card text-text-primary hover:bg-bg-overlay",
-              )}
-            >
-              <QrCode className="h-4 w-4" /> PIX
-            </button>
-            {/* Cartão só aparece se o Stripe estiver configurado no servidor. */}
-            {config?.cartao && (
-              <button
-                onClick={() => setMethod("stripe")}
-                className={cn(
-                  "flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors",
-                  method === "stripe"
-                    ? "border-accent-brand bg-accent-brand/10 text-accent-brand"
-                    : "border-border-default bg-bg-card text-text-primary hover:bg-bg-overlay",
-                )}
-              >
-                <CreditCard className="h-4 w-4" /> Cartão
-              </button>
-            )}
+          <p className="mb-3 flex items-center gap-2 text-sm font-medium text-text-secondary">
+            <QrCode className="h-4 w-4 text-accent-brand" /> Pagamento via PIX
+          </p>
+          <p className="text-xs text-text-muted">Pagamento único, renovação manual a cada ciclo.</p>
+          <div className="mt-3">
+            <label className="mb-1.5 block text-sm font-medium text-text-secondary">
+              CNPJ da empresa (ou CPF) <span className="text-accent-red">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="00.000.000/0000-00"
+              value={cpfCnpj}
+              onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
+              className="w-full rounded-xl border border-border-default bg-bg-card px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-brand focus:outline-none"
+            />
           </div>
-          {method === "pix" && (
-            <>
-              <p className="mt-2 text-xs text-text-muted">Pagamento único, renovação manual a cada ciclo.</p>
-              <div className="mt-3">
-                <label className="mb-1.5 block text-sm font-medium text-text-secondary">
-                  CNPJ da empresa (ou CPF) <span className="text-accent-red">*</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="00.000.000/0000-00"
-                  value={cpfCnpj}
-                  onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
-                  className="w-full rounded-xl border border-border-default bg-bg-card px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-brand focus:outline-none"
-                />
-              </div>
-            </>
-          )}
-          {method === "stripe" && (
-            <p className="mt-2 text-xs text-text-muted">Assinatura recorrente, renovação automática pelo cartão.</p>
-          )}
         </div>
 
         {error && (

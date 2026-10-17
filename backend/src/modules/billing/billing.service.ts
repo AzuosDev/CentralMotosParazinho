@@ -2,9 +2,9 @@ import { BadRequestException, Injectable, Logger, NotFoundException, Unauthorize
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
+import { BillingConfig, BillingConfigDocument } from './schemas/billing-config.schema';
 
 export interface PixData {
   id: string;
@@ -14,9 +14,8 @@ export interface PixData {
 }
 
 interface CheckoutResult {
-  method: 'stripe' | 'pix';
-  url?: string;
-  pixData?: PixData;
+  method: 'pix';
+  pixData: PixData;
 }
 
 interface AsaasPaymentResponse {
@@ -53,7 +52,7 @@ export type FaturaStatus = 'paga' | 'pendente' | 'vencida' | 'cancelada' | 'esto
 
 export interface FaturaAssinatura {
   id: string;
-  origem: 'pix' | 'cartao';
+  origem: 'pix';
   descricao: string;
   valor: number;
   status: FaturaStatus;
@@ -83,81 +82,88 @@ function statusAsaas(status: string): FaturaStatus {
   return 'pendente';
 }
 
-function statusStripe(status: Stripe.Invoice.Status | null): FaturaStatus {
-  if (status === 'paid') return 'paga';
-  if (status === 'void') return 'cancelada';
-  if (status === 'uncollectible') return 'vencida';
-  return 'pendente';
-}
-
 const DIA_MS = 24 * 60 * 60 * 1000;
 
-// Plano único do sistema. Os valores vêm de PLANO_EMPRESARIAL_VALOR_MENSAL/_ANUAL (em
-// reais) para o preço poder mudar sem deploy; os defaults são os valores antigos.
+// Plano único do sistema, pago só por PIX. O preço é definido pelo admin no Painel Admin:
+// um padrão para todos (BillingConfig) e, opcionalmente, um preço próprio por cliente
+// (User.valor*Personalizado). Sem nada configurado, cai nas variáveis
+// PLANO_EMPRESARIAL_VALOR_* e, por fim, nos valores antigos abaixo.
 export const PLANO = 'empresarial';
 export const PLANO_NOME = 'Plano Empresarial';
 const VALOR_PADRAO = { monthly: 29.9, annual: 299.9 };
+const CONFIG_PLANO = 'plano';
 
-export interface PlanoInfo {
-  id: string;
-  nome: string;
+export interface Precos {
   valorMensal: number;
   valorAnual: number;
+}
+
+export interface PlanoInfo extends Precos {
+  id: string;
+  nome: string;
+  // true quando o cliente tem preço próprio definido pelo admin.
+  personalizado: boolean;
+}
+
+type Cycle = 'monthly' | 'annual';
+
+function arredonda(v: number) {
+  return Math.round(v * 100) / 100;
 }
 
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
-  private stripe: Stripe;
-  private stripeConfigurado: boolean;
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(BillingConfig.name) private billingConfigModel: Model<BillingConfigDocument>,
     private configService: ConfigService,
-  ) {
-    // O SDK do Stripe lança na construção se a key for falsy (string vazia inclusa) — sem
-    // isso, qualquer ambiente de dev sem STRIPE_SECRET_KEY configurada (comum: ninguém
-    // mexendo em billing localmente) derruba o boot inteiro da aplicação, não só as rotas
-    // de billing. Em produção mantém o fail-fast original (string vazia, Stripe lança).
-    const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    const fallbackKey = process.env.NODE_ENV === 'production' ? '' : 'sk_test_local_dev_placeholder';
-    this.stripe = new Stripe(stripeKey || fallbackKey);
-    this.stripeConfigurado = !!stripeKey;
-  }
+  ) {}
 
-  // Só presença das chaves — usado pela tela de Configurações pra decidir quais formas de
-  // pagamento oferecer. Não expõe valor nenhum; o teste real das chaves é diagnostico().
-  getConfigStatus(): { pix: boolean; cartao: boolean; plano: PlanoInfo } {
+  // Se o PIX está disponível e quanto ESTE usuário paga (preço próprio ou o padrão).
+  async getConfigStatus(userId: string): Promise<{ pix: boolean; plano: PlanoInfo }> {
+    const { precos, personalizado } = await this.precosDoUsuario(userId);
     return {
       pix: !!this.configService.get<string>('ASAAS_API_KEY'),
-      cartao: this.stripeConfigurado && !!this.stripePriceId('monthly'),
-      plano: {
-        id: PLANO,
-        nome: PLANO_NOME,
-        valorMensal: this.valorPlano('monthly'),
-        valorAnual: this.valorPlano('annual'),
-      },
+      plano: { id: PLANO, nome: PLANO_NOME, ...precos, personalizado },
     };
   }
 
-  private valorPlano(cycle: 'monthly' | 'annual'): number {
+  private precoEnv(cycle: Cycle): number {
     const raw = this.configService.get<string>(
       cycle === 'annual' ? 'PLANO_EMPRESARIAL_VALOR_ANUAL' : 'PLANO_EMPRESARIAL_VALOR_MENSAL',
     );
     const valor = raw ? Number(raw.replace(',', '.')) : NaN;
-    return Number.isFinite(valor) && valor > 0 ? Math.round(valor * 100) / 100 : VALOR_PADRAO[cycle];
+    return Number.isFinite(valor) && valor > 0 ? arredonda(valor) : VALOR_PADRAO[cycle];
   }
 
-  // STRIPE_PRICE_BASICO_* são os nomes antigos, aceitos enquanto o ambiente não é renomeado.
-  private stripePriceKeys(cycle: 'monthly' | 'annual'): [string, string] {
-    return cycle === 'annual'
-      ? ['STRIPE_PRICE_EMPRESARIAL_ANNUAL', 'STRIPE_PRICE_BASICO_ANNUAL']
-      : ['STRIPE_PRICE_EMPRESARIAL_MONTHLY', 'STRIPE_PRICE_BASICO_MONTHLY'];
+  // Preço padrão do plano (o que o admin definiu; sem definição, variável de ambiente/padrão).
+  async precosPadrao(): Promise<Precos & { definidoPeloAdmin: boolean }> {
+    const cfg = await this.billingConfigModel.findOne({ chave: CONFIG_PLANO }).lean().exec();
+    if (cfg) return { valorMensal: cfg.valorMensal, valorAnual: cfg.valorAnual, definidoPeloAdmin: true };
+    return { valorMensal: this.precoEnv('monthly'), valorAnual: this.precoEnv('annual'), definidoPeloAdmin: false };
   }
 
-  private stripePriceId(cycle: 'monthly' | 'annual'): string | undefined {
-    const [nova, antiga] = this.stripePriceKeys(cycle);
-    return this.configService.get<string>(nova) || this.configService.get<string>(antiga) || undefined;
+  async definirPrecosPadrao(precos: Precos): Promise<Precos & { definidoPeloAdmin: boolean }> {
+    const set = { valorMensal: arredonda(precos.valorMensal), valorAnual: arredonda(precos.valorAnual) };
+    await this.billingConfigModel
+      .updateOne({ chave: CONFIG_PLANO }, { $set: set }, { upsert: true })
+      .exec();
+    return { ...set, definidoPeloAdmin: true };
+  }
+
+  async precosDoUsuario(userId: string): Promise<{ precos: Precos; personalizado: boolean }> {
+    const [padrao, user] = await Promise.all([
+      this.precosPadrao(),
+      this.userModel.findById(userId).select('valorMensalPersonalizado valorAnualPersonalizado').lean().exec(),
+    ]);
+    const mensal = user?.valorMensalPersonalizado ?? null;
+    const anual = user?.valorAnualPersonalizado ?? null;
+    return {
+      precos: { valorMensal: mensal ?? padrao.valorMensal, valorAnual: anual ?? padrao.valorAnual },
+      personalizado: mensal != null || anual != null,
+    };
   }
 
   private get asaasUrl() {
@@ -188,42 +194,10 @@ export class BillingService {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new NotFoundException('User not found');
 
-    if (dto.method === 'stripe') {
-      return this.createStripeCheckout(user, dto);
+    if (!this.configService.get<string>('ASAAS_API_KEY')) {
+      throw new BadRequestException('Pagamento via PIX indisponível no momento');
     }
     return this.createAsaasPixCheckout(user, dto);
-  }
-
-  private async createStripeCheckout(user: UserDocument, dto: CreateCheckoutDto): Promise<CheckoutResult> {
-    const priceId = this.stripePriceId(dto.cycle);
-    if (!priceId) throw new BadRequestException('Preço não configurado no servidor');
-
-    const appUrl = this.configService.get<string>('APP_URL') ?? 'https://meugasto.vercel.app';
-
-    let customerId = user.stripeCustomerId ?? undefined;
-    if (!customerId) {
-      const customer = await this.stripe.customers.create({
-        email: user.email,
-        metadata: { userId: user._id.toString() },
-      });
-      customerId = customer.id;
-      await this.userModel.findByIdAndUpdate(user._id, { stripeCustomerId: customerId }).exec();
-    }
-
-    const session = await this.stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${appUrl}/checkout?success=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/checkout`,
-      metadata: { userId: user._id.toString(), plan: PLANO, cycle: dto.cycle },
-      subscription_data: {
-        metadata: { userId: user._id.toString(), plan: PLANO, cycle: dto.cycle },
-      },
-    });
-
-    return { method: 'stripe', url: session.url! };
   }
 
   private async createAsaasPixCheckout(user: UserDocument, dto: CreateCheckoutDto): Promise<CheckoutResult> {
@@ -255,7 +229,8 @@ export class BillingService {
 
     await this.userModel.findByIdAndUpdate(user._id, { asaasCustomerId, cpfCnpj: cpfCnpjDigits }).exec();
 
-    const value = this.valorPlano(dto.cycle);
+    const { precos } = await this.precosDoUsuario(user._id.toString());
+    const value = dto.cycle === 'annual' ? precos.valorAnual : precos.valorMensal;
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 3);
     const dueDateStr = dueDate.toISOString().split('T')[0];
@@ -295,10 +270,10 @@ export class BillingService {
     };
   }
 
-  // Cobranças do Asaas (PIX) + invoices do Stripe (cartão) do usuário, mais recentes primeiro.
-  // Uma origem fora do ar não derruba a outra: o erro só é logado e a lista vem parcial.
+  // Cobranças PIX (Asaas) do usuário, mais recentes primeiro. Se o Asaas estiver fora do ar
+  // o erro só é logado e a lista vem vazia, sem derrubar a tela de Configurações.
   async listarFaturas(userId: string): Promise<FaturaAssinatura[]> {
-    const user = await this.userModel.findById(userId).select('asaasCustomerId stripeCustomerId').lean().exec();
+    const user = await this.userModel.findById(userId).select('asaasCustomerId').lean().exec();
     if (!user) throw new NotFoundException('User not found');
 
     const faturas: FaturaAssinatura[] = [];
@@ -325,30 +300,6 @@ export class BillingService {
         }
       } catch (err) {
         this.logger.error(`[Asaas] Falha ao listar faturas de ${userId}: ${(err as Error).message}`);
-      }
-    }
-
-    if (user.stripeCustomerId && this.stripeConfigurado) {
-      try {
-        const invoices = await this.stripe.invoices.list({ customer: user.stripeCustomerId, limit: 24 });
-        for (const inv of invoices.data) {
-          if (inv.status === 'draft' || !inv.id) continue;
-          const status = statusStripe(inv.status);
-          const paidAt = inv.status_transitions?.paid_at;
-          faturas.push({
-            id: inv.id,
-            origem: 'cartao',
-            descricao: inv.lines?.data?.[0]?.description ?? inv.description ?? 'Assinatura Central Motos',
-            valor: (status === 'paga' ? inv.amount_paid : inv.amount_due) / 100,
-            status,
-            vencimento: new Date((inv.due_date ?? inv.created) * 1000).toISOString().split('T')[0],
-            pagoEm: paidAt ? new Date(paidAt * 1000).toISOString().split('T')[0] : null,
-            url: inv.hosted_invoice_url ?? null,
-            podePagarPix: false,
-          });
-        }
-      } catch (err) {
-        this.logger.error(`[Stripe] Falha ao listar faturas de ${userId}: ${(err as Error).message}`);
       }
     }
 
@@ -411,56 +362,6 @@ export class BillingService {
     if (paid) await this.aplicarPagamentoAsaas(data.id, userId, cycle);
 
     return { paid };
-  }
-
-  async handleStripeWebhook(rawBody: Buffer, signature: string): Promise<void> {
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
-    if (!webhookSecret) {
-      this.logger.warn('[Stripe] STRIPE_WEBHOOK_SECRET não configurado — webhook ignorado');
-      return;
-    }
-
-    let event: Stripe.Event;
-    try {
-      event = this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    } catch (err) {
-      this.logger.error(`[Stripe] Assinatura inválida: ${(err as Error).message}`);
-      throw new BadRequestException('Assinatura do webhook inválida');
-    }
-
-    this.logger.log(`[Stripe] Evento recebido: ${event.type} (id: ${event.id})`);
-
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.userId;
-      const cycle = session.metadata?.cycle ?? 'monthly';
-
-      this.logger.log(`[Stripe] checkout.session.completed — userId: ${userId}, cycle: ${cycle}, sessionId: ${session.id}`);
-
-      if (userId) {
-        const days = cycle === 'annual' ? 365 : 30;
-        await this.userModel.findByIdAndUpdate(userId, {
-          subscriptionStatus: 'active',
-          plan: PLANO,
-          billingCycle: cycle,
-          stripeSubscriptionId: session.subscription as string,
-          subscriptionExpiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
-        }).exec();
-        this.logger.log(`[Stripe] Usuário ${userId} ativado com sucesso`);
-      } else {
-        this.logger.warn('[Stripe] checkout.session.completed sem userId no metadata — assinatura não ativada');
-      }
-    }
-
-    if (event.type === 'customer.subscription.deleted') {
-      const sub = event.data.object as Stripe.Subscription;
-      this.logger.log(`[Stripe] customer.subscription.deleted — subscriptionId: ${sub.id}`);
-      await this.userModel.updateOne(
-        { stripeSubscriptionId: sub.id },
-        { subscriptionStatus: 'cancelled', stripeSubscriptionId: null },
-      ).exec();
-      this.logger.log(`[Stripe] Assinatura ${sub.id} cancelada`);
-    }
   }
 
   // O corpo do webhook não é confiável por si só (a rota é pública): se ASAAS_WEBHOOK_TOKEN
@@ -548,79 +449,16 @@ export class BillingService {
         : 'Não configurado. O webhook ainda relê o pagamento na API, mas configure o mesmo token aqui e no painel do Asaas.',
     });
 
-    // ── Stripe (cartão) ──
-    if (!this.stripeConfigurado) {
-      itens.push({ chave: 'STRIPE_SECRET_KEY', ok: false, detalhe: 'Não configurada — pagamento com cartão indisponível.' });
-    } else {
-      const sk = get('STRIPE_SECRET_KEY')!;
-      try {
-        await this.stripe.balance.retrieve();
-        itens.push({
-          chave: 'STRIPE_SECRET_KEY',
-          ok: true,
-          detalhe: `Chave válida (${sk.startsWith('sk_live_') || sk.startsWith('rk_live_') ? 'produção' : 'teste'}).`,
-        });
-        for (const cycle of ['monthly', 'annual'] as const) {
-          const [nova, antiga] = this.stripePriceKeys(cycle);
-          const k = get(nova) ? nova : get(antiga) ? antiga : nova;
-          const priceId = get(k);
-          if (!priceId) {
-            itens.push({ chave: k, ok: false, detalhe: 'Não configurado.' });
-            continue;
-          }
-          try {
-            const price = await this.stripe.prices.retrieve(priceId);
-            const valor = price.unit_amount != null ? (price.unit_amount / 100).toFixed(2) : '?';
-            itens.push({
-              chave: k,
-              ok: price.active,
-              detalhe: `${priceId}: ${price.currency.toUpperCase()} ${valor}${price.recurring ? ` / ${price.recurring.interval}` : ''}${price.active ? '' : ' (INATIVO)'}`,
-            });
-          } catch (err) {
-            itens.push({ chave: k, ok: false, detalhe: `${priceId} não encontrado: ${(err as Error).message}` });
-          }
-        }
-      } catch (err) {
-        itens.push({ chave: 'STRIPE_SECRET_KEY', ok: false, detalhe: `Rejeitada pela API: ${(err as Error).message}` });
-      }
-      itens.push({
-        chave: 'STRIPE_WEBHOOK_SECRET',
-        ok: !!get('STRIPE_WEBHOOK_SECRET'),
-        detalhe: get('STRIPE_WEBHOOK_SECRET')
-          ? 'Configurado.'
-          : 'Não configurado — pagamentos com cartão não ativam a assinatura automaticamente.',
-      });
-    }
-
-    for (const cycle of ['monthly', 'annual'] as const) {
-      const k = cycle === 'annual' ? 'PLANO_EMPRESARIAL_VALOR_ANUAL' : 'PLANO_EMPRESARIAL_VALOR_MENSAL';
-      itens.push({
-        chave: k,
-        ok: true,
-        detalhe: `${PLANO_NOME} ${cycle === 'annual' ? 'anual' : 'mensal'}: R$ ${this.valorPlano(cycle).toFixed(2).replace('.', ',')}` +
-          (get(k) ? '' : ' (valor padrão — variável não configurada)'),
-      });
-    }
-
+    const padrao = await this.precosPadrao();
+    const fmt = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
     itens.push({
-      chave: 'APP_URL',
-      ok: !!get('APP_URL'),
-      detalhe: get('APP_URL') ?? 'Não configurado — usando https://meugasto.vercel.app nos retornos do Stripe.',
+      chave: 'Preço padrão do plano',
+      ok: padrao.definidoPeloAdmin,
+      detalhe: `${PLANO_NOME}: ${fmt(padrao.valorMensal)}/mês · ${fmt(padrao.valorAnual)}/ano` +
+        (padrao.definidoPeloAdmin ? '' : ' — ainda não definido pelo admin (usando valor padrão).'),
     });
 
     return itens;
-  }
-
-  async createPortalSession(userId: string): Promise<{ url: string }> {
-    const user = await this.userModel.findById(userId).exec();
-    if (!user?.stripeCustomerId) throw new NotFoundException('Assinatura via cartão não encontrada');
-
-    const appUrl = this.configService.get<string>('APP_URL') ?? 'https://meugasto.vercel.app';
-    const session = await this.stripe.billingPortal.sessions.create({
-      customer: user.stripeCustomerId,
-      return_url: `${appUrl}/settings`,
-    });
-    return { url: session.url };
   }
 
   async migrateLegacyUsers(excludeEmails: string[] = []): Promise<{ updated: number }> {

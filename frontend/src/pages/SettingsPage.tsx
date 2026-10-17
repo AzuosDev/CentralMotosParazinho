@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Fingerprint, ShieldCheck, Trash2, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import { CreditCard, Fingerprint, ShieldCheck, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { startRegistration, platformAuthenticatorIsAvailable } from "@simplewebauthn/browser";
 
 import { api } from "../lib/api";
@@ -32,8 +32,6 @@ export function SettingsPage() {
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [registerSuccess, setRegisterSuccess] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
-  const [portalError, setPortalError] = useState<string | null>(null);
 
   const credentialsQuery = useQuery<StoredCredential[]>({
     queryKey: ["webauthn-credentials"],
@@ -84,18 +82,6 @@ export function SettingsPage() {
     onError: () => setDeleteError("Erro ao remover credencial."),
   });
 
-  const handleOpenPortal = async () => {
-    setPortalLoading(true);
-    setPortalError(null);
-    try {
-      const { data } = await api.post<{ url: string }>('/api/billing/portal');
-      window.location.href = data.url;
-    } catch {
-      setPortalError('Não foi possível abrir o portal. Tente novamente.');
-      setPortalLoading(false);
-    }
-  };
-
   function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -137,31 +123,11 @@ export function SettingsPage() {
 
           {subscription.subscriptionExpiresAt && (
             <p className="text-xs text-text-secondary">
-              {subscription.subscriptionStatus === 'active' ? 'Renova em' : 'Expirou em'}{' '}
+              {subscription.subscriptionStatus === 'active' ? 'Válida até' : 'Expirou em'}{' '}
               {new Date(subscription.subscriptionExpiresAt).toLocaleDateString('pt-BR')}
             </p>
           )}
 
-          {/* Só mostra o portal se tiver assinatura ativa via cartão (stripeSubscriptionId existe) */}
-          {subscription.subscriptionStatus === 'active' && (
-            <>
-              <button
-                onClick={handleOpenPortal}
-                disabled={portalLoading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-default bg-bg-overlay px-4 py-3 text-sm font-medium text-text-primary transition hover:bg-bg-muted disabled:opacity-50"
-              >
-                {portalLoading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Abrindo portal...</>
-                ) : (
-                  <><ExternalLink className="h-4 w-4" /> Gerenciar assinatura</>
-                )}
-              </button>
-              {portalError && <p className="text-xs text-accent-red">{portalError}</p>}
-              <p className="text-xs text-text-muted">
-                Cancele, troque o cartão ou veja faturas no portal seguro da Stripe.
-              </p>
-            </>
-          )}
         </div>
       )}
 

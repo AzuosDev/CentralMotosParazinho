@@ -8,6 +8,7 @@ import { SetTrialDto } from './dto/set-trial.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { SetAdminDto, SetBloqueioDto } from './dto/set-flag.dto';
 import { ResetSenhaDto } from './dto/reset-senha.dto';
+import { SetPrecoUsuarioDto } from '../billing/dto/precos.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ICurrentUser } from '../../common/types/current-user.type';
 
@@ -36,6 +37,11 @@ export class AdminController {
   @Patch('users/:id/admin')
   async setAdmin(@Param('id') id: string, @Body() dto: SetAdminDto) {
     return this.adminService.setAdmin(id, dto.isAdmin);
+  }
+
+  @Patch('users/:id/preco')
+  async setPreco(@Param('id') id: string, @Body() dto: SetPrecoUsuarioDto) {
+    return this.adminService.setPreco(id, dto.valorMensal, dto.valorAnual);
   }
 
   @Patch('users/:id/senha')

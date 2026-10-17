@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Bug, CalendarClock, CheckCircle2, Gift, KeyRound, Lightbulb, Loader2, Mail, Search, Shield, UserPlus, Users, XCircle } from "lucide-react";
+import { Ban, Bug, CalendarClock, CheckCircle2, Gift, KeyRound, Lightbulb, Loader2, Mail, Search, Shield, Tag, UserPlus, Users, XCircle } from "lucide-react";
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
-import { formatDisplayDate } from "../lib/finance";
+import { formatCurrency, formatDisplayDate } from "../lib/finance";
 import { PLANO_NOME } from "../lib/plano";
 import { useToast } from "../components/ui/Toast";
 import { SupportThreadDrawer } from "../components/support/SupportThreadDrawer";
@@ -47,7 +47,24 @@ type AdminUser = {
   isAdmin: boolean;
   isRootAdmin: boolean;
   bloqueado: boolean;
+  valorMensalPersonalizado: number | null;
+  valorAnualPersonalizado: number | null;
 };
+
+type PrecosPadrao = { valorMensal: number; valorAnual: number; definidoPeloAdmin: boolean };
+
+// "1.234,56" / "1234.56" / "199,9" → número; vazio → null.
+function parseValor(texto: string): number | null {
+  const limpo = texto.trim().replace(/\s|R\$/g, "");
+  if (!limpo) return null;
+  const normalizado = limpo.includes(",") ? limpo.replace(/\./g, "").replace(",", ".") : limpo;
+  const n = Number(normalizado);
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : NaN;
+}
+
+function valorParaInput(v: number | null | undefined): string {
+  return v == null ? "" : v.toFixed(2).replace(".", ",");
+}
 
 type AcessoInicial = "teste" | "gratis" | "pagante";
 
@@ -113,8 +130,98 @@ export function SupportAdminPage() {
 
 type DiagnosticoItem = { chave: string; ok: boolean; detalhe: string };
 
-// Testa as chaves do Asaas/Stripe configuradas no servidor contra as APIs reais
+// Testa a configuração do PIX (Asaas) no servidor contra a API real
 // (GET /api/billing/diagnostico) — não mostra os valores das chaves, só se funcionam.
+function PrecoPadraoCard() {
+  const { addToast } = useToast();
+  const queryClient = useQueryClient();
+  const [mensal, setMensal] = useState("");
+  const [anual, setAnual] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const precosQuery = useQuery<PrecosPadrao>({
+    queryKey: ["billing-precos"],
+    queryFn: async () => (await api.get<PrecosPadrao>("/api/billing/precos")).data,
+  });
+
+  // Preenche o formulário quando os valores chegam (sem sobrescrever o que já foi digitado).
+  const carregado = precosQuery.data;
+  const [preenchido, setPreenchido] = useState(false);
+  if (carregado && !preenchido) {
+    setPreenchido(true);
+    setMensal(valorParaInput(carregado.valorMensal));
+    setAnual(valorParaInput(carregado.valorAnual));
+  }
+
+  const salvarMutation = useMutation({
+    mutationFn: async (precos: { valorMensal: number; valorAnual: number }) => {
+      await api.put("/api/billing/precos", precos);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["billing-precos"] });
+      void queryClient.invalidateQueries({ queryKey: ["billing-diagnostico"] });
+      void queryClient.invalidateQueries({ queryKey: ["billing-config"] });
+      addToast("Preço do plano atualizado.", "success");
+    },
+    onError: (err) => setError(apiErrorMessage(err, "Não foi possível salvar o preço.")),
+  });
+
+  const salvar = () => {
+    const valorMensal = parseValor(mensal);
+    const valorAnual = parseValor(anual);
+    if (!valorMensal || !valorAnual || Number.isNaN(valorMensal) || Number.isNaN(valorAnual)) {
+      setError("Informe valores válidos (maiores que zero) para mensal e anual.");
+      return;
+    }
+    setError(null);
+    salvarMutation.mutate({ valorMensal, valorAnual });
+  };
+
+  const inputClass =
+    "w-full rounded-xl border border-bg-muted bg-bg-muted px-3 py-2.5 text-sm text-text-primary focus:border-accent-brand focus:outline-none";
+
+  return (
+    <div className="space-y-3 rounded-2xl bg-bg-card p-5">
+      <div>
+        <h2 className="font-semibold text-text-primary">Preço do {PLANO_NOME}</h2>
+        <p className="text-xs text-text-secondary">
+          Valor cobrado via PIX de todos os clientes que não têm um preço próprio (definido na aba Usuários).
+          Vale para as próximas cobranças.
+        </p>
+      </div>
+      {precosQuery.isLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-text-secondary" />
+      ) : (
+        <>
+          {carregado && !carregado.definidoPeloAdmin && (
+            <p className="text-xs text-accent-yellow">Ainda não definido — usando o valor padrão do sistema.</p>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1 text-xs text-text-secondary">
+              Mensal (R$)
+              <input className={inputClass} inputMode="decimal" value={mensal} onChange={(e) => setMensal(e.target.value)} />
+            </label>
+            <label className="space-y-1 text-xs text-text-secondary">
+              Anual (R$)
+              <input className={inputClass} inputMode="decimal" value={anual} onChange={(e) => setAnual(e.target.value)} />
+            </label>
+          </div>
+          {error && <p className="text-xs text-accent-red">{error}</p>}
+          <button
+            type="button"
+            onClick={salvar}
+            disabled={salvarMutation.isPending}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-accent-brand-hover disabled:opacity-50"
+          >
+            {salvarMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Salvar preço
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PagamentosDiagnosticoTab() {
   const diagQuery = useQuery<DiagnosticoItem[]>({
     queryKey: ["billing-diagnostico"],
@@ -124,8 +231,9 @@ function PagamentosDiagnosticoTab() {
 
   return (
     <div className="space-y-4">
+      <PrecoPadraoCard />
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-text-secondary">Verificação das chaves de pagamento configuradas no servidor.</p>
+        <p className="text-sm text-text-secondary">Verificação das chaves de pagamento (PIX/Asaas) configuradas no servidor.</p>
         <button
           type="button"
           onClick={() => void diagQuery.refetch()}
@@ -389,7 +497,21 @@ function AdminUsersTab() {
     onError: (err) => addToast(apiErrorMessage(err, "Não foi possível redefinir a senha."), "error"),
   });
 
-  const acaoPending = bloqueioMutation.isPending || adminMutation.isPending || senhaMutation.isPending;
+  const precoMutation = useMutation({
+    mutationFn: async ({ id, valorMensal, valorAnual }: { id: string; valorMensal: number | null; valorAnual: number | null }) => {
+      await api.patch(`/api/admin/users/${id}/preco`, { valorMensal, valorAnual });
+    },
+    onSuccess: (_d, vars) =>
+      invalidateWithToast(
+        vars.valorMensal == null && vars.valorAnual == null
+          ? "Cliente voltou a pagar o preço padrão."
+          : "Preço do cliente atualizado.",
+      ),
+    onError: (err) => addToast(apiErrorMessage(err, "Não foi possível salvar o preço."), "error"),
+  });
+
+  const acaoPending =
+    bloqueioMutation.isPending || adminMutation.isPending || senhaMutation.isPending || precoMutation.isPending;
 
   const users = usersQuery.data ?? [];
 
@@ -482,6 +604,7 @@ function AdminUsersTab() {
               onToggleBloqueio={() => bloqueioMutation.mutate({ id: u._id, bloqueado: !u.bloqueado })}
               onToggleAdmin={() => adminMutation.mutate({ id: u._id, isAdmin: !u.isAdmin })}
               onResetSenha={(password) => senhaMutation.mutate({ id: u._id, password })}
+              onSetPreco={(valorMensal, valorAnual) => precoMutation.mutate({ id: u._id, valorMensal, valorAnual })}
               acaoPending={acaoPending}
             />
           ))}
@@ -500,6 +623,7 @@ function AdminUserCard({
   onToggleBloqueio,
   onToggleAdmin,
   onResetSenha,
+  onSetPreco,
   acaoPending,
 }: {
   user: AdminUser;
@@ -510,10 +634,29 @@ function AdminUserCard({
   onToggleBloqueio: () => void;
   onToggleAdmin: () => void;
   onResetSenha: (password: string) => void;
+  onSetPreco: (valorMensal: number | null, valorAnual: number | null) => void;
   acaoPending: boolean;
 }) {
   const [days, setDays] = useState(15);
   const [novaSenha, setNovaSenha] = useState<string | null>(null);
+  const [editandoPreco, setEditandoPreco] = useState(false);
+  const [precoMensal, setPrecoMensal] = useState("");
+  const [precoAnual, setPrecoAnual] = useState("");
+  const temPrecoProprio = u.valorMensalPersonalizado != null || u.valorAnualPersonalizado != null;
+
+  const abrirPreco = () => {
+    setPrecoMensal(valorParaInput(u.valorMensalPersonalizado));
+    setPrecoAnual(valorParaInput(u.valorAnualPersonalizado));
+    setEditandoPreco(true);
+  };
+
+  const salvarPreco = () => {
+    const m = parseValor(precoMensal);
+    const a = parseValor(precoAnual);
+    if (Number.isNaN(m) || Number.isNaN(a)) return;
+    onSetPreco(m, a);
+    setEditandoPreco(false);
+  };
   const cfg = statusConfig[u.status];
   const plano = planLabel(u);
   const expiry = expiryLine(u);
@@ -545,6 +688,17 @@ function AdminUserCard({
         {plano && <span>{plano}</span>}
         {expiry && <span>{expiry}</span>}
         {!u.emailVerified && <span className="text-accent-yellow">Email não verificado</span>}
+        {temPrecoProprio && (
+          <span className="text-accent-brand">
+            Preço próprio:{" "}
+            {[
+              u.valorMensalPersonalizado != null && `${formatCurrency(u.valorMensalPersonalizado)}/mês`,
+              u.valorAnualPersonalizado != null && `${formatCurrency(u.valorAnualPersonalizado)}/ano`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -611,6 +765,15 @@ function AdminUserCard({
             <Shield className="h-3.5 w-3.5" />
             {u.isAdmin ? "Remover admin" : "Tornar admin"}
           </button>
+          {!editandoPreco && (
+            <button
+              type="button"
+              onClick={abrirPreco}
+              className="inline-flex items-center gap-1.5 rounded-full bg-bg-muted px-3 py-1 text-xs font-semibold text-text-secondary transition hover:bg-bg-overlay"
+            >
+              <Tag className="h-3.5 w-3.5" /> {temPrecoProprio ? "Editar preço" : "Preço próprio"}
+            </button>
+          )}
           {novaSenha === null ? (
             <button
               type="button"
@@ -654,6 +817,45 @@ function AdminUserCard({
               </button>
             </form>
           )}
+        </div>
+      )}
+
+      {editandoPreco && (
+        <div className="mt-3 space-y-2 rounded-xl bg-bg-muted p-3">
+          <p className="text-xs text-text-secondary">
+            Preço do {PLANO_NOME} só para este cliente. Deixe em branco para usar o preço padrão.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              inputMode="decimal"
+              placeholder="Mensal (R$)"
+              value={precoMensal}
+              onChange={(e) => setPrecoMensal(e.target.value)}
+              className="w-32 rounded-lg border border-bg-muted bg-bg-card px-2.5 py-1.5 text-xs text-text-primary focus:border-accent-brand focus:outline-none"
+            />
+            <input
+              inputMode="decimal"
+              placeholder="Anual (R$)"
+              value={precoAnual}
+              onChange={(e) => setPrecoAnual(e.target.value)}
+              className="w-32 rounded-lg border border-bg-muted bg-bg-card px-2.5 py-1.5 text-xs text-text-primary focus:border-accent-brand focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={salvarPreco}
+              disabled={acaoPending || Number.isNaN(parseValor(precoMensal)) || Number.isNaN(parseValor(precoAnual))}
+              className="rounded-full bg-accent-brand px-3 py-1 text-xs font-semibold text-white transition hover:bg-accent-brand-hover disabled:opacity-50"
+            >
+              Salvar
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditandoPreco(false)}
+              className="px-1.5 text-xs text-text-muted hover:text-text-primary"
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
     </div>

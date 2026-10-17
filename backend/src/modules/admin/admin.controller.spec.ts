@@ -108,6 +108,16 @@ describe('AdminController — gestão de usuários', () => {
     await http().patch(`/api/admin/users/${alvo._id}/bloqueio`).send({ bloqueado: true }).expect(400);
   });
 
+  it('define e remove o preço próprio de um cliente', async () => {
+    const alvo = await userModel.create({ email: 'alvo@t.com', password: 'x' });
+    const r = await http().patch(`/api/admin/users/${alvo._id}/preco`).send({ valorMensal: 149.9, valorAnual: null }).expect(200);
+    expect(r.body).toMatchObject({ valorMensalPersonalizado: 149.9, valorAnualPersonalizado: null });
+    await http().patch(`/api/admin/users/${alvo._id}/preco`).send({ valorMensal: 0, valorAnual: null }).expect(400);
+    await http().patch(`/api/admin/users/${alvo._id}/preco`).send({ valorMensal: null, valorAnual: null }).expect(200);
+    const salvo = await userModel.findById(alvo._id).lean();
+    expect(salvo?.valorMensalPersonalizado).toBeNull();
+  });
+
   it('redefine a senha de um usuário', async () => {
     const alvo = await userModel.create({ email: 'alvo@t.com', password: 'x' });
     await http().patch(`/api/admin/users/${alvo._id}/senha`).send({ password: 'NovaSenha1' }).expect(200);

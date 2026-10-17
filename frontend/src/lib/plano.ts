@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { formatCurrency } from "./finance";
 
-// Espelha getConfigStatus em backend/src/modules/billing/billing.service.ts. O valor do
-// plano vem do servidor (PLANO_EMPRESARIAL_VALOR_*), então nenhuma tela fixa preço.
+// Espelha getConfigStatus em backend/src/modules/billing/billing.service.ts. O preço é o
+// que o admin definiu no Painel Admin (padrão ou próprio do cliente) — nenhuma tela fixa
+// valor. Pagamento só por PIX.
 export type BillingConfig = {
   pix: boolean;
-  cartao: boolean;
-  plano: { id: string; nome: string; valorMensal: number; valorAnual: number };
+  plano: { id: string; nome: string; valorMensal: number; valorAnual: number; personalizado: boolean };
 };
 
 export const PLANO_ID = "empresarial";

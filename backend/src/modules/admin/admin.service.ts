@@ -42,7 +42,7 @@ function resolveStatus(user: {
 }
 
 const ADMIN_USER_FIELDS =
-  'email name createdAt emailVerified isLegacyFree subscriptionStatus plan billingCycle trialEndsAt subscriptionExpiresAt isAdmin bloqueado';
+  'email name createdAt emailVerified isLegacyFree subscriptionStatus plan billingCycle trialEndsAt subscriptionExpiresAt isAdmin bloqueado valorMensalPersonalizado valorAnualPersonalizado';
 
 type AdminUserDoc = Pick<User, 'email' | 'isLegacyFree' | 'subscriptionStatus' | 'trialEndsAt' | 'subscriptionExpiresAt' | 'isAdmin' | 'bloqueado'>;
 
@@ -88,6 +88,8 @@ export class AdminService {
         isAdmin: isAdminUser(u),
         isRootAdmin: u.email === ADMIN_EMAIL,
         bloqueado: u.bloqueado ?? false,
+        valorMensalPersonalizado: u.valorMensalPersonalizado ?? null,
+        valorAnualPersonalizado: u.valorAnualPersonalizado ?? null,
         status,
         hasAccess: hasAccess && !u.bloqueado,
       };
@@ -133,6 +135,15 @@ export class AdminService {
       throw new BadRequestException('O administrador principal não pode ser rebaixado');
     }
     return this.update(userId, { isAdmin });
+  }
+
+  // Preço próprio do cliente no Plano Empresarial; null volta para o preço padrão.
+  // Vale para as próximas cobranças — um PIX já gerado com o valor antigo não é
+  // reaproveitado (BillingService#createAsaasPixCheckout compara o valor).
+  async setPreco(userId: string, valorMensal: number | null, valorAnual: number | null) {
+    await this.findAlvo(userId);
+    const r = (v: number | null) => (v == null ? null : Math.round(v * 100) / 100);
+    return this.update(userId, { valorMensalPersonalizado: r(valorMensal), valorAnualPersonalizado: r(valorAnual) });
   }
 
   async resetSenha(userId: string, password: string) {
