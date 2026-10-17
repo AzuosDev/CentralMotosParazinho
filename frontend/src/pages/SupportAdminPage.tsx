@@ -4,6 +4,7 @@ import { Ban, Bug, CalendarClock, CheckCircle2, Gift, KeyRound, Lightbulb, Loade
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { formatDisplayDate } from "../lib/finance";
+import { PLANO_NOME } from "../lib/plano";
 import { useToast } from "../components/ui/Toast";
 import { SupportThreadDrawer } from "../components/support/SupportThreadDrawer";
 
@@ -307,7 +308,8 @@ function SupportMessagesTab() {
 function planLabel(u: AdminUser): string | null {
   if (u.isLegacyFree) return "Acesso gratuito liberado";
   if (!u.plan) return null;
-  const nomePlano = u.plan === "basico" ? "Plano Básico" : u.plan;
+  // "basico" é o nome antigo do mesmo plano, antes de virar Plano Empresarial.
+  const nomePlano = u.plan === "empresarial" || u.plan === "basico" ? PLANO_NOME : u.plan;
   const ciclo = u.billingCycle === "annual" ? "Anual" : u.billingCycle === "monthly" ? "Mensal" : null;
   return ciclo ? `${nomePlano} · ${ciclo}` : nomePlano;
 }

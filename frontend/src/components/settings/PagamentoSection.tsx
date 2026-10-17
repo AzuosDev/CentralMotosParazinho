@@ -6,6 +6,7 @@ import { api } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { formatCurrency } from "../../lib/finance";
 import { formatCpfCnpj } from "../../lib/cpfCnpj";
+import { PLANO_ID, PLANO_NOME, precoPlano, useBillingConfig } from "../../lib/plano";
 import { useAuth, extractSubscription } from "../../contexts/AuthContext";
 import type { User } from "../../types/api";
 
@@ -33,10 +34,7 @@ type PixData = {
 
 type Cycle = "monthly" | "annual";
 
-const PLANOS: Record<Cycle, { label: string; preco: string }> = {
-  monthly: { label: "Mensal", preco: "R$ 29,90" },
-  annual: { label: "Anual", preco: "R$ 299,90" },
-};
+const CICLOS: Record<Cycle, string> = { monthly: "Mensal", annual: "Anual" };
 
 const statusConfig: Record<FaturaStatus, { label: string; className: string }> = {
   paga: { label: "Paga", className: "bg-accent-brand/15 text-accent-brand" },
@@ -118,11 +116,7 @@ export function PagamentoSection() {
   const [pago, setPago] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const configQuery = useQuery<{ pix: boolean; cartao: boolean }>({
-    queryKey: ["billing-config"],
-    queryFn: async () => (await api.get<{ pix: boolean; cartao: boolean }>("/api/billing/config")).data,
-    staleTime: Infinity,
-  });
+  const configQuery = useBillingConfig();
 
   const faturasQuery = useQuery<Fatura[]>({
     queryKey: ["billing-faturas"],
@@ -191,14 +185,14 @@ export function PagamentoSection() {
 
   const gerarPagamento = async () => {
     if (cpfCnpj.replace(/\D/g, "").length < 11) {
-      setError("Informe um CPF ou CNPJ válido para pagar via PIX.");
+      setError("Informe o CNPJ da empresa (ou CPF) para pagar via PIX.");
       return;
     }
     setError(null);
     setLoadingId("novo");
     try {
       const { data } = await api.post<{ pixData?: PixData }>("/api/billing/checkout", {
-        plan: "basico",
+        plan: PLANO_ID,
         cycle,
         method: "pix",
         cpfCnpj,
@@ -270,7 +264,7 @@ export function PagamentoSection() {
         <div>
           <h2 className="font-semibold text-text-primary">Pagamento</h2>
           <p className="text-xs text-text-secondary">
-            Pague ou renove a assinatura via PIX a qualquer momento. Os dias pagos somam ao prazo atual.
+            {PLANO_NOME}: pague ou renove via PIX a qualquer momento. Os dias pagos somam ao prazo atual.
           </p>
         </div>
       </div>
@@ -311,15 +305,15 @@ export function PagamentoSection() {
                           : "border-border-default bg-bg-muted hover:bg-bg-overlay",
                       )}
                     >
-                      <p className="text-xs text-text-secondary">{PLANOS[c].label}</p>
-                      <p className="text-sm font-bold text-text-primary">{PLANOS[c].preco}</p>
+                      <p className="text-xs text-text-secondary">{CICLOS[c]}</p>
+                      <p className="text-sm font-bold text-text-primary">{precoPlano(configQuery.data, c)}</p>
                     </button>
                   ))}
                 </div>
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="CPF ou CNPJ"
+                  placeholder="CNPJ da empresa (ou CPF)"
                   value={cpfCnpj}
                   onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
                   className="w-full rounded-xl border border-border-default bg-bg-muted px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-brand focus:outline-none"
@@ -332,7 +326,7 @@ export function PagamentoSection() {
                   {loadingId === "novo" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Gerando PIX...</>
                   ) : (
-                    <><QrCode className="h-4 w-4" /> Gerar PIX de {PLANOS[cycle].preco}</>
+                    <><QrCode className="h-4 w-4" /> Gerar PIX de {precoPlano(configQuery.data, cycle)}</>
                   )}
                 </button>
               </div>

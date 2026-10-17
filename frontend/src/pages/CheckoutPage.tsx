@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { useAuth, extractSubscription, computeHasAccess } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 import { formatCpfCnpj } from "../lib/cpfCnpj";
+import { PLANO_ID, PLANO_NOME, mesesEconomizados, precoPlano, useBillingConfig } from "../lib/plano";
 import type { User } from "../types/api";
 
 type PlanCycle = "monthly" | "annual";
@@ -18,9 +19,9 @@ interface PixData {
   expiracao: string;
 }
 
-const PLANS = {
-  monthly: { label: "Mensal", price: "R$ 29,90", period: "/mês", savings: null },
-  annual: { label: "Anual", price: "R$ 299,90", period: "/ano", savings: "Economize 2 meses (16%)" },
+const CICLOS: Record<PlanCycle, { label: string; period: string }> = {
+  monthly: { label: "Mensal", period: "/mês" },
+  annual: { label: "Anual", period: "/ano" },
 };
 
 const FEATURES = [
@@ -51,6 +52,8 @@ export function CheckoutPage() {
   const [copied, setCopied] = useState(false);
   const [cpfCnpj, setCpfCnpj] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { data: config } = useBillingConfig();
+  const economia = mesesEconomizados(config);
 
   // Handle Stripe success redirect
   const success = searchParams.get("success");
@@ -107,7 +110,7 @@ export function CheckoutPage() {
 
   const handleProceed = async () => {
     if (method === 'pix' && cpfCnpj.replace(/\D/g, '').length < 11) {
-      setError('Informe um CPF ou CNPJ válido para pagar via PIX.');
+      setError('Informe o CNPJ da empresa (ou CPF) para pagar via PIX.');
       return;
     }
     setLoading(true);
@@ -115,7 +118,7 @@ export function CheckoutPage() {
     try {
       const { data } = await api.post<{ method: string; url?: string; pixData?: PixData }>(
         '/api/billing/checkout',
-        { plan: 'basico', cycle, method, ...(method === 'pix' ? { cpfCnpj } : {}) },
+        { plan: PLANO_ID, cycle, method, ...(method === 'pix' ? { cpfCnpj } : {}) },
       );
 
       if (method === 'stripe' && data.url) {
@@ -155,7 +158,7 @@ export function CheckoutPage() {
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-text-primary">Pagamento confirmado!</h1>
-          <p className="mt-2 text-sm text-text-secondary">Sua assinatura do Plano Básico está ativa.</p>
+          <p className="mt-2 text-sm text-text-secondary">Sua assinatura do {PLANO_NOME} está ativa.</p>
         </div>
         <button
           onClick={() => navigate("/dashboard", { replace: true })}
@@ -244,8 +247,8 @@ export function CheckoutPage() {
         )}
 
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-text-primary">Plano Básico</h1>
-          <p className="mt-2 text-text-secondary">Acesso completo ao sistema da Central Motos</p>
+          <h1 className="text-3xl font-bold text-text-primary">{PLANO_NOME}</h1>
+          <p className="mt-2 text-text-secondary">Acesso completo ao sistema da Central Motos para a sua empresa</p>
         </div>
 
         {/* Features */}
@@ -276,13 +279,15 @@ export function CheckoutPage() {
                     : "border-border-default bg-bg-card hover:bg-bg-overlay",
                 )}
               >
-                <p className="text-sm font-semibold text-text-primary">{PLANS[c].label}</p>
+                <p className="text-sm font-semibold text-text-primary">{CICLOS[c].label}</p>
                 <p className="mt-1 text-xl font-bold text-text-primary">
-                  {PLANS[c].price}
-                  <span className="text-sm font-normal text-text-secondary">{PLANS[c].period}</span>
+                  {precoPlano(config, c)}
+                  <span className="text-sm font-normal text-text-secondary">{CICLOS[c].period}</span>
                 </p>
-                {PLANS[c].savings && (
-                  <p className="mt-1 text-xs text-accent-brand">{PLANS[c].savings}</p>
+                {c === "annual" && economia > 0 && (
+                  <p className="mt-1 text-xs text-accent-brand">
+                    Economize {economia} {economia === 1 ? "mês" : "meses"}
+                  </p>
                 )}
               </button>
             ))}
@@ -292,7 +297,7 @@ export function CheckoutPage() {
         {/* Payment method */}
         <div className="mb-6">
           <p className="mb-3 text-sm font-medium text-text-secondary">Forma de pagamento</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn("grid gap-3", config?.cartao ? "grid-cols-2" : "grid-cols-1")}>
             <button
               onClick={() => setMethod("pix")}
               className={cn(
@@ -304,29 +309,32 @@ export function CheckoutPage() {
             >
               <QrCode className="h-4 w-4" /> PIX
             </button>
-            <button
-              onClick={() => setMethod("stripe")}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors",
-                method === "stripe"
-                  ? "border-accent-brand bg-accent-brand/10 text-accent-brand"
-                  : "border-border-default bg-bg-card text-text-primary hover:bg-bg-overlay",
-              )}
-            >
-              <CreditCard className="h-4 w-4" /> Cartão
-            </button>
+            {/* Cartão só aparece se o Stripe estiver configurado no servidor. */}
+            {config?.cartao && (
+              <button
+                onClick={() => setMethod("stripe")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors",
+                  method === "stripe"
+                    ? "border-accent-brand bg-accent-brand/10 text-accent-brand"
+                    : "border-border-default bg-bg-card text-text-primary hover:bg-bg-overlay",
+                )}
+              >
+                <CreditCard className="h-4 w-4" /> Cartão
+              </button>
+            )}
           </div>
           {method === "pix" && (
             <>
               <p className="mt-2 text-xs text-text-muted">Pagamento único, renovação manual a cada ciclo.</p>
               <div className="mt-3">
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary">
-                  CPF ou CNPJ <span className="text-accent-red">*</span>
+                  CNPJ da empresa (ou CPF) <span className="text-accent-red">*</span>
                 </label>
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="000.000.000-00"
+                  placeholder="00.000.000/0000-00"
                   value={cpfCnpj}
                   onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
                   className="w-full rounded-xl border border-border-default bg-bg-card px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-brand focus:outline-none"
@@ -353,7 +361,7 @@ export function CheckoutPage() {
           {loading ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Processando…</>
           ) : (
-            <>Assinar por {PLANS[cycle].price}{PLANS[cycle].period} <ArrowRight className="h-4 w-4" /></>
+            <>Assinar por {precoPlano(config, cycle)}{CICLOS[cycle].period} <ArrowRight className="h-4 w-4" /></>
           )}
         </button>
 

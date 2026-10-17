@@ -92,6 +92,19 @@ function statusStripe(status: Stripe.Invoice.Status | null): FaturaStatus {
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
+// Plano único do sistema. Os valores vêm de PLANO_EMPRESARIAL_VALOR_MENSAL/_ANUAL (em
+// reais) para o preço poder mudar sem deploy; os defaults são os valores antigos.
+export const PLANO = 'empresarial';
+export const PLANO_NOME = 'Plano Empresarial';
+const VALOR_PADRAO = { monthly: 29.9, annual: 299.9 };
+
+export interface PlanoInfo {
+  id: string;
+  nome: string;
+  valorMensal: number;
+  valorAnual: number;
+}
+
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
@@ -114,11 +127,37 @@ export class BillingService {
 
   // Só presença das chaves — usado pela tela de Configurações pra decidir quais formas de
   // pagamento oferecer. Não expõe valor nenhum; o teste real das chaves é diagnostico().
-  getConfigStatus(): { pix: boolean; cartao: boolean } {
+  getConfigStatus(): { pix: boolean; cartao: boolean; plano: PlanoInfo } {
     return {
       pix: !!this.configService.get<string>('ASAAS_API_KEY'),
-      cartao: this.stripeConfigurado && !!this.configService.get<string>('STRIPE_PRICE_BASICO_MONTHLY'),
+      cartao: this.stripeConfigurado && !!this.stripePriceId('monthly'),
+      plano: {
+        id: PLANO,
+        nome: PLANO_NOME,
+        valorMensal: this.valorPlano('monthly'),
+        valorAnual: this.valorPlano('annual'),
+      },
     };
+  }
+
+  private valorPlano(cycle: 'monthly' | 'annual'): number {
+    const raw = this.configService.get<string>(
+      cycle === 'annual' ? 'PLANO_EMPRESARIAL_VALOR_ANUAL' : 'PLANO_EMPRESARIAL_VALOR_MENSAL',
+    );
+    const valor = raw ? Number(raw.replace(',', '.')) : NaN;
+    return Number.isFinite(valor) && valor > 0 ? Math.round(valor * 100) / 100 : VALOR_PADRAO[cycle];
+  }
+
+  // STRIPE_PRICE_BASICO_* são os nomes antigos, aceitos enquanto o ambiente não é renomeado.
+  private stripePriceKeys(cycle: 'monthly' | 'annual'): [string, string] {
+    return cycle === 'annual'
+      ? ['STRIPE_PRICE_EMPRESARIAL_ANNUAL', 'STRIPE_PRICE_BASICO_ANNUAL']
+      : ['STRIPE_PRICE_EMPRESARIAL_MONTHLY', 'STRIPE_PRICE_BASICO_MONTHLY'];
+  }
+
+  private stripePriceId(cycle: 'monthly' | 'annual'): string | undefined {
+    const [nova, antiga] = this.stripePriceKeys(cycle);
+    return this.configService.get<string>(nova) || this.configService.get<string>(antiga) || undefined;
   }
 
   private get asaasUrl() {
@@ -156,8 +195,7 @@ export class BillingService {
   }
 
   private async createStripeCheckout(user: UserDocument, dto: CreateCheckoutDto): Promise<CheckoutResult> {
-    const priceKey = dto.cycle === 'annual' ? 'STRIPE_PRICE_BASICO_ANNUAL' : 'STRIPE_PRICE_BASICO_MONTHLY';
-    const priceId = this.configService.get<string>(priceKey);
+    const priceId = this.stripePriceId(dto.cycle);
     if (!priceId) throw new BadRequestException('Preço não configurado no servidor');
 
     const appUrl = this.configService.get<string>('APP_URL') ?? 'https://meugasto.vercel.app';
@@ -179,9 +217,9 @@ export class BillingService {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/checkout?success=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/checkout`,
-      metadata: { userId: user._id.toString(), plan: dto.plan, cycle: dto.cycle },
+      metadata: { userId: user._id.toString(), plan: PLANO, cycle: dto.cycle },
       subscription_data: {
-        metadata: { userId: user._id.toString(), plan: dto.plan, cycle: dto.cycle },
+        metadata: { userId: user._id.toString(), plan: PLANO, cycle: dto.cycle },
       },
     });
 
@@ -217,11 +255,11 @@ export class BillingService {
 
     await this.userModel.findByIdAndUpdate(user._id, { asaasCustomerId, cpfCnpj: cpfCnpjDigits }).exec();
 
-    const value = dto.cycle === 'annual' ? 299.90 : 29.90;
+    const value = this.valorPlano(dto.cycle);
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 3);
     const dueDateStr = dueDate.toISOString().split('T')[0];
-    const externalReference = `${user._id.toString()}__${dto.plan}__${dto.cycle}`;
+    const externalReference = `${user._id.toString()}__${PLANO}__${dto.cycle}`;
 
     // Reaproveita uma cobrança PIX ainda em aberto do mesmo plano/ciclo em vez de criar
     // outra — sem isso, cada clique em "Pagar" (checkout ou Configurações) deixava uma
@@ -230,7 +268,8 @@ export class BillingService {
       `/payments?customer=${encodeURIComponent(asaasCustomerId)}&status=PENDING` +
         `&externalReference=${encodeURIComponent(externalReference)}&limit=1`,
     );
-    const paymentData = abertas.data.find((p) => !p.deleted && p.billingType === 'PIX')
+    // Cobrança aberta com valor antigo (preço do plano mudou) não é reaproveitada.
+    const paymentData = abertas.data.find((p) => !p.deleted && p.billingType === 'PIX' && p.value === value)
       ?? await this.asaasFetch<AsaasPaymentResponse>('/payments', {
         method: 'POST',
         body: JSON.stringify({
@@ -238,7 +277,7 @@ export class BillingService {
           billingType: 'PIX',
           value,
           dueDate: dueDateStr,
-          description: `Central Motos - Plano Básico ${dto.cycle === 'annual' ? 'Anual' : 'Mensal'}`,
+          description: `Central Motos - ${PLANO_NOME} ${dto.cycle === 'annual' ? 'Anual' : 'Mensal'}`,
           externalReference,
         }),
       });
@@ -337,7 +376,7 @@ export class BillingService {
   // e o webhook chamam isto para o mesmo pagamento, e só o primeiro estende o prazo. A
   // renovação soma ao prazo atual quando ainda está vigente, então pagar antes de vencer
   // não "perde" os dias que faltavam.
-  private async aplicarPagamentoAsaas(paymentId: string, userId: string, plan?: string, cycle?: string): Promise<void> {
+  private async aplicarPagamentoAsaas(paymentId: string, userId: string, cycle?: string): Promise<void> {
     const user = await this.userModel.findById(userId).select('subscriptionStatus subscriptionExpiresAt').lean().exec();
     if (!user) return;
 
@@ -353,7 +392,7 @@ export class BillingService {
       {
         $set: {
           subscriptionStatus: 'active',
-          plan: plan ?? 'basico',
+          plan: PLANO,
           billingCycle: cycle ?? 'monthly',
           subscriptionExpiresAt: new Date(base + days * DIA_MS),
         },
@@ -364,12 +403,12 @@ export class BillingService {
 
   async verifyAndActivatePix(paymentId: string, userId: string): Promise<{ paid: boolean }> {
     const data = await this.asaasFetch<AsaasPaymentResponse>(`/payments/${encodeURIComponent(paymentId)}`);
-    const [refUserId, plan, cycle] = (data.externalReference ?? '').split('__');
+    const [refUserId, , cycle] = (data.externalReference ?? '').split('__');
     // Cobrança de outro usuário: não revela nem o status dela.
     if (refUserId !== userId) throw new NotFoundException('Pagamento não encontrado');
 
     const paid = ASAAS_PAGO.includes(data.status);
-    if (paid) await this.aplicarPagamentoAsaas(data.id, userId, plan, cycle);
+    if (paid) await this.aplicarPagamentoAsaas(data.id, userId, cycle);
 
     return { paid };
   }
@@ -402,7 +441,7 @@ export class BillingService {
         const days = cycle === 'annual' ? 365 : 30;
         await this.userModel.findByIdAndUpdate(userId, {
           subscriptionStatus: 'active',
-          plan: session.metadata?.plan ?? 'basico',
+          plan: PLANO,
           billingCycle: cycle,
           stripeSubscriptionId: session.subscription as string,
           subscriptionExpiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
@@ -446,10 +485,10 @@ export class BillingService {
     const real = await this.asaasFetch<AsaasPaymentResponse>(`/payments/${encodeURIComponent(payment.id)}`);
     if (!ASAAS_PAGO.includes(real.status) || !real.externalReference) return;
 
-    const [userId, plan, cycle] = real.externalReference.split('__');
+    const [userId, , cycle] = real.externalReference.split('__');
     if (!userId || !Types.ObjectId.isValid(userId)) return;
 
-    await this.aplicarPagamentoAsaas(real.id, userId, plan, cycle);
+    await this.aplicarPagamentoAsaas(real.id, userId, cycle);
   }
 
   // Testa de verdade cada chave de pagamento configurada (não só a presença). Só para
@@ -521,7 +560,9 @@ export class BillingService {
           ok: true,
           detalhe: `Chave válida (${sk.startsWith('sk_live_') || sk.startsWith('rk_live_') ? 'produção' : 'teste'}).`,
         });
-        for (const k of ['STRIPE_PRICE_BASICO_MONTHLY', 'STRIPE_PRICE_BASICO_ANNUAL']) {
+        for (const cycle of ['monthly', 'annual'] as const) {
+          const [nova, antiga] = this.stripePriceKeys(cycle);
+          const k = get(nova) ? nova : get(antiga) ? antiga : nova;
           const priceId = get(k);
           if (!priceId) {
             itens.push({ chave: k, ok: false, detalhe: 'Não configurado.' });
@@ -548,6 +589,16 @@ export class BillingService {
         detalhe: get('STRIPE_WEBHOOK_SECRET')
           ? 'Configurado.'
           : 'Não configurado — pagamentos com cartão não ativam a assinatura automaticamente.',
+      });
+    }
+
+    for (const cycle of ['monthly', 'annual'] as const) {
+      const k = cycle === 'annual' ? 'PLANO_EMPRESARIAL_VALOR_ANUAL' : 'PLANO_EMPRESARIAL_VALOR_MENSAL';
+      itens.push({
+        chave: k,
+        ok: true,
+        detalhe: `${PLANO_NOME} ${cycle === 'annual' ? 'anual' : 'mensal'}: R$ ${this.valorPlano(cycle).toFixed(2).replace('.', ',')}` +
+          (get(k) ? '' : ' (valor padrão — variável não configurada)'),
       });
     }
 

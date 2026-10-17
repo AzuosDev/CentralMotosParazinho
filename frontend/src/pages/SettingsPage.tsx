@@ -6,6 +6,7 @@ import { startRegistration, platformAuthenticatorIsAvailable } from "@simpleweba
 import { api } from "../lib/api";
 import { useAuth, computeHasAccess } from "../contexts/AuthContext";
 import { PagamentoSection } from "../components/settings/PagamentoSection";
+import { PLANO_NOME } from "../lib/plano";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 
 type StoredCredential = {
@@ -121,7 +122,7 @@ export function SettingsPage() {
                 {subscription.subscriptionStatus === 'trial'
                   ? 'Período de teste'
                   : subscription.subscriptionStatus === 'active'
-                  ? `Plano Básico · ${subscription.billingCycle === 'annual' ? 'Anual' : 'Mensal'}`
+                  ? `${PLANO_NOME} · ${subscription.billingCycle === 'annual' ? 'Anual' : 'Mensal'}`
                   : 'Sem assinatura ativa'}
               </p>
             </div>

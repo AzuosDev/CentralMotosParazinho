@@ -121,7 +121,11 @@ describe('BillingController', () => {
 
   it('GET /config: informa só a presença das chaves', async () => {
     const res = await http().get('/api/billing/config').expect(200);
-    expect(res.body).toEqual({ pix: true, cartao: false });
+    expect(res.body).toEqual({
+      pix: true,
+      cartao: false,
+      plano: { id: 'empresarial', nome: 'Plano Empresarial', valorMensal: 29.9, valorAnual: 299.9 },
+    });
   });
 
   it('GET /faturas: lista as cobranças do usuário com status traduzido, sem as de outros', async () => {
@@ -163,11 +167,25 @@ describe('BillingController', () => {
   });
 
   it('POST /checkout pix: reaproveita a cobrança pendente do mesmo plano em vez de criar outra', async () => {
-    const body = { plan: 'basico', cycle: 'monthly', method: 'pix', cpfCnpj: '123.456.789-09' };
+    const body = { plan: 'empresarial', cycle: 'monthly', method: 'pix', cpfCnpj: '12.345.678/0001-95' };
     const r1 = await http().post('/api/billing/checkout').send(body).expect(201);
     const r2 = await http().post('/api/billing/checkout').send(body).expect(201);
     expect(criados).toHaveLength(1);
     expect(r2.body.pixData.id).toBe(r1.body.pixData.id);
+    expect(criados[0]).toMatchObject({ value: 29.9, description: 'Central Motos - Plano Empresarial Mensal' });
+  });
+
+  it('POST /checkout pix: usa o valor do plano configurado e não reaproveita cobrança com valor antigo', async () => {
+    const body = { plan: 'empresarial', cycle: 'annual', method: 'pix', cpfCnpj: '12.345.678/0001-95' };
+    await http().post('/api/billing/checkout').send(body).expect(201);
+    process.env.PLANO_EMPRESARIAL_VALOR_ANUAL = '1200,00';
+    try {
+      await http().post('/api/billing/checkout').send(body).expect(201);
+    } finally {
+      delete process.env.PLANO_EMPRESARIAL_VALOR_ANUAL;
+    }
+    expect(criados).toHaveLength(2);
+    expect(criados[1]).toMatchObject({ value: 1200, externalReference: `${USER_ID}__empresarial__annual` });
   });
 
   it('webhook: token errado é rejeitado e não ativa nada', async () => {
