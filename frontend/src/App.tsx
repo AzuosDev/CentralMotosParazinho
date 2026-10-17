@@ -8,7 +8,6 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth, computeHasAccess, extractSubscription } from "./contexts/AuthContext";
 import { getAccessToken, hasRefreshToken, refreshAccessToken } from "./lib/auth";
 import { api } from "./lib/api";
-import { ADMIN_EMAIL } from "./lib/brand";
 import { PUBLIC_PAGES } from "./content/public-pages";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react"
@@ -29,7 +28,6 @@ const GoalsPage = lazy(() => import("./pages/GoalsPage").then((m) => ({ default:
 const ContasPage = lazy(() => import("./pages/ContasPage").then((m) => ({ default: m.ContasPage })));
 const TransactionsPage = lazy(() => import("./pages/TransactionsPage").then((m) => ({ default: m.TransactionsPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import("./pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })));
@@ -73,7 +71,7 @@ function SubscriptionGate() {
   // A conta admin precisa acessar o Painel Admin mesmo sem assinatura — é de lá que ela
   // libera acesso gratuito (o dela ou o de outros usuários). Sem este bypass, ninguém
   // consegue clicar em "Liberar acesso gratuito" a partir dessa própria conta.
-  if (subscription.email === ADMIN_EMAIL) {
+  if (subscription.isAdmin) {
     return <Outlet />;
   }
 
@@ -214,7 +212,8 @@ export default function App() {
                 </>
               )}
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              {/* Sem cadastro público: contas são criadas pelos admins no Painel Admin. */}
+              <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

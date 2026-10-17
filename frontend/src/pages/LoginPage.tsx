@@ -153,14 +153,7 @@ export function LoginPage() {
     <AuthCard
       title="Bem-vindo de volta"
       subtitle="Gerencie suas finanças com inteligência"
-      footer={
-        <>
-          Não tem conta?{" "}
-          <Link to="/register" className="font-semibold text-accent-brand hover:underline">
-            Criar conta
-          </Link>
-        </>
-      }
+      footer={<>Não tem conta? Peça acesso ao administrador.</>}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Field

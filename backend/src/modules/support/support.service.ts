@@ -6,9 +6,8 @@ import { SupportReply, SupportReplyDocument } from './schemas/support-reply.sche
 import { CreateSupportMessageDto } from './dto/create-support-message.dto';
 import { EmailService } from '../../common/services/email.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { ADMIN_EMAIL } from '../../common/guards/admin.guard';
 
-type Requester = { userId: string; email: string };
+type Requester = { userId: string; email: string; isAdmin: boolean };
 
 @Injectable()
 export class SupportService {
@@ -105,8 +104,8 @@ export class SupportService {
   // abertos; pra usuário comum, chamados com resposta do suporte ainda não vista.
   // Não escreve nada na coleção Notification (bill-reminders) — é só leitura,
   // computada aqui, pra não arriscar mexer naquele schema.
-  async getBellNotifications(userId: string, email: string) {
-    if (email === ADMIN_EMAIL) {
+  async getBellNotifications(userId: string, isAdmin: boolean) {
+    if (isAdmin) {
       const open = await this.supportMessageModel
         .find({ status: 'aberto' })
         .sort({ createdAt: -1 })
@@ -163,7 +162,7 @@ export class SupportService {
     const message = await this.supportMessageModel.findById(messageId).exec();
     if (!message) throw new NotFoundException('Mensagem não encontrada');
 
-    const isAdmin = requester.email === ADMIN_EMAIL;
+    const isAdmin = requester.isAdmin;
     const isOwner = message.userId.toString() === requester.userId;
     if (!isAdmin && !isOwner) throw new NotFoundException('Mensagem não encontrada');
 

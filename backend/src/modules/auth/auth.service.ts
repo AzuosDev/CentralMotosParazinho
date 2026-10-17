@@ -17,17 +17,6 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
-  async register(dto: { email: string; password: string }) {
-    const user = await this.usersService.create(dto);
-    await this.emailService.sendVerificationEmail(
-      user['email'] as string,
-      user['emailVerificationToken'] as string,
-      user['name'] as string | undefined,
-    );
-    const { emailVerificationToken, password, passwordResetToken, passwordResetExpires, ...safeUser } = user;
-    return safeUser;
-  }
-
   async resendVerification(email: string) {
     const token = await this.usersService.regenerateVerificationToken(email);
     await this.emailService.sendVerificationEmail(email, token);
@@ -68,6 +57,10 @@ export class AuthService {
     }
     const userId = t.userId.toString();
     const user = await this.usersService.findById(userId);
+    if (user.bloqueado) {
+      await this.refreshModel.deleteMany({ userId: t.userId }).exec();
+      throw new UnauthorizedException('Conta bloqueada');
+    }
     // rotate
     await this.refreshModel.findByIdAndDelete(t._id).exec();
     const payload = { sub: userId, email: user.email };

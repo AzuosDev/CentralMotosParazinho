@@ -1,9 +1,8 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards, Req, HttpCode } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Post, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
 import { LocalAuthGuard } from '../../common/guards/local-auth.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -21,12 +20,12 @@ interface RequestWithUser extends Request {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Throttle(5, 60)
+  // Cadastro público desativado: o sistema é de uso interno e as contas são criadas
+  // pelos admins (POST /api/admin/users). A rota continua respondendo para que um
+  // frontend antigo em cache mostre a mensagem certa em vez de um 404 genérico.
   @Post('register')
-  @HttpCode(201)
-  async register(@Body() dto: RegisterDto) {
-    const user = await this.authService.register(dto);
-    return user;
+  register() {
+    throw new ForbiddenException('Cadastro desativado. Peça acesso ao administrador.');
   }
 
   @Get('verify-email')

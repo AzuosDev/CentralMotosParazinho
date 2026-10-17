@@ -21,6 +21,16 @@ export class User {
   @Prop({ default: false })
   emailVerified!: boolean;
 
+  // Contas são criadas pelos admins (não há cadastro público). isAdmin dá acesso ao
+  // Painel Admin; ADMIN_EMAIL é sempre admin, independente deste campo (admin.guard.ts).
+  @Prop({ default: false })
+  isAdmin?: boolean;
+
+  // Conta bloqueada por um admin: não loga, não renova token e o JwtAuthGuard recusa
+  // qualquer request — os dados ficam intactos para um eventual desbloqueio.
+  @Prop({ default: false })
+  bloqueado?: boolean;
+
   @Prop()
   emailVerificationToken?: string;
 

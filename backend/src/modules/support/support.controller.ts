@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { isAdminUser } from '../../common/guards/admin.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
@@ -36,12 +37,12 @@ export class SupportController {
   // branch por role acontece dentro do service.
   @Get('notifications')
   async getBellNotifications(@CurrentUser() user: ICurrentUser) {
-    return this.supportService.getBellNotifications(user._id.toString(), user.email);
+    return this.supportService.getBellNotifications(user._id.toString(), isAdminUser(user));
   }
 
   @Patch('messages/:id/dismiss')
   async dismissBellItem(@Param('id') id: string, @CurrentUser() user: ICurrentUser) {
-    return this.supportService.dismissBellItem(id, { userId: user._id.toString(), email: user.email });
+    return this.supportService.dismissBellItem(id, { userId: user._id.toString(), email: user.email, isAdmin: isAdminUser(user) });
   }
 
   @UseGuards(AdminGuard)
@@ -54,7 +55,7 @@ export class SupportController {
   // service, já que o próprio usuário também precisa ler/responder a sua conversa.
   @Get('messages/:id/thread')
   async getThread(@Param('id') id: string, @CurrentUser() user: ICurrentUser) {
-    return this.supportService.getThread(id, { userId: user._id.toString(), email: user.email });
+    return this.supportService.getThread(id, { userId: user._id.toString(), email: user.email, isAdmin: isAdminUser(user) });
   }
 
   @Post('messages/:id/replies')
@@ -63,6 +64,6 @@ export class SupportController {
     @CurrentUser() user: ICurrentUser,
     @Body() dto: CreateSupportReplyDto,
   ) {
-    return this.supportService.addReply(id, { userId: user._id.toString(), email: user.email }, dto.mensagem);
+    return this.supportService.addReply(id, { userId: user._id.toString(), email: user.email, isAdmin: isAdminUser(user) }, dto.mensagem);
   }
 }

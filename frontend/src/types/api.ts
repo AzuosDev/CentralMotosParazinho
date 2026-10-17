@@ -24,6 +24,7 @@ export type User = MongoDocument & {
   subscriptionExpiresAt?: string | null;
   billingCycle?: string | null;
   cpfCnpj?: string | null;
+  isAdmin?: boolean;
 };
 
 export type AuthTokens = {

@@ -17,6 +17,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Credenciais inválidas');
     if (!user.emailVerified) throw new UnauthorizedException('Email não verificado');
+    if (user.bloqueado) throw new UnauthorizedException('Conta bloqueada. Fale com o administrador.');
     // return user object (including password) for internal use
     return user;
   }

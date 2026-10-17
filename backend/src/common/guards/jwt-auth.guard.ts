@@ -14,13 +14,16 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const token = authHeader.slice(7).trim();
+    let user;
     try {
       const payload = this.jwtService.verify(token) as any;
-      const user = await this.usersService.findById(payload.sub);
-      request.user = user;
-      return true;
+      user = await this.usersService.findById(payload.sub);
     } catch (error) {
       throw new UnauthorizedException('Token inválido');
     }
+    // Bloqueio vale na hora, sem esperar o access token (15 min) expirar.
+    if (user.bloqueado) throw new UnauthorizedException('Conta bloqueada');
+    request.user = user;
+    return true;
   }
 }

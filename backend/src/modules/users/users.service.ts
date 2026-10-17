@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UserDocument, User } from './schemas/user.schema';
+import { isAdminUser } from '../../common/guards/admin.guard';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import { Wallet, WalletDocument } from '../wallets/schemas/wallet.schema';
 import { Goal, GoalDocument } from '../goals/schemas/goal.schema';
@@ -19,32 +20,6 @@ export class UsersService {
     @InjectModel(PendingAccount.name) private pendingAccountModel: Model<PendingAccountDocument>,
   ) {}
 
-  async create(dto: { email: string; password: string }) {
-    const hashed = await bcrypt.hash(dto.password, 12);
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-    const trialEndsAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
-    const created = await this.userModel.create({
-      email: dto.email,
-      password: hashed,
-      emailVerified: false,
-      emailVerificationToken,
-      subscriptionStatus: 'trial',
-      trialEndsAt,
-      // Enquanto não houver preço definido para a Central Motos, o trial de 15 dias
-      // trancaria todo mundo fora ao vencer: computeHasAccess passa a retornar false
-      // e o SubscriptionGate redireciona para /checkout, uma tela que não tem como
-      // concluir sem price id no Stripe. isLegacyFree curto-circuita essa checagem.
-      // Quando o preço existir, remova esta linha — quem já se cadastrou mantém a
-      // flag e fica grandfathered, que é exatamente o que 'legacy free' significa.
-      isLegacyFree: true,
-    });
-    const obj = created.toObject() as Record<string, unknown>;
-    delete obj['password'];
-    delete obj['passwordResetToken'];
-    delete obj['passwordResetExpires'];
-    return obj;
-  }
-
   async findByEmail(email: string) {
     return this.userModel.findOne({ email }).exec();
   }
@@ -55,6 +30,7 @@ export class UsersService {
     const hash = crypto.createHash('md5').update(doc.email.toLowerCase().trim()).digest('hex');
     return {
       ...doc.toObject(),
+      isAdmin: isAdminUser(doc),
       gravatarUrl: `https://www.gravatar.com/avatar/${hash}?s=200&d=mp`,
     };
   }

@@ -47,7 +47,6 @@ import { UserProfileModal } from "../modals/UserProfileModal";
 import { WebAuthnSuggestionModal } from "../modals/WebAuthnSuggestionModal";
 import { useWebAuthnSuggestion } from "../../hooks/useWebAuthnSuggestion";
 import { hasSeenWhatsNew } from "../modals/WhatsNewModal";
-import { ADMIN_EMAIL } from "../../lib/brand";
 import { BrandLockup, BrandSymbol } from "../BrandMark";
 const TransactionModal = lazy(() =>
   import("../modals/TransactionModal").then((m) => ({ default: m.TransactionModal }))
@@ -440,6 +439,7 @@ function SidebarContent({
   collapsed = false,
   onToggleCollapse,
 }: SidebarContentProps) {
+  const { subscription } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
@@ -528,7 +528,7 @@ function SidebarContent({
       </nav>
 
       <div className={cn("flex flex-col gap-1 pb-1", collapsed ? "px-3" : "px-4")}>
-        {email === ADMIN_EMAIL && (
+        {subscription?.isAdmin && (
           <Link
             to="/admin/suporte"
             onClick={onNavigate}
